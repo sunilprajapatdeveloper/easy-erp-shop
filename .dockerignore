@@ -1,0 +1,34 @@
+# Git
+.git
+.gitignore
+
+# Build outputs
+.gradle
+build
+bin
+target
+*.jar
+
+# IDE
+.vscode
+.idea
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+logs
+*.log
+
+# Environment files
+.env
+.env.local
+.env.development
+
+# Node modules (for frontend if any)
+node_modules
+
+# Uploads
+uploads

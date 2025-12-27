@@ -1,0 +1,17 @@
+storage:
+  active: s3
+  max-file-size: 50MB
+
+  s3:
+    enabled: true
+    bucket: ${STORAGE_S3_BUCKET}
+    region: ${STORAGE_S3_REGION}
+    access-key: ${STORAGE_S3_ACCESS_KEY}
+    secret-key: ${STORAGE_S3_SECRET_KEY}
+    cdn-url: ${STORAGE_S3_CDN_URL}
+
+  thumbnail:
+    enabled: true
+    width: 400
+    height: 400
+    quality: 0.8

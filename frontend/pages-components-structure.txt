@@ -1,0 +1,383 @@
+📁 PAGES
+├── Adjustments
+│   ├── AdjustmentListPage.vue
+│   ├── CreateAdjustmentsPage.vue
+│   └── EditAdjustmentPage.vue
+├── BestElectronicsShop
+│   ├── CartPage.vue
+│   ├── CheckoutPage.vue
+│   ├── ContactPage.vue
+│   ├── FaqPage.vue
+│   ├── LandingPage.vue
+│   ├── LoginPage.vue
+│   ├── LogoutPage.vue
+│   ├── OfferPage.vue
+│   ├── ShopDetailsPage.vue
+│   ├── ShopGridPage.vue
+│   ├── ShopLeftSidebarPage.vue
+│   ├── ShopRightSidebarPage.vue
+│   ├── SignupPage.vue
+│   ├── TermsConditionsPage.vue
+│   └── WishlistPage.vue
+├── Dashboard
+│   └── DashboardPage.vue
+├── Expenses
+│   ├── CreateExpensesPage.vue
+│   ├── EditExpensesPage.vue
+│   ├── ExpenseCategoryPage.vue
+│   └── ExpensesListPage.vue
+├── MobileScannerPage.vue
+├── NotFound
+│   └── NotFoundPage.vue
+├── Payments
+│   └── PaymentGatewayPage.vue
+├── People
+│   ├── CreateUserPage.vue
+│   ├── CustomerListPage.vue
+│   ├── SupplierListPage.vue
+│   ├── UpdateUserPage.vue
+│   └── UserListPage.vue
+├── Products
+│   ├── CreateProductsPage.vue
+│   ├── EditProductsPage.vue
+│   ├── EditProductStockPage.vue
+│   ├── ManageProductPricesPage.vue
+│   ├── ManageProductStocksPage.vue
+│   ├── ManageProductTaxesPage.vue
+│   ├── PrintBarcodePage.vue
+│   ├── ProductDetailsPage.vue
+│   └── ProductsListPage.vue
+├── PurchaseReturn
+│   ├── CreatePurchaseReturnPage.vue
+│   ├── EditPurchaseReturnPage.vue
+│   └── PurchaseReturnListPage.vue
+├── Purchases
+│   ├── CreatePurchasePage.vue
+│   ├── EditPurchasePage.vue
+│   └── PurchaseListPage.vue
+├── Quotations
+│   ├── CreateQuotationPage.vue
+│   ├── EditQuotationPage.vue
+│   └── QuotationListPage.vue
+├── Reports
+│   ├── CustomerReportPage.vue
+│   ├── ProductQuantityAlertPage.vue
+│   ├── ProductReportPage.vue
+│   ├── ProfitLossPage.vue
+│   ├── PurchasePaymentReportPage.vue
+│   ├── PurchaseReportPage.vue
+│   ├── PurchaseReturnReportPage.vue
+│   ├── SalesPaymentReportPage.vue
+│   ├── SalesReportPage.vue
+│   ├── SalesReturnReportPage.vue
+│   ├── StockReportDetailsPage.vue
+│   ├── StockReportPage.vue
+│   ├── SupplierReportPage.vue
+│   ├── UserReportPage.vue
+│   └── WarehouseReportPage.vue
+├── Sales
+│   ├── CreateSalesPage.vue
+│   ├── EditSalesPage.vue
+│   ├── PosPage.vue
+│   ├── SalesListPage.vue
+│   └── ShipmentPage.vue
+├── SalesReturn
+│   ├── CreateSalesReturnPage.vue
+│   ├── EditSalesReturnPage.vue
+│   └── SalesReturnListPage.vue
+├── Settings
+│   ├── BackupPage.vue
+│   ├── BrandListPage.vue
+│   ├── CategoryPage.vue
+│   ├── CreateGroupPermissionPage.vue
+│   ├── CreateWarehousePage.vue
+│   ├── CurrncyListPage.vue
+│   ├── EditGroupPermissionPage.vue
+│   ├── GroupPermissionPage.vue
+│   ├── MyProfilePage.vue
+│   ├── PosSettingsPage.vue
+│   ├── SystemSettingsPage.vue
+│   ├── UnitListPage.vue
+│   ├── WarehousePage.vue
+│   └── WarehouseSettingsPage.vue
+└── Transfer
+    ├── CreateTransferPage.vue
+    ├── EditTransferPage.vue
+    └── TransferListPage.vue
+
+📁 COMPONENTS
+├── Adjustments
+│   ├── AdjustmentList
+│   │   ├── AdjustmentList.vue
+│   │   └── DetailsModal.vue
+│   └── CreateAdjustments
+│       ├── ChooseForm.vue
+│       ├── NotesContent.vue
+│       ├── QuantityCounter.vue
+│       └── SelectedProducts.vue
+├── BarcodeScanner
+│   ├── MobileScanner.vue
+│   └── PhysicalScanner.vue
+├── BestElectronicsShop
+│   ├── Cart
+│   │   ├── CartContent.vue
+│   │   └── QuantityCounter.vue
+│   ├── Checkout
+│   │   ├── CheckoutContent.vue
+│   │   ├── PaymentCardGateway.vue
+│   │   ├── PaymentUPIGateway.vue
+│   │   └── YourOrder.vue
+│   ├── Common
+│   │   ├── BreadCrumb.vue
+│   │   └── ShopSidebar.vue
+│   ├── Contact
+│   │   ├── ContactForm.vue
+│   │   └── ContactInfo.vue
+│   ├── Faq
+│   │   └── FaqAccordion.vue
+│   ├── LandingPage
+│   │   ├── BrowseAllProducts.vue
+│   │   ├── CategoryWrap.vue
+│   │   └── MainBanner.vue
+│   ├── Layouts
+│   │   ├── MainFooter.vue
+│   │   ├── MainHeader.vue
+│   │   ├── ResponsiveNavbar.vue
+│   │   └── SearchModal.vue
+│   ├── Offer
+│   │   ├── HeroContent.vue
+│   │   └── OfferWrapper.vue
+│   ├── ShopDetails
+│   │   ├── ShopDetails.vue
+│   │   └── SingleProductSlider.vue
+│   ├── ShopGrid
+│   │   └── ProductsContent.vue
+│   ├── ShopLeftSidebar
+│   │   └── ProductsContent.vue
+│   ├── ShopRightSidebar
+│   │   └── ProductsContent.vue
+│   ├── TermsConditions
+│   │   └── TermsConditions.vue
+│   └── Wishlist
+│       └── WishlistContent.vue
+├── Common
+│   ├── BreadcrumbMenu.vue
+│   ├── FilterContent.vue
+│   ├── FilterModal.vue
+│   └── Popup.vue
+├── Dashboard
+│   ├── PaymentSentReceivedChart.vue
+│   ├── RecentInvoices.vue
+│   ├── RecentSales.vue
+│   ├── SalesTargetChart.vue
+│   ├── StatusContent.vue
+│   ├── StockAlert.vue
+│   ├── ThisWeeksSalesPurchasesChart.vue
+│   ├── TopCustomerChart.vue
+│   └── TopSellingProductsChart.vue
+├── Expenses
+│   ├── CreateExpenses
+│   │   └── CreateExpensesFrom.vue
+│   ├── ExpenseCategory
+│   │   ├── CreateCategoryModal.vue
+│   │   └── ExpenseCategory.vue
+│   └── ExpensesList
+│       ├── DetailsModal.vue
+│       ├── ExpensesList.vue
+│       └── FilterContent.vue
+├── Layouts
+│   ├── HeaderContent
+│   │   ├── LanguageDropdown.vue
+│   │   ├── NotificationDropdown.vue
+│   │   ├── ProfileDropdown.vue
+│   │   ├── SettingsBarBtn.vue
+│   │   └── ToggleFullscreenBtn.vue
+│   ├── LightDarkSwtich.vue
+│   ├── MainFooter.vue
+│   ├── MainHeader.vue
+│   ├── MainSidebar.vue
+│   ├── PreLoader.vue
+│   └── SettingSidebar.vue
+├── PaymentMethods
+│   ├── methods
+│   │   ├── CardPayment.vue
+│   │   ├── CashPayment.vue
+│   │   ├── ChequePayment.vue
+│   │   ├── GiftCardPayment.vue
+│   │   ├── PaypalPayment.vue
+│   │   └── UPIPayment.vue
+│   ├── PaymentGateway.vue
+│   └── PaymentSection.vue
+├── People
+│   ├── CustomerList
+│   │   ├── CreateCustomer.vue
+│   │   ├── CustomerDetails.vue
+│   │   ├── CustomerList.vue
+│   │   ├── FilterContent.vue
+│   │   └── FilterModal.vue
+│   ├── SupplierList
+│   │   ├── CreateSupplierForm.vue
+│   │   ├── FilterContent.vue
+│   │   ├── FilterModal.vue
+│   │   ├── SupplierDetails.vue
+│   │   └── SupplierList.vue
+│   └── UserList
+│       ├── CreateUser.vue
+│       ├── FilterContent.vue
+│       ├── FilterModal.vue
+│       ├── UserDetails.vue
+│       └── UserList.vue
+├── Pos
+│   └── PosScannerIntegration.vue
+├── Products
+│   ├── CreateProducts
+│   │   ├── AddImages.vue
+│   │   └── CreateProducts.vue
+│   ├── ManageProductPrices
+│   │   └── ManageProductPrices.vue
+│   ├── ManageProductStocks
+│   │   └── ManageProductStocks.vue
+│   ├── PrintBarcode
+│   │   ├── BarcodeWrapper.vue
+│   │   ├── ChooseForm.vue
+│   │   ├── PaperSize.vue
+│   │   ├── QuantityCounter.vue
+│   │   └── SelectedProducts.vue
+│   ├── ProductDetails
+│   │   └── ProductDetails.vue
+│   └── ProductsList
+│       └── ProductsList.vue
+├── PurchaseReturn
+│   ├── CreatePurchaseReturn
+│   │   ├── ChooseForm.vue
+│   │   ├── QuantityCounter.vue
+│   │   ├── SelectedProducts.vue
+│   │   └── SubmitPurchase.vue
+│   └── PurchaseReturnList
+│       ├── PurchaseReturnDetails.vue
+│       └── PurchaseReturnList.vue
+├── Purchases
+│   ├── CreatePurchase
+│   │   ├── ChooseForm.vue
+│   │   ├── QuantityCounter.vue
+│   │   ├── SelectedProducts.vue
+│   │   └── SubmitPurchase.vue
+│   └── PurchaseList
+│       ├── PurchaseDetails.vue
+│       └── PurchaseList.vue
+├── Quotations
+│   ├── CreateQuotation
+│   │   ├── QuantityCounter.vue
+│   │   ├── SelectedProducts.vue
+│   │   └── SubmitQuotation.vue
+│   └── QuotationList
+│       ├── QuotationDetails.vue
+│       └── QuotationList.vue
+├── Reports
+│   ├── CustomerReport
+│   │   └── CustomerReport.vue
+│   ├── ProductQuantityAlert
+│   │   ├── FilterModal.vue
+│   │   └── ProductQuantityAlert.vue
+│   ├── ProductReport
+│   │   ├── ProductDetailsReportModal.vue
+│   │   └── ProductReport.vue
+│   ├── ProfitLoss
+│   │   └── ProfitLoss.vue
+│   ├── PurchasePaymentReport
+│   │   └── PurchasePaymentReport.vue
+│   ├── PurchaseReport
+│   │   └── PurchaseReportContent.vue
+│   ├── PurchaseReturnReport
+│   │   └── PurchaseReturnReport.vue
+│   ├── SalesPaymentReport
+│   │   └── SalesPaymentReport.vue
+│   ├── SalesReport
+│   │   └── SalesReport.vue
+│   ├── SalesReturnReport
+│   │   └── SalesReturnReport.vue
+│   ├── StockReport
+│   │   └── StockReport.vue
+│   ├── StockReportDetails
+│   │   └── StockReportDetails.vue
+│   ├── SupplierReport
+│   │   └── SupplierReport.vue
+│   ├── UserReport
+│   │   └── UserReport.vue
+│   └── WarehouseReport
+│       └── WarehouseReport.vue
+├── Sales
+│   ├── CreateSales
+│   │   ├── ChooseForm.vue
+│   │   ├── QuantityCounter.vue
+│   │   ├── SelectedProducts.vue
+│   │   └── SubmitPurchase.vue
+│   ├── Pos
+│   │   ├── EditContent.vue
+│   │   ├── PosLeftContent.vue
+│   │   ├── PosRightContent.vue
+│   │   ├── QuantityCounter.vue
+│   │   └── SelectedProducts.vue
+│   ├── SalesList
+│   │   ├── SalesDetails.vue
+│   │   └── SalesList.vue
+│   └── Shipment
+│       ├── EditShipment.vue
+│       └── ShipmentList.vue
+├── SalesReturn
+│   ├── CreateSalesReturn
+│   │   ├── ChooseForm.vue
+│   │   ├── QuantityCounter.vue
+│   │   ├── SelectedProducts.vue
+│   │   └── SubmitPurchase.vue
+│   └── SalesReturnList
+│       ├── SalesReturnDetails.vue
+│       └── SalesReturnList.vue
+├── Settings
+│   ├── Backup
+│   │   ├── BackupContent.vue
+│   │   └── BackupContentModal.vue
+│   ├── BrandList
+│   │   ├── BrandList.vue
+│   │   └── CreateBrandModal.vue
+│   ├── Category
+│   │   ├── CategoryList.vue
+│   │   └── CreateCategoryModal.vue
+│   ├── CreateGroupPermission
+│   │   └── CreateGroupPermission.vue
+│   ├── CurrncyList
+│   │   ├── CreateCurrencyModal.vue
+│   │   └── CurrncyList.vue
+│   ├── EditGroupPermission
+│   │   └── EditGroupPermission.vue
+│   ├── GroupPermission
+│   │   └── GroupPermission.vue
+│   ├── MyProfile
+│   │   └── MyProfile.vue
+│   ├── SystemSettings
+│   │   ├── CurrencySettings.vue
+│   │   ├── ExchangeRates.vue
+│   │   ├── PaymentGateway.vue
+│   │   ├── PosGeneralSettings.vue
+│   │   ├── PosReceiptSettings.vue
+│   │   ├── SMSConfiguration.vue
+│   │   ├── SMTPConfiguration.vue
+│   │   └── SystemSettings.vue
+│   ├── UnitList
+│   │   ├── CreateUnit.vue
+│   │   └── UnitList.vue
+│   └── Warehouse
+│       ├── CreateWarehouseModal.vue
+│       ├── WarehouseGeneralDetails.vue
+│       ├── WarehouseList.vue
+│       └── WarehouseOtherSettings.vue
+└── Transfer
+    ├── CreateTransfer
+    │   ├── ChooseForm.vue
+    │   ├── CreateTransferFrom.vue
+    │   ├── QuantityCounter.vue
+    │   └── SelectedProducts.vue
+    └── TransferList
+        ├── DetailsModal.vue
+        └── TransferList.vue
+

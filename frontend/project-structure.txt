@@ -1,0 +1,647 @@
+├── .browserslistrc
+├── .eslintrc.js
+├── .gitignore
+├── babel.config.js
+├── generate-structure.js
+├── package-lock.json
+├── package.json
+├── project-structure.txt
+├── public
+│   ├── favicon.ico
+│   ├── favicon.webp
+│   └── index.html
+├── README.md
+├── src
+│   ├── App.vue
+│   ├── assets
+│   │   ├── css
+│   │   │   ├── dark-theme.css
+│   │   │   ├── dark-theme.css.map
+│   │   │   ├── dark-theme.scss
+│   │   │   ├── remixicon.css
+│   │   │   ├── responsive.css
+│   │   │   ├── responsive.css.map
+│   │   │   ├── responsive.scss
+│   │   │   ├── style.css
+│   │   │   ├── style.css.map
+│   │   │   └── style.scss
+│   │   ├── custom.css
+│   │   ├── custom.css.map
+│   │   ├── custom.scss
+│   │   ├── fonts
+│   │   │   ├── remixicon.eot
+│   │   │   ├── remixicon.svg
+│   │   │   ├── remixicon.ttf
+│   │   │   ├── remixicon.woff
+│   │   │   └── remixicon.woff2
+│   │   ├── img
+│   │   │   ├── admin.webp
+│   │   │   ├── brand
+│   │   │   │   ├── brand-1.webp
+│   │   │   │   ├── brand-2.webp
+│   │   │   │   ├── brand-3.webp
+│   │   │   │   └── brand-4.webp
+│   │   │   ├── category
+│   │   │   │   ├── category-1.webp
+│   │   │   │   ├── category-2.webp
+│   │   │   │   ├── category-3.webp
+│   │   │   │   ├── category-4.webp
+│   │   │   │   ├── category-5.webp
+│   │   │   │   ├── category-6.webp
+│   │   │   │   └── category-7.webp
+│   │   │   ├── down-arrow-white.webp
+│   │   │   ├── down-arrow.webp
+│   │   │   ├── favicon.webp
+│   │   │   ├── flags
+│   │   │   │   ├── china.webp
+│   │   │   │   ├── france.webp
+│   │   │   │   ├── german.webp
+│   │   │   │   ├── japan.webp
+│   │   │   │   ├── turkey.webp
+│   │   │   │   └── uk.webp
+│   │   │   ├── hero-img.webp
+│   │   │   ├── icons
+│   │   │   │   ├── add-circle.svg
+│   │   │   │   ├── adjustments.svg
+│   │   │   │   ├── arrow-down.svg
+│   │   │   │   ├── arrow-left.svg
+│   │   │   │   ├── arrow-right.svg
+│   │   │   │   ├── arrow-up.svg
+│   │   │   │   ├── backup.svg
+│   │   │   │   ├── barcode.svg
+│   │   │   │   ├── brand.svg
+│   │   │   │   ├── cards.svg
+│   │   │   │   ├── cart.svg
+│   │   │   │   ├── category.svg
+│   │   │   │   ├── check-icon.svg
+│   │   │   │   ├── close-2.svg
+│   │   │   │   ├── close-circle-2.svg
+│   │   │   │   ├── close-circle.svg
+│   │   │   │   ├── close.svg
+│   │   │   │   ├── copy.svg
+│   │   │   │   ├── create-item.svg
+│   │   │   │   ├── currency.svg
+│   │   │   │   ├── customer-report.svg
+│   │   │   │   ├── dashboard.svg
+│   │   │   │   ├── dollar-circle.svg
+│   │   │   │   ├── down-arrow-2.svg
+│   │   │   │   ├── down-arrow-3.svg
+│   │   │   │   ├── down-arrow-4.svg
+│   │   │   │   ├── down-arrow-black.svg
+│   │   │   │   ├── down-arrow-blue.svg
+│   │   │   │   ├── down-arrow-white.svg
+│   │   │   │   ├── down-arrow.svg
+│   │   │   │   ├── download.svg
+│   │   │   │   ├── edit.svg
+│   │   │   │   ├── expense-category.svg
+│   │   │   │   ├── expenses.svg
+│   │   │   │   ├── eye-close.svg
+│   │   │   │   ├── eye.svg
+│   │   │   │   ├── filter.svg
+│   │   │   │   ├── globe.svg
+│   │   │   │   ├── group.svg
+│   │   │   │   ├── heart.svg
+│   │   │   │   ├── item-list.svg
+│   │   │   │   ├── left-arrow-purple.svg
+│   │   │   │   ├── left-arrow.svg
+│   │   │   │   ├── mail.svg
+│   │   │   │   ├── map.svg
+│   │   │   │   ├── maximize.svg
+│   │   │   │   ├── menu-bar.svg
+│   │   │   │   ├── money-2.svg
+│   │   │   │   ├── money-3.svg
+│   │   │   │   ├── money-change-2.svg
+│   │   │   │   ├── money-change.svg
+│   │   │   │   ├── money-send-2.svg
+│   │   │   │   ├── money-send.svg
+│   │   │   │   ├── money-tick.svg
+│   │   │   │   ├── moneys.svg
+│   │   │   │   ├── notification.svg
+│   │   │   │   ├── paypal.svg
+│   │   │   │   ├── people.svg
+│   │   │   │   ├── phone.svg
+│   │   │   │   ├── products.svg
+│   │   │   │   ├── profile-circle.svg
+│   │   │   │   ├── purchase-2.svg
+│   │   │   │   ├── purchase-payment.svg
+│   │   │   │   ├── purchase-return-2.svg
+│   │   │   │   ├── purchase-return.svg
+│   │   │   │   ├── purchase.svg
+│   │   │   │   ├── quantity-alert.svg
+│   │   │   │   ├── quotation.svg
+│   │   │   │   ├── reports.svg
+│   │   │   │   ├── right-arrow-purple.svg
+│   │   │   │   ├── right-arrow.svg
+│   │   │   │   ├── right-long-arrow.svg
+│   │   │   │   ├── rotate-left.svg
+│   │   │   │   ├── sale-report-2.svg
+│   │   │   │   ├── sale.svg
+│   │   │   │   ├── sales-return-2.svg
+│   │   │   │   ├── sales-return.svg
+│   │   │   │   ├── search.svg
+│   │   │   │   ├── setting-2.svg
+│   │   │   │   ├── setting-3.svg
+│   │   │   │   ├── setting.svg
+│   │   │   │   ├── shopping-cart.svg
+│   │   │   │   ├── sidebar-menu.svg
+│   │   │   │   ├── star.svg
+│   │   │   │   ├── supplier-report.svg
+│   │   │   │   ├── tick-circle.svg
+│   │   │   │   ├── transfer.svg
+│   │   │   │   ├── unit.svg
+│   │   │   │   ├── up-arrow-ash.svg
+│   │   │   │   ├── up-down-aroow.svg
+│   │   │   │   ├── upload-files.svg
+│   │   │   │   ├── user-square.svg
+│   │   │   │   ├── wallet-add-2.svg
+│   │   │   │   ├── wallet-add.svg
+│   │   │   │   ├── wallet-money-2.svg
+│   │   │   │   ├── wallet-money.svg
+│   │   │   │   ├── warehouse-report.svg
+│   │   │   │   └── warehouse.svg
+│   │   │   ├── login-bg.webp
+│   │   │   ├── logo-2.webp
+│   │   │   ├── logo-white.webp
+│   │   │   ├── logo.webp
+│   │   │   ├── moon.svg
+│   │   │   ├── night.webp
+│   │   │   ├── orlo_logo.png
+│   │   │   ├── products
+│   │   │   │   ├── barcode-2.webp
+│   │   │   │   ├── barcode-3.webp
+│   │   │   │   ├── barcode.webp
+│   │   │   │   ├── cart-item-1.webp
+│   │   │   │   ├── cart-item-2.webp
+│   │   │   │   ├── cart-item-3.webp
+│   │   │   │   ├── Group 2128.png
+│   │   │   │   ├── offer-1.webp
+│   │   │   │   ├── offer-2.webp
+│   │   │   │   ├── offer-3.webp
+│   │   │   │   ├── product-1.webp
+│   │   │   │   ├── product-10.webp
+│   │   │   │   ├── product-11.webp
+│   │   │   │   ├── product-12.webp
+│   │   │   │   ├── product-13.webp
+│   │   │   │   ├── product-14.webp
+│   │   │   │   ├── product-15.webp
+│   │   │   │   ├── product-16.webp
+│   │   │   │   ├── product-17.webp
+│   │   │   │   ├── product-18.webp
+│   │   │   │   ├── product-19.webp
+│   │   │   │   ├── product-2.webp
+│   │   │   │   ├── product-20.webp
+│   │   │   │   ├── product-21.webp
+│   │   │   │   ├── product-22.webp
+│   │   │   │   ├── product-23.webp
+│   │   │   │   ├── product-24.webp
+│   │   │   │   ├── product-25.webp
+│   │   │   │   ├── product-26.webp
+│   │   │   │   ├── product-27.webp
+│   │   │   │   ├── product-28.webp
+│   │   │   │   ├── product-29.webp
+│   │   │   │   ├── product-3.webp
+│   │   │   │   ├── product-30.webp
+│   │   │   │   ├── product-31.webp
+│   │   │   │   ├── product-32.webp
+│   │   │   │   ├── product-33.webp
+│   │   │   │   ├── product-34.webp
+│   │   │   │   ├── product-35.webp
+│   │   │   │   ├── product-36.webp
+│   │   │   │   ├── product-37.webp
+│   │   │   │   ├── product-38.webp
+│   │   │   │   ├── product-39.webp
+│   │   │   │   ├── product-4.webp
+│   │   │   │   ├── product-40.webp
+│   │   │   │   ├── product-41.webp
+│   │   │   │   ├── product-5.webp
+│   │   │   │   ├── product-6.webp
+│   │   │   │   ├── product-7.webp
+│   │   │   │   ├── product-8.webp
+│   │   │   │   ├── product-9.webp
+│   │   │   │   ├── product-thumb-1.webp
+│   │   │   │   ├── product-thumb-10.webp
+│   │   │   │   ├── product-thumb-11.webp
+│   │   │   │   ├── product-thumb-12.webp
+│   │   │   │   ├── product-thumb-13.webp
+│   │   │   │   ├── product-thumb-14.webp
+│   │   │   │   ├── product-thumb-2.webp
+│   │   │   │   ├── product-thumb-3.webp
+│   │   │   │   ├── product-thumb-4.webp
+│   │   │   │   ├── product-thumb-5.webp
+│   │   │   │   ├── product-thumb-6.webp
+│   │   │   │   ├── product-thumb-7.webp
+│   │   │   │   ├── product-thumb-8.webp
+│   │   │   │   ├── product-thumb-9.webp
+│   │   │   │   ├── single-product-2.webp
+│   │   │   │   ├── single-product-3.webp
+│   │   │   │   ├── single-product-4.webp
+│   │   │   │   ├── single-product-5.webp
+│   │   │   │   └── single-product.webp
+│   │   │   ├── products.pdf
+│   │   │   ├── products.xlsx
+│   │   │   ├── sun.svg
+│   │   │   ├── sunny.webp
+│   │   │   └── users
+│   │   │       ├── client.webp
+│   │   │       ├── user-1.webp
+│   │   │       ├── user-2.webp
+│   │   │       ├── user-3.webp
+│   │   │       ├── user-4.webp
+│   │   │       ├── user-5.webp
+│   │   │       └── user-6.webp
+│   │   └── logo.png
+│   ├── bootstrap.d.ts
+│   ├── components
+│   │   ├── Adjustments
+│   │   │   ├── AdjustmentList
+│   │   │   │   ├── AdjustmentList.vue
+│   │   │   │   └── DetailsModal.vue
+│   │   │   └── CreateAdjustments
+│   │   │       ├── ChooseForm.vue
+│   │   │       ├── NotesContent.vue
+│   │   │       ├── QuantityCounter.vue
+│   │   │       └── SelectedProducts.vue
+│   │   ├── BestElectronicsShop
+│   │   │   ├── Cart
+│   │   │   │   ├── CartContent.vue
+│   │   │   │   └── QuantityCounter.vue
+│   │   │   ├── Checkout
+│   │   │   │   ├── CheckoutContent.vue
+│   │   │   │   └── YourOrder.vue
+│   │   │   ├── Common
+│   │   │   │   ├── BreadCrumb.vue
+│   │   │   │   └── ShopSidebar.vue
+│   │   │   ├── Contact
+│   │   │   │   ├── ContactForm.vue
+│   │   │   │   └── ContactInfo.vue
+│   │   │   ├── Faq
+│   │   │   │   └── FaqAccordion.vue
+│   │   │   ├── LandingPage
+│   │   │   │   ├── BrowseAllProducts.vue
+│   │   │   │   ├── CategoryWrap.vue
+│   │   │   │   └── MainBanner.vue
+│   │   │   ├── Layouts
+│   │   │   │   ├── MainFooter.vue
+│   │   │   │   ├── MainHeader.vue
+│   │   │   │   ├── ResponsiveNavbar.vue
+│   │   │   │   └── SearchModal.vue
+│   │   │   ├── Offer
+│   │   │   │   ├── HeroContent.vue
+│   │   │   │   └── OfferWrapper.vue
+│   │   │   ├── ShopDetails
+│   │   │   │   ├── ShopDetails.vue
+│   │   │   │   └── SingleProductSlider.vue
+│   │   │   ├── ShopGrid
+│   │   │   │   └── ProductsContent.vue
+│   │   │   ├── ShopLeftSidebar
+│   │   │   │   └── ProductsContent.vue
+│   │   │   ├── ShopRightSidebar
+│   │   │   │   └── ProductsContent.vue
+│   │   │   ├── TermsConditions
+│   │   │   │   └── TermsConditions.vue
+│   │   │   └── Wishlist
+│   │   │       └── WishlistContent.vue
+│   │   ├── Common
+│   │   │   ├── BreadcrumbMenu.vue
+│   │   │   ├── FilterContent.vue
+│   │   │   └── FilterModal.vue
+│   │   ├── Dashboard
+│   │   │   ├── PaymentSentReceivedChart.vue
+│   │   │   ├── RecentInvoices.vue
+│   │   │   ├── RecentSales.vue
+│   │   │   ├── SalesTargetChart.vue
+│   │   │   ├── StatusContent.vue
+│   │   │   ├── StockAlert.vue
+│   │   │   ├── ThisWeeksSalesPurchasesChart.vue
+│   │   │   ├── TopCustomerChart.vue
+│   │   │   └── TopSellingProductsChart.vue
+│   │   ├── Expenses
+│   │   │   ├── CreateExpenses
+│   │   │   │   └── CreateExpensesFrom.vue
+│   │   │   ├── ExpenseCategory
+│   │   │   │   ├── CreateCategoryModal.vue
+│   │   │   │   └── ExpenseCategory.vue
+│   │   │   └── ExpensesList
+│   │   │       ├── DetailsModal.vue
+│   │   │       ├── ExpensesList.vue
+│   │   │       └── FilterContent.vue
+│   │   ├── Layouts
+│   │   │   ├── HeaderContent
+│   │   │   │   ├── LanguageDropdown.vue
+│   │   │   │   ├── NotificationDropdown.vue
+│   │   │   │   ├── ProfileDropdown.vue
+│   │   │   │   ├── SettingsBarBtn.vue
+│   │   │   │   └── ToggleFullscreenBtn.vue
+│   │   │   ├── LightDarkSwtich.vue
+│   │   │   ├── MainFooter.vue
+│   │   │   ├── MainHeader.vue
+│   │   │   ├── MainSidebar.vue
+│   │   │   ├── PreLoader.vue
+│   │   │   └── SettingSidebar.vue
+│   │   ├── People
+│   │   │   ├── CustomerList
+│   │   │   │   ├── CreateCustomer.vue
+│   │   │   │   ├── CustomerDetails.vue
+│   │   │   │   ├── CustomerList.vue
+│   │   │   │   ├── FilterContent.vue
+│   │   │   │   └── FilterModal.vue
+│   │   │   ├── SupplierList
+│   │   │   │   ├── CreateSupplierForm.vue
+│   │   │   │   ├── FilterContent.vue
+│   │   │   │   ├── FilterModal.vue
+│   │   │   │   ├── SupplierDetails.vue
+│   │   │   │   └── SupplierList.vue
+│   │   │   └── UserList
+│   │   │       ├── CreateUserModal.vue
+│   │   │       ├── FilterContent.vue
+│   │   │       ├── FilterModal.vue
+│   │   │       ├── UserDetails.vue
+│   │   │       └── UserList.vue
+│   │   ├── Products
+│   │   │   ├── CreateProducts
+│   │   │   │   ├── AddImages.vue
+│   │   │   │   └── CreateProducts.vue
+│   │   │   ├── PrintBarcode
+│   │   │   │   ├── BarcodeWrapper.vue
+│   │   │   │   ├── ChooseForm.vue
+│   │   │   │   ├── PaperSize.vue
+│   │   │   │   ├── QuantityCounter.vue
+│   │   │   │   └── SelectedProducts.vue
+│   │   │   ├── ProductDetails
+│   │   │   │   └── ProductDetails.vue
+│   │   │   └── ProductsList
+│   │   │       └── ProductsList.vue
+│   │   ├── PurchaseReturn
+│   │   │   ├── CreatePurchaseReturn
+│   │   │   │   ├── QuantityCounter.vue
+│   │   │   │   ├── SelectedProducts.vue
+│   │   │   │   └── SubmitPurchase.vue
+│   │   │   └── PurchaseReturnList
+│   │   │       ├── PurchaseReturnDetails.vue
+│   │   │       └── PurchaseReturnList.vue
+│   │   ├── Purchases
+│   │   │   ├── CreatePurchase
+│   │   │   │   ├── QuantityCounter.vue
+│   │   │   │   ├── SelectedProducts.vue
+│   │   │   │   └── SubmitPurchase.vue
+│   │   │   └── PurchaseList
+│   │   │       ├── PurchaseDetails.vue
+│   │   │       └── PurchaseList.vue
+│   │   ├── Quotations
+│   │   │   ├── CreateQuotation
+│   │   │   │   ├── QuantityCounter.vue
+│   │   │   │   ├── SelectedProducts.vue
+│   │   │   │   └── SubmitQuotation.vue
+│   │   │   └── QuotationList
+│   │   │       ├── QuotationDetails.vue
+│   │   │       └── QuotationList.vue
+│   │   ├── Reports
+│   │   │   ├── CustomerReport
+│   │   │   │   └── CustomerReport.vue
+│   │   │   ├── ProductQuantityAlert
+│   │   │   │   ├── FilterModal.vue
+│   │   │   │   └── ProductQuantityAlert.vue
+│   │   │   ├── ProductReport
+│   │   │   │   ├── ProductDetailsReportModal.vue
+│   │   │   │   └── ProductReport.vue
+│   │   │   ├── ProfitLoss
+│   │   │   │   └── ProfitLoss.vue
+│   │   │   ├── PurchasePaymentReport
+│   │   │   │   └── PurchasePaymentReport.vue
+│   │   │   ├── PurchaseReport
+│   │   │   │   └── PurchaseReportContent.vue
+│   │   │   ├── PurchaseReturnReport
+│   │   │   │   └── PurchaseReturnReport.vue
+│   │   │   ├── SalesPaymentReport
+│   │   │   │   └── SalesPaymentReport.vue
+│   │   │   ├── SalesReport
+│   │   │   │   └── SalesReport.vue
+│   │   │   ├── SalesReturnReport
+│   │   │   │   └── SalesReturnReport.vue
+│   │   │   ├── StockReport
+│   │   │   │   └── StockReport.vue
+│   │   │   ├── StockReportDetails
+│   │   │   │   └── StockReportDetails.vue
+│   │   │   ├── SupplierReport
+│   │   │   │   └── SupplierReport.vue
+│   │   │   ├── UserReport
+│   │   │   │   └── UserReport.vue
+│   │   │   └── WarehouseReport
+│   │   │       └── WarehouseReport.vue
+│   │   ├── Sales
+│   │   │   ├── CreateSales
+│   │   │   │   ├── QuantityCounter.vue
+│   │   │   │   ├── SelectedProducts.vue
+│   │   │   │   └── SubmitPurchase.vue
+│   │   │   ├── Pos
+│   │   │   │   ├── EditContent.vue
+│   │   │   │   ├── PosLeftContent.vue
+│   │   │   │   ├── PosRightContent.vue
+│   │   │   │   ├── QuantityCounter.vue
+│   │   │   │   └── SelectedProducts.vue
+│   │   │   ├── SalesList
+│   │   │   │   ├── SalesDetails.vue
+│   │   │   │   └── SalesList.vue
+│   │   │   └── Shipment
+│   │   │       ├── EditShipment.vue
+│   │   │       └── ShipmentList.vue
+│   │   ├── SalesReturn
+│   │   │   ├── CreateSalesReturn
+│   │   │   │   ├── QuantityCounter.vue
+│   │   │   │   ├── SelectedProducts.vue
+│   │   │   │   └── SubmitPurchase.vue
+│   │   │   └── SalesReturnList
+│   │   │       ├── SalesReturnDetails.vue
+│   │   │       └── SalesReturnList.vue
+│   │   ├── Settings
+│   │   │   ├── Backup
+│   │   │   │   ├── BackupContent.vue
+│   │   │   │   └── BackupContentModal.vue
+│   │   │   ├── BrandList
+│   │   │   │   ├── BrandList.vue
+│   │   │   │   └── CreateBrandModal.vue
+│   │   │   ├── Category
+│   │   │   │   ├── CategoryList.vue
+│   │   │   │   └── CreateCategoryModal.vue
+│   │   │   ├── CreateGroupPermission
+│   │   │   │   └── CreateGroupPermission.vue
+│   │   │   ├── CurrncyList
+│   │   │   │   ├── CreateCurrencyModal.vue
+│   │   │   │   └── CurrncyList.vue
+│   │   │   ├── EditGroupPermission
+│   │   │   │   └── EditGroupPermission.vue
+│   │   │   ├── GroupPermission
+│   │   │   │   └── GroupPermission.vue
+│   │   │   ├── MyProfile
+│   │   │   │   └── MyProfile.vue
+│   │   │   ├── SystemSettings
+│   │   │   │   ├── PaymentGateway.vue
+│   │   │   │   ├── PosReceiptSettings.vue
+│   │   │   │   ├── SMSConfiguration.vue
+│   │   │   │   ├── SMTPConfiguration.vue
+│   │   │   │   └── SystemSettings.vue
+│   │   │   ├── UnitList
+│   │   │   │   ├── CreateUnit.vue
+│   │   │   │   └── UnitList.vue
+│   │   │   └── Warehouse
+│   │   │       ├── CreateWarehouseModal.vue
+│   │   │       └── WarehouseList.vue
+│   │   └── Transfer
+│   │       ├── CreateTransfer
+│   │       │   ├── ChooseForm.vue
+│   │       │   ├── CreateTransferFrom.vue
+│   │       │   ├── QuantityCounter.vue
+│   │       │   └── SelectedProducts.vue
+│   │       └── TransferList
+│   │           ├── DetailsModal.vue
+│   │           └── TransferList.vue
+│   ├── constants
+│   │   ├── PERMISSIONS.ts
+│   │   └── PERMISSION_LIST.ts
+│   ├── enums
+│   │   └── shipmentStatus.ts
+│   ├── main.ts
+│   ├── pages
+│   │   ├── Adjustments
+│   │   │   ├── AdjustmentListPage.vue
+│   │   │   ├── CreateAdjustmentsPage.vue
+│   │   │   └── EditAdjustmentPage.vue
+│   │   ├── BestElectronicsShop
+│   │   │   ├── CartPage.vue
+│   │   │   ├── CheckoutPage.vue
+│   │   │   ├── ContactPage.vue
+│   │   │   ├── FaqPage.vue
+│   │   │   ├── LandingPage.vue
+│   │   │   ├── LoginPage.vue
+│   │   │   ├── LogoutPage.vue
+│   │   │   ├── OfferPage.vue
+│   │   │   ├── ShopDetailsPage.vue
+│   │   │   ├── ShopGridPage.vue
+│   │   │   ├── ShopLeftSidebarPage.vue
+│   │   │   ├── ShopRightSidebarPage.vue
+│   │   │   ├── SignupPage.vue
+│   │   │   ├── TermsConditionsPage.vue
+│   │   │   └── WishlistPage.vue
+│   │   ├── Dashboard
+│   │   │   └── DashboardPage.vue
+│   │   ├── Expenses
+│   │   │   ├── CreateExpensesPage.vue
+│   │   │   ├── EditExpensesPage.vue
+│   │   │   ├── ExpenseCategoryPage.vue
+│   │   │   └── ExpensesListPage.vue
+│   │   ├── People
+│   │   │   ├── CustomerListPage.vue
+│   │   │   ├── SupplierListPage.vue
+│   │   │   └── UserListPage.vue
+│   │   ├── Products
+│   │   │   ├── CreateProductsPage.vue
+│   │   │   ├── EditProductsPage.vue
+│   │   │   ├── PrintBarcodePage.vue
+│   │   │   ├── ProductDetailsPage.vue
+│   │   │   └── ProductsListPage.vue
+│   │   ├── PurchaseReturn
+│   │   │   ├── CreatePurchaseReturnPage.vue
+│   │   │   ├── EditPurchaseReturnPage.vue
+│   │   │   └── PurchaseReturnListPage.vue
+│   │   ├── Purchases
+│   │   │   ├── CreatePurchasePage.vue
+│   │   │   ├── EditPurchasePage.vue
+│   │   │   └── PurchaseListPage.vue
+│   │   ├── Quotations
+│   │   │   ├── CreateQuotationPage.vue
+│   │   │   ├── EditQuotationPage.vue
+│   │   │   └── QuotationListPage.vue
+│   │   ├── Reports
+│   │   │   ├── CustomerReportPage.vue
+│   │   │   ├── ProductQuantityAlertPage.vue
+│   │   │   ├── ProductReportPage.vue
+│   │   │   ├── ProfitLossPage.vue
+│   │   │   ├── PurchasePaymentReportPage.vue
+│   │   │   ├── PurchaseReportPage.vue
+│   │   │   ├── PurchaseReturnReportPage.vue
+│   │   │   ├── SalesPaymentReportPage.vue
+│   │   │   ├── SalesReportPage.vue
+│   │   │   ├── SalesReturnReportPage.vue
+│   │   │   ├── StockReportDetailsPage.vue
+│   │   │   ├── StockReportPage.vue
+│   │   │   ├── SupplierReportPage.vue
+│   │   │   ├── UserReportPage.vue
+│   │   │   └── WarehouseReportPage.vue
+│   │   ├── Sales
+│   │   │   ├── CreateSalesPage.vue
+│   │   │   ├── EditSalesPage.vue
+│   │   │   ├── PosPage.vue
+│   │   │   ├── SalesListPage.vue
+│   │   │   └── ShipmentPage.vue
+│   │   ├── SalesReturn
+│   │   │   ├── CreateSalesReturnPage.vue
+│   │   │   ├── EditSalesReturnPage.vue
+│   │   │   └── SalesReturnListPage.vue
+│   │   ├── Settings
+│   │   │   ├── BackupPage.vue
+│   │   │   ├── BrandListPage.vue
+│   │   │   ├── CategoryPage.vue
+│   │   │   ├── CreateGroupPermissionPage.vue
+│   │   │   ├── CurrncyListPage.vue
+│   │   │   ├── EditGroupPermissionPage.vue
+│   │   │   ├── GroupPermissionPage.vue
+│   │   │   ├── MyProfilePage.vue
+│   │   │   ├── SystemSettingsPage.vue
+│   │   │   ├── UnitListPage.vue
+│   │   │   └── WarehousePage.vue
+│   │   └── Transfer
+│   │       ├── CreateTransferPage.vue
+│   │       ├── EditTransferPage.vue
+│   │       └── TransferListPage.vue
+│   ├── router
+│   │   └── index.ts
+│   ├── services
+│   │   ├── adjustmentService.ts
+│   │   ├── adjustmentTypeService.ts
+│   │   ├── api.ts
+│   │   ├── authService.ts
+│   │   ├── brandService.ts
+│   │   ├── categoryService.ts
+│   │   ├── currencyService.ts
+│   │   ├── productService.ts
+│   │   ├── roleService.ts
+│   │   ├── saleService.ts
+│   │   ├── transferService.ts
+│   │   ├── unitService.ts
+│   │   ├── userService.ts
+│   │   └── warehouseService.ts
+│   ├── shims-images.d.ts
+│   ├── shims-vue.d.ts
+│   ├── stores
+│   │   ├── adjustmentStore.ts
+│   │   ├── adjustmentTypeStore.ts
+│   │   ├── brandStore.ts
+│   │   ├── categoryStore.ts
+│   │   ├── currencyStore.ts
+│   │   ├── productStore.ts
+│   │   ├── roleStore.ts
+│   │   ├── saleStore.ts
+│   │   ├── settingStore.ts
+│   │   ├── transferStore.ts
+│   │   ├── unitStore.ts
+│   │   ├── userStore.ts
+│   │   └── warehouseStore.ts
+│   ├── types
+│   │   ├── Adjustment.ts
+│   │   ├── AdjustmentType.ts
+│   │   ├── Brand.ts
+│   │   ├── Category.ts
+│   │   ├── Currency.ts
+│   │   ├── Product.ts
+│   │   ├── Role.ts
+│   │   ├── Sale.ts
+│   │   ├── TaxTypes.ts
+│   │   ├── Transfer.ts
+│   │   ├── Unit.ts
+│   │   ├── User.ts
+│   │   └── Warehouse.ts
+│   └── utils
+│       ├── store.ts
+│       └── transferUtils.ts
+├── tsconfig.json
+└── vue.config.js

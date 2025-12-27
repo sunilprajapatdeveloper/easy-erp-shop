@@ -1,0 +1,6 @@
+export enum PaymentSourceType {
+  SALE = "SALE",
+  PURCHASE = "PURCHASE",
+  SALE_RETURN = "SALE_RETURN",
+  PURCHASE_RETURN = "PURCHASE_RETURN",
+}

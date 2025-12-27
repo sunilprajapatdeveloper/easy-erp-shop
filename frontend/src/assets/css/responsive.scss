@@ -1,0 +1,712 @@
+@media only screen and (max-width: 575px) {
+  .xs-none {
+    display: none;
+  }
+  //Sidebar CSS
+  body {
+    .sidebar-area {
+      width: 85px;
+    }
+  }
+  //Single Product CSS
+  .table {
+    &.single-product-table {
+      th,
+      td {
+        padding: 20px;
+      }
+    }
+  }
+}
+@media only screen and (min-width: 576px) and (max-width: 767px) {
+  .container-fluid {
+    max-width: 540px;
+    padding: 0 15px;
+  }
+}
+@media only screen and (max-width: 767px) {
+  p,
+  input,
+  textarea,
+  span,
+  label {
+    font-size: 14px;
+    line-height: 25px;
+  }
+  .sm-none {
+    display: none !important;
+  }
+  .w-sm-100 {
+    width: 100%;
+  }
+  .pt-100 {
+    padding-top: 50px;
+  }
+  .ptb-100 {
+    padding-top: 50px;
+    padding-bottom: 50px;
+  }
+  .pb-100 {
+    padding-bottom: 50px;
+  }
+  .pb-70 {
+    padding-bottom: 20px;
+  }
+  .pb-75 {
+    padding-bottom: 25px;
+  }
+  .pt-75 {
+    padding-top: 25px;
+  }
+  .ptb-150 {
+    padding-top: 70px;
+    padding-bottom: 70px;
+  }
+  .row {
+    &.mb-30 {
+      margin-bottom: 25px;
+    }
+    &.mb-40 {
+      margin-bottom: 35px;
+    }
+  }
+  .btn {
+    font-size: 14px;
+    padding: 9px 24px 9px;
+  }
+  .back-to-top {
+    font-size: 20px;
+    width: 35px;
+    height: 35px;
+    line-height: 32px;
+    right: 10px;
+    i {
+      font-size: 18px;
+    }
+  }
+  .section-title {
+    font-size: 28px;
+  }
+  .card-body {
+    padding: 22px;
+  }
+  .form-group {
+    input,
+    select {
+      height: 52px;
+    }
+    .percent-sign {
+      top: 36px;
+      right: 3px;
+    }
+  }
+  .page-nav {
+    margin-top: 20px;
+  }
+  // Delete, Success, and Error Popup
+  .delete-popup,
+  .error-popup,
+  .success-popup {
+    &.offcanvas {
+      width: max-content;
+      max-height: 75px;
+      padding: 23px 10px 23px 15px;
+    }
+
+    span {
+      font-size: 14px;
+      margin-left: 2px;
+    }
+
+    img {
+      max-width: 18px;
+      top: -1px;
+    }
+  }
+
+  .success-popup.offcanvas {
+    background: #198754;
+  }
+
+  .delete-popup.offcanvas {
+    background: #dc3545;
+  }
+
+  .error-popup.offcanvas {
+    background: #dc3545;
+  }
+
+  //Breadcrumb css
+  .br-wrapper {
+    &.pb-60 {
+      padding-bottom: 30px !important;
+    }
+    &.mb-80 {
+      margin-bottom: 40px !important;
+    }
+    h4 {
+      width: 100%;
+      margin-bottom: 20px;
+    }
+    .breadcrumb-menu {
+      width: 100%;
+    }
+  }
+  body {
+    .main-content {
+      padding-top: 145px;
+      &.style-two {
+        padding-top: 120px;
+      }
+    }
+  }
+  //Details CSS
+  .details-title {
+    &.mb-40 {
+      margin-bottom: 30px !important;
+    }
+    li {
+      margin-bottom: 13px;
+    }
+  }
+}
+@media only screen and (min-width: 768px) {
+  .modal {
+    .modal-dialog {
+      &.modal-rl {
+        --bs-modal-width: 590px;
+      }
+    }
+  }
+}
+@media only screen and (min-width: 768px) and (max-width: 991px) {
+  .container-fluid {
+    max-width: 720px;
+    padding-left: 15px;
+    padding-right: 15px;
+  }
+  .section-title {
+    font-size: 34px;
+  }
+  .pt-100 {
+    padding-top: 70px;
+  }
+  .pb-100 {
+    padding-bottom: 70px;
+  }
+  .pb-70 {
+    padding-bottom: 40px;
+  }
+  .pt-75 {
+    padding-top: 50px;
+  }
+  .pb-75 {
+    padding-bottom: 50px;
+  }
+  .ptb-100 {
+    padding-top: 70px;
+    padding-bottom: 70px;
+  }
+  .btn {
+    font-size: 13px !important;
+  }
+}
+@media only screen and (max-width: 991px) {
+  .md-none {
+    display: none !important;
+  }
+  .mb-md-15 {
+    margin-bottom: 15px;
+  }
+  .mb-md-25 {
+    margin-bottom: 25px;
+  }
+  input,
+  select,
+  textarea {
+    font-size: 14px !important;
+  }
+  .h-55 {
+    height: 50px;
+  }
+  .btn {
+    font-size: 14px;
+    padding: 13.5px 15px;
+    img {
+      margin-left: 4px;
+    }
+  }
+  //Product Details CSS
+  .single-product-img {
+    margin-bottom: 25px;
+  }
+  .table-tablist {
+    &.style-two {
+      .nav-item {
+        .nav-link {
+          &::after {
+            display: none;
+          }
+        }
+      }
+    }
+  }
+  //Table CSS
+  .table {
+    thead {
+      tr {
+        th {
+          padding-right: 50px;
+          &:last-child {
+            padding-right: 0;
+          }
+        }
+      }
+    }
+    tbody {
+      tr {
+        td {
+          padding-right: 50px;
+          &:last-child {
+            padding-right: 0;
+          }
+        }
+      }
+    }
+  }
+  .button-group {
+    min-width: 85px;
+    a {
+      margin-right: 13px;
+      &:last-child {
+        margin: 0;
+      }
+      img {
+        max-width: 16px;
+      }
+    }
+    &.style-two {
+      min-width: 39px;
+    }
+  }
+  //Shop Details CSS
+  .product-tab-content {
+    .offer-card {
+      margin-top: 20px;
+    }
+  }
+  //Chart CSS
+  .chart-wrapper {
+    flex-wrap: wrap;
+    &.style-one,
+    &.style-two,
+    &.style-three {
+      .card {
+        &:nth-child(1),
+        &:nth-child(2),
+        &:nth-child(3) {
+          width: 100%;
+        }
+      }
+    }
+  }
+}
+@media only screen and (min-width: 992px) {
+  .container {
+    max-width: 980px;
+  }
+}
+@media only screen and (max-width: 1199px) {
+  .lg-none {
+    display: none !important;
+  }
+  .sidebar {
+    margin-top: 50px;
+  }
+  //Sidebar CSS
+  body {
+    overflow-x: hidden;
+    .sidebar-area {
+      left: -210px !important;
+      z-index: 99 !important;
+    }
+    .main-content {
+      width: 100%;
+    }
+    &.minimized {
+      .sidebar-area {
+        left: 0 !important;
+      }
+    }
+  }
+}
+@media only screen and (min-width: 992px) and (max-width: 1199px) {
+  .modal {
+    .modal-dialog {
+      &.modal-xxl {
+        --bs-modal-width: 960px;
+      }
+    }
+  }
+  .button-group {
+    min-width: 84px;
+    &.style-two {
+      min-width: 39px;
+    }
+  }
+  //Chart CSS
+  .chart-wrapper {
+    &.style-one {
+      .card {
+        &:nth-child(1) {
+          width: calc(45% - 10px);
+        }
+        &:nth-child(2) {
+          width: calc(55% - 10px);
+        }
+      }
+    }
+    &.style-two {
+      .card {
+        &:nth-child(1) {
+          width: calc(55% - 10px);
+        }
+        &:nth-child(2) {
+          width: calc(45% - 10px);
+        }
+      }
+    }
+    &.style-three {
+      .card {
+        &:nth-child(1),
+        &:nth-child(2) {
+          width: calc(50% - 20px);
+        }
+        &:nth-child(3) {
+          width: 100%;
+        }
+      }
+    }
+  }
+}
+@media only screen and (min-width: 1200px) {
+  .container {
+    max-width: 1170px;
+  }
+  .p-xl-40 {
+    padding: 25px 20px 30px !important;
+  }
+  .p-xl-60 {
+    padding: 35px 40px 40px !important;
+  }
+  //sideabr CSS
+  body {
+    .sidebar-area {
+      width: 208px;
+      left: 0px;
+    }
+    .main-content {
+      width: calc(100% - 208px);
+      transition: var(--transition);
+      float: right;
+      transition: var(--transition);
+      padding: {
+        top: 140px;
+        left: 12px;
+        bottom: 0;
+        right: 12px;
+      }
+      &.style-two {
+        padding: {
+          top: 120px;
+        }
+      }
+    }
+    &.minimized {
+      .sidebar-area {
+        left: -210px;
+      }
+      .main-content {
+        width: 100%;
+      }
+    }
+  }
+}
+@media only screen and (min-width: 1200px) and (max-width: 1399px) {
+  .gx-xl-45 {
+    --bs-gutter-x: 2.1rem;
+  }
+  //Sidebar CSS
+  body {
+    .sidebar-area {
+      width: 194px;
+      left: 0px;
+      .sidebar-menu-wrap {
+        padding: 35px 32px;
+      }
+    }
+    .main-content {
+      width: calc(100% - 194px);
+    }
+    &.minimized {
+      .sidebar-area {
+        left: -194px;
+      }
+      .main-content {
+        width: 100%;
+      }
+    }
+  }
+  //Chart CSS
+  .chart-wrapper {
+    &.style-one {
+      .card {
+        &:nth-child(1) {
+          width: calc(45% - 10px);
+        }
+        &:nth-child(2) {
+          width: calc(55% - 10px);
+        }
+      }
+    }
+    &.style-two {
+      .card {
+        &:nth-child(1) {
+          width: calc(55% - 10px);
+        }
+        &:nth-child(2) {
+          width: calc(45% - 10px);
+        }
+      }
+    }
+    &.style-three {
+      .card {
+        &:nth-child(1),
+        &:nth-child(2) {
+          width: calc(50% - 20px);
+        }
+        &:nth-child(3) {
+          width: 100%;
+        }
+      }
+    }
+  }
+}
+@media only screen and (min-width: 1400px) {
+  .container {
+    max-width: 1330px;
+  }
+  .px-xxl-6 {
+    padding-left: 31px !important;
+    padding-right: 31px !important;
+  }
+  .ps-xxl-6 {
+    padding-left: 63px !important;
+  }
+  .p-xxl-30 {
+    padding: 30px;
+  }
+  .gx-xxl-6 {
+    --bs-gutter-x: 2.6rem;
+  }
+  .gx-xxl-7 {
+    --bs-gutter-x: 5.5rem;
+  }
+  .pe-xxl-6 {
+    padding-right: 5.4rem !important;
+  }
+  .pe-xxl-7 {
+    padding-right: 6.7rem !important;
+  }
+  .pe-xxl-8 {
+    padding-right: 6.5rem !important;
+  }
+  .p-xl-40 {
+    padding: 35px 40px 40px !important;
+  }
+  .p-xl-60 {
+    padding: 60px 60px 60px !important;
+  }
+  .me-xxl-15 {
+    margin-right: 15px;
+  }
+  .w-xxl-5 {
+    width: calc(100% + 58px);
+    margin-left: -58px;
+  }
+  .w-xxl-5 {
+    width: calc(100% + 85px);
+    margin-left: -85px;
+  }
+  .btn {
+    padding: 14.5px 23px;
+    img {
+      margin-left: 9px;
+    }
+  }
+  .form-group {
+    input,
+    select,
+    textarea {
+      padding-left: 20px;
+    }
+  }
+  .modal {
+    .modal-header {
+      padding: 28px 40px 26px;
+    }
+    .modal-body {
+      padding: 28px 40px 40px;
+    }
+    .modal-dialog {
+      &.modal-md {
+        --bs-modal-width: 736px;
+      }
+      &.modal-lg {
+        --bs-modal-width: 830px;
+      }
+      &.modal-xl {
+        --bs-modal-width: 1096px;
+      }
+      &.modal-xxl {
+        --bs-modal-width: 1344px;
+      }
+    }
+  }
+  #detailsModal {
+    .modal-header {
+      padding: 28px 40px 26px;
+    }
+    .modal-body {
+      padding: 28px 40px 30px;
+    }
+    .modal-footer {
+      padding-left: 40px;
+      padding-right: 40px;
+    }
+  }
+  body {
+    .main-content {
+      padding-left: 30px;
+      padding-right: 30px;
+    }
+  }
+  //Chart CSS
+  .chart-wrapper {
+    &.style-one {
+      .card {
+        &:nth-child(1) {
+          width: calc(37% - 10px);
+        }
+        &:nth-child(2) {
+          width: calc(63% - 10px);
+        }
+      }
+    }
+    &.style-two {
+      .card {
+        &:nth-child(1) {
+          width: calc(62% - 10px);
+        }
+        &:nth-child(2) {
+          width: calc(48% - 10px);
+        }
+      }
+    }
+    &.style-three {
+      .card {
+        &:nth-child(1),
+        &:nth-child(2) {
+          width: calc(50% - 20px);
+        }
+        &:nth-child(3) {
+          width: 100%;
+        }
+      }
+    }
+  }
+  //Table CSS
+  .table > :not(caption) > * > * {
+    padding: 17px;
+  }
+  .table {
+    tbody {
+      td {
+        padding: 20px 17px;
+      }
+    }
+  }
+  .button-group a {
+    margin-right: 12px;
+  }
+  .details-list {
+    li {
+      padding: 16px 40px;
+    }
+  }
+}
+@media only screen and (min-width: 1600px) {
+  //Table CSS
+  .table-responsive {
+    &.style-one {
+      .table {
+        th {
+          padding: 15px 20px 24px 102px;
+        }
+        td {
+          padding: 15px 20px 15px 102px;
+        }
+      }
+    }
+    &.style-four {
+      th {
+        padding: 15px 10px 24px 75px;
+      }
+      td {
+        padding: 15px 10px 15px 75px;
+      }
+    }
+    &.style-five {
+      th {
+        padding: 15px 10px 24px 80px;
+      }
+      td {
+        padding: 15px 10px 15px 80px;
+      }
+    }
+  }
+  //Chart CSS
+  .chart-wrapper {
+    &.style-one {
+      .card {
+        &:nth-child(1) {
+          width: calc(37% - 10px);
+        }
+        &:nth-child(2) {
+          width: calc(63% - 10px);
+        }
+      }
+    }
+    &.style-two {
+      .card {
+        &:nth-child(1) {
+          width: calc(62% - 10px);
+        }
+        &:nth-child(2) {
+          width: calc(48% - 10px);
+        }
+      }
+    }
+    &.style-three {
+      .card {
+        &:nth-child(1),
+        &:nth-child(2) {
+          width: calc(28.3% - 20px);
+        }
+        &:nth-child(3) {
+          width: calc(43.4% - 20px);
+        }
+      }
+    }
+  }
+}

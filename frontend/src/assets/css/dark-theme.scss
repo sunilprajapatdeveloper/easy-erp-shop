@@ -1,0 +1,238 @@
+/*-------------------------------
+    Dark Theme  CSS
+-------------------------------*/
+.logo-dark{
+    display: none!important;
+}
+.logo-light{
+    display: block!important;
+}
+.theme-dark {
+    background-color: #0E1622;
+    .logo-light{
+        display: none!important;
+    }
+    .logo-dark{
+        display: block!important;
+    }
+    .header-area.style-two .header-left .header-burger-menu i {
+        color: var(--offwhiteColor);
+    }
+    .main-content,
+    .header-area .header-left .search-area input,
+    .modal-content{
+        background-color: #0E1622!important;
+    }
+    .profile-dropdown .dropdown-menu,
+    .setting-sidebar .checkbox-label {
+        background-color: #0E1622;
+    }
+    .sidebar .sidebar-widget,
+    .sidebar .card{
+        background-color: transparent;
+        border: 1px solid rgba(255,255,255,0.2)!important;
+    }
+    .text-title,
+    .select-cat,
+    .accordion-item .accordion-header .accordion-button,
+    h1,h2,h3,h4,h5,h6,
+    .stat-card .stat-info h4{
+        color: var(--whiteColor)!important;
+    }
+    .br-1,
+    .br-2{
+        border-bottom:1px solid #39414F!important;
+    }
+    .header-area.style-one{
+        background-color: #222!important;
+
+    }
+    .coupon-form input,
+    .contact_form .form-group input,
+    .contact_form .form-group select, 
+    .contact_form .form-group textarea{
+        color: var(--whiteColor);
+        background-color: #0E1622!important;
+        &::placeholder{
+            color: var(--offwhiteColor);
+            opacity: 1;
+        }
+    }
+    .accordion-item,
+    .contact-card {
+        background-color: #0E1622!important;
+    }
+    .bg-white,
+    .bg_ash{
+        background-color: #1E293B!important;
+    }
+    .product-card .add-to-cart {
+        background-color: var(--secondaryColor)!important;
+        img{
+            filter: brightness(0) invert(1);
+        }
+    }
+    .product-card .product-info h3 a,
+    .ctegory-card h6 a {
+        color: var(--whiteColor);
+        &:hover{
+            color: var(--secondaryColor);
+        }
+    }
+    .badge-success{
+        background-color: transparent;
+        border: 1px solid #03B288;
+    }
+    .badge-danger{
+        background-color: transparent;
+        border: 1px solid #EA3548;
+    }
+    .badge-alert{
+        background-color: transparent;
+        border: 1px solid #6366F1;
+    }
+    .text-black,
+    .text-para,
+    .text-bg,
+    p,
+    .profile-dropdown .dropdown-menu ul li a,
+    .single-product-details .add-to-cart .btn,
+    .profile-dropdown span,
+    .sidebar-area .sidebar-menu-wrap .sidebar-menu > .nav-item .sidebar-secondary-menu li a,
+    .text-optional{
+        color: var(--offwhiteColor)!important;
+    }
+    .setting-sidebar .close-btn img,
+    .sidebar-area .sidebar-menu-wrap .sidebar-menu > .nav-item .sidebar-secondary-menu li img{
+        filter: brightness(0) invert(1);
+    }
+    .card,
+    .table tr th,
+    .table tr td,
+    .card-body{
+        background-color: #1E293B;
+    }
+    .select-cat,
+    .bg_mild,
+    .details-list li:nth-child(odd),
+    .sidebar-area .sidebar-menu-wrap .sidebar-menu > .nav-item .sidebar-secondary-menu li.active a,
+    .sidebar-area .sidebar-menu-wrap .sidebar-menu > .nav-item .sidebar-secondary-menu li:hover a,
+    .form-group .percent-sign {
+        background-color: #0E1622!important;
+    }
+    .profile-dropdown .dropdown-menu ul li a{
+        color: var(--offwhiteColor);
+        &:hover{
+            color: var(--secondaryColor)!important;
+        }
+    }
+    .table-responsive.style-two{
+        tr{
+            th,td{
+                background-color: transparent;
+            }
+        }
+    }
+    .cart-table tbody tr td .shop-item a,
+    .table-tablist .nav-item .nav-link.active,
+    .header-area .header-right .navbar-nav > .nav-item .nav-link {
+        color: var(--whiteColor);
+    }
+    .header-area .header-right .navbar-nav > .nav-item .nav-link.active {
+        color: var(--secondaryColor);
+    }
+    .header-area .header-right .navbar-nav > .nav-item .nav-link.dropdown-toggle::before {
+        background-image: url(../img/icons/down-arrow-white.svg);
+    }
+    .modal .modal-header,
+    .modal .modal-footer,
+    .table-tablist,
+    .setting-sidebar .logo,
+    .accordion-item .accordion-body,
+    .setting-sidebar .offcanvas-body .settings-item,
+    .setting-sidebar .offcanvas-body .settings-item h6,
+    .table > :not(caption) > * > * {
+        border-color: #39414F!important;
+    }
+    .header-area {
+        .header-right,
+        .header-right {
+            .option-item {
+                button{
+                    &>img{
+                        filter: brightness(0) invert(0.6);
+                    }
+                    &.flag-item {
+                        img{
+                            filter: brightness(1) invert(0);
+                        }
+                    }
+                }
+                .profile-dropdown{
+                    .dropdown-toggle {
+                        img{
+                            filter: brightness(1) invert(0); 
+                        }
+                    }
+                }
+            }
+        }
+    }
+    .page-unit select {
+        background-image: url(../img/icons/down-arrow-white.svg);
+    }
+    .page-nav{
+        li{
+            a{
+                color: var(--whiteColor);
+                &.active,
+                &:hover{
+                    background: var(--Purple-Gradient, linear-gradient(132deg, #4F46E5 4.27%, #6366F1 100%)); 
+                    color: var(--whiteColor);
+                }
+            }
+        }
+    }
+    .v-counter{
+        &.style-one,
+        &.style-two{
+            background-color: #0E1622!important;
+            input{
+                color: var(--whiteColor);
+                &::placeholder{
+                    color: var(--whiteColor);
+                }
+            }
+        }
+        &.style-three{
+            background-color: #0E1622 !important;
+            input{
+                color: var(--whiteColor);
+                &::placeholder{
+                    color: var(--whiteColor);
+                }
+            }
+        }
+        &.style-one,
+        &.style-two,
+        &.style-three{
+            .minusBtn::before,
+            .plusBtn::before {
+                color: var(--whiteColor);
+            }
+        }
+    }
+    .tag-list {
+        li {
+            a {
+                color: var(--whiteColor);
+                border: 1px solid #4F46E5;
+                background-color:transparent;
+                &:hover{
+                    background-color: var(--secondaryColor);
+                    border-color: transparent;
+                }
+            }
+        }
+    }
+}

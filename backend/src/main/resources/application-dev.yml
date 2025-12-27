@@ -1,0 +1,13 @@
+storage:
+  active: local
+  max-file-size: 20MB
+
+  local:
+    base-path: ./uploads
+    public-url-prefix: http://localhost:9090
+
+  thumbnail:
+    enabled: true
+    width: 300
+    height: 300
+    quality: 0.7

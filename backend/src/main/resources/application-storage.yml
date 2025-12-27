@@ -1,0 +1,46 @@
+storage:
+  active: local
+  max-file-size: 10MB
+  allowed-content-types:
+    - image/jpeg
+    - image/png
+    - image/gif
+    - image/webp
+    - image/svg+xml
+    - application/pdf
+
+  thumbnail:
+    enabled: true
+    width: 300
+    height: 300
+    quality: 0.8
+
+  # Local storage config
+  local:
+    base-path: ./uploads
+    public-url-prefix: http://localhost:9090
+
+  # S3 storage config - DISABLED BY DEFAULT
+  s3:
+    enabled: false
+    bucket: ${STORAGE_S3_BUCKET:}
+    region: ${STORAGE_S3_REGION:us-east-1}
+    access-key: ${STORAGE_S3_ACCESS_KEY:}
+    secret-key: ${STORAGE_S3_SECRET_KEY:}
+    endpoint: ${STORAGE_S3_ENDPOINT:}
+    cdn-url: ${STORAGE_S3_CDN_URL:}
+
+  # Azure Blob Storage config - DISABLED BY DEFAULT
+  azure:
+    enabled: false
+    connection-string: ${STORAGE_AZURE_CONNECTION_STRING:}
+    container: ${STORAGE_AZURE_CONTAINER:}
+    cdn-url: ${STORAGE_AZURE_CDN_URL:}
+
+  # Google Cloud Storage config - DISABLED BY DEFAULT
+  gcs:
+    enabled: false
+    project-id: ${STORAGE_GCS_PROJECT_ID:}
+    credentials-json: ${STORAGE_GCS_CREDENTIALS_JSON:}
+    bucket: ${STORAGE_GCS_BUCKET:}
+    cdn-url: ${STORAGE_GCS_CDN_URL:}
