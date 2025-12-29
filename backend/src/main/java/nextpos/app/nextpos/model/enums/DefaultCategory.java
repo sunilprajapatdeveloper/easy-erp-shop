@@ -1,24 +1,30 @@
 package nextpos.app.nextpos.model.enums;
 
 public enum DefaultCategory {
-    UNCATEGORIZED("Uncategorized"),
-    GENERAL("General"),
-    FOOD("Food & Beverage"),
-    ELECTRONICS("Electronics"),
-    CLOTHING("Clothing"),
-    STATIONERY("Stationery"),
-    HOUSEHOLD("Household"),
-    TOILETRIES("Toiletries"),
-    BEVERAGES("Beverages"),
-    SNACKS("Snacks");
+    GENERAL("General", "GEN", "General products without specific category"),
+    UNCATEGORIZED("Uncategorized", "UNCAT", "Products without category"),
+    MISC("Miscellaneous", "MISC", "Miscellaneous items"),
+    NEW_ARRIVALS("New Arrivals", "NEW", "Newly arrived products");
 
-    private final String displayName;
+    private final String name;
+    private final String code;
+    private final String description;
 
-    DefaultCategory(String displayName) {
-        this.displayName = displayName;
+    DefaultCategory(String name, String code, String description) {
+        this.name = name;
+        this.code = code;
+        this.description = description;
     }
 
-    public String getDisplayName() {
-        return displayName;
+    public String getName() {
+        return name;
+    }
+
+    public String getCode() {
+        return code;
+    }
+
+    public String getDescription() {
+        return description;
     }
 }
