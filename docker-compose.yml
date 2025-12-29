@@ -11,7 +11,7 @@ services:
     environment:
       POSTGRES_DB: ${DB_NAME:-easyerpshop}
       POSTGRES_USER: ${DB_USER:-postgres}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-1234}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-12345678}
       POSTGRES_INITDB_ARGS: "--encoding=UTF8"
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -35,7 +35,7 @@ services:
     restart: unless-stopped
     command: >
       redis-server
-      --requirepass ${REDIS_PASSWORD:-1234}
+      --requirepass ${REDIS_PASSWORD:-12345678}
       --maxmemory 128mb
       --maxmemory-policy allkeys-lru
       --save ""
@@ -44,7 +44,7 @@ services:
     networks:
       - easy-erp-network
     healthcheck:
-      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-1234}", "ping"]
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-12345678}", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -131,9 +131,9 @@ services:
       STORAGE_ACTIVE: ${STORAGE_ACTIVE}
       SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL:-jdbc:postgresql://postgres:5432/easyerpshop}
       SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME:-postgres}
-      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:-1234}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:-12345678}
       SPRING_REDIS_HOST: ${SPRING_REDIS_HOST:-redis}
-      SPRING_REDIS_PASSWORD: ${SPRING_REDIS_PASSWORD:-1234}
+      SPRING_REDIS_PASSWORD: ${SPRING_REDIS_PASSWORD:-12345678}
       SPRING_KAFKA_BOOTSTRAP_SERVERS: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:-kafka:9092}
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-production}
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
@@ -144,7 +144,7 @@ services:
       ENCRYPTION_KEY: ${ENCRYPTION_KEY:-easy_erp_shop_encrypt_key_32_chars}
       INIT_DATASOURCE_URL: ${INIT_DATASOURCE_URL:-jdbc:postgresql://postgres:5432/postgres}
       INIT_DATASOURCE_USERNAME: ${INIT_DATASOURCE_USERNAME:-postgres}
-      INIT_DATASOURCE_PASSWORD: ${INIT_DATASOURCE_PASSWORD:-1234}
+      INIT_DATASOURCE_PASSWORD: ${INIT_DATASOURCE_PASSWORD:-12345678}
       JAVA_OPTS: "-Xmx768m -Xms512m -XX:+UseSerialGC -Xss512k"
     volumes:
       - uploads_data:/app/uploads
