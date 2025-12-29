@@ -6,6 +6,7 @@ services:
   # 1. POSTGRESQL DATABASE
   postgres:
     image: postgres:15-alpine
+    mem_limit: 512m
     container_name: easy-erp-postgres
     restart: unless-stopped
     environment:
@@ -31,6 +32,7 @@ services:
   # 2. REDIS CACHE
   redis:
     image: redis:7-alpine
+    mem_limit: 256m
     container_name: easy-erp-redis
     restart: unless-stopped
     command: >
@@ -57,6 +59,7 @@ services:
   # 3. ZOOKEEPER
   zookeeper:
     image: confluentinc/cp-zookeeper:7.6.0
+    mem_limit: 256m
     container_name: easy-erp-zookeeper
     restart: unless-stopped
     environment:
@@ -83,6 +86,7 @@ services:
   # 4. KAFKA
   kafka:
     image: confluentinc/cp-kafka:7.6.0
+    mem_limit: 1024m
     container_name: easy-erp-kafka
     restart: unless-stopped
     depends_on:
@@ -127,6 +131,7 @@ services:
         condition: service_healthy
       kafka:
         condition: service_started
+    mem_limit: 1024m
     environment:
       SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL:-jdbc:postgresql://postgres:5432/easyerpshop}
       SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME:-postgres}
@@ -181,6 +186,7 @@ services:
       - easy-erp-network
     ports:
       - "${FRONTEND_PORT:-80}:80"   # Host:Container port
+    mem_limit: 1024m
     environment:
       VUE_APP_API_URL: ${SPRING_DATASOURCE_URL:-http://localhost:9091}
 
