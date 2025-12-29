@@ -168,7 +168,12 @@ public class UserServiceImpl implements UserService {
         savedUser = userRepository.save(savedUser);
 
         // Get full media response
-        MediaResponse mediaResponse = getProfileImageFromMedia(savedUser.getId(), savedUser.getCompanyId());
+        MediaResponse mediaResponse = null;
+        try {
+            mediaResponse = getProfileImageFromMedia(savedUser.getId(), savedUser.getCompanyId());
+        } catch (Exception e) {
+            log.warn("Could not retrieve profile image for new user: {}", e.getMessage());
+        }
 
         return UserResponse.fromEntity(savedUser, mediaResponse);
     }
@@ -226,7 +231,12 @@ public class UserServiceImpl implements UserService {
         User saved = userRepository.save(user);
 
         // Get full media response
-        MediaResponse mediaResponse = getProfileImageFromMedia(saved.getId(), saved.getCompanyId());
+        MediaResponse mediaResponse = null;
+        try {
+            mediaResponse = getProfileImageFromMedia(saved.getId(), saved.getCompanyId());
+        } catch (Exception e) {
+            log.warn("Could not retrieve profile image for new user: {}", e.getMessage());
+        }
 
         return UserResponse.fromEntity(saved, mediaResponse);
     }
@@ -237,7 +247,12 @@ public class UserServiceImpl implements UserService {
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         // Get full media response
-        MediaResponse mediaResponse = getProfileImageFromMedia(userId, user.getCompanyId());
+        MediaResponse mediaResponse = null;
+        try {
+            mediaResponse = getProfileImageFromMedia(userId, user.getCompanyId());
+        } catch (Exception e) {
+            log.warn("Could not retrieve profile image for new user: {}", e.getMessage());
+        }
 
         return UserResponse.fromEntity(user, mediaResponse);
     }
@@ -264,16 +279,21 @@ public class UserServiceImpl implements UserService {
 
         // Get profile images for all users in batch
         Map<Long, List<MediaResponse>> mediaMap = mediaService.getMediaForEntities(companyId, "USER", userIds);
+        if (mediaMap == null) {
+            mediaMap = Collections.emptyMap();
+        }
+
+        final Map<Long, List<MediaResponse>> finalMediaMap = mediaMap;
 
         return users.stream()
                 .map(user -> {
-                    MediaResponse mediaResponse = null;
-                    List<MediaResponse> userMedia = mediaMap.get(user.getId());
-                    if (userMedia != null && !userMedia.isEmpty()) {
-                        // Get the first profile image
-                        mediaResponse = userMedia.get(0);
-                    }
-                    return UserResponse.fromEntity(user, mediaResponse);
+                    List<MediaResponse> userMedia = finalMediaMap.get(user.getId());
+                    MediaResponse profileImage = (userMedia != null && !userMedia.isEmpty())
+                            ? userMedia.get(0)
+                            : null;
+
+                    // This now works because UserResponse.fromEntity handles null profileImage
+                    return UserResponse.fromEntity(user, profileImage);
                 })
                 .collect(Collectors.toList());
     }
@@ -382,7 +402,12 @@ public class UserServiceImpl implements UserService {
         savedUser = userRepository.save(savedUser);
 
         // Get full media response
-        MediaResponse mediaResponse = getProfileImageFromMedia(savedUser.getId(), savedUser.getCompanyId());
+        MediaResponse mediaResponse = null;
+        try {
+            mediaResponse = getProfileImageFromMedia(savedUser.getId(), savedUser.getCompanyId());
+        } catch (Exception e) {
+            log.warn("Could not retrieve profile image for new user: {}", e.getMessage());
+        }
 
         return UserResponse.fromEntity(savedUser, mediaResponse);
     }
@@ -457,7 +482,12 @@ public class UserServiceImpl implements UserService {
         final long expiresIn = (expiration.getTime() - System.currentTimeMillis()) / 1000;
 
         // Get full media response
-        MediaResponse mediaResponse = getProfileImageFromMedia(user.getId(), user.getCompanyId());
+        MediaResponse mediaResponse = null;
+        try {
+            mediaResponse = getProfileImageFromMedia(user.getId(), user.getCompanyId());
+        } catch (Exception e) {
+            log.warn("Could not retrieve profile image for new user: {}", e.getMessage());
+        }
 
         return new JwtResponse(token, expiresIn, UserResponse.fromEntity(user, mediaResponse));
     }
@@ -628,14 +658,26 @@ public class UserServiceImpl implements UserService {
     }
 
     private MediaResponse getProfileImageFromMedia(Long userId, Long companyId) {
-        List<MediaResponse> media = mediaService.getMediaForEntities(
+        // Get the map from the service
+        Map<Long, List<MediaResponse>> mediaMap = mediaService.getMediaForEntities(
                 companyId,
                 "USER",
-                Collections.singletonList(userId)).get(userId);
+                Collections.singletonList(userId));
 
-        if (media != null && !media.isEmpty()) {
-            return media.get(media.size() - 1);
+        // Check if the map itself is null (Defensive programming)
+        if (mediaMap == null) {
+            return null;
         }
+
+        // Get the list for this specific user safely
+        List<MediaResponse> mediaList = mediaMap.get(userId);
+
+        // Return the latest media if it exists, otherwise return null
+        if (mediaList != null && !mediaList.isEmpty()) {
+            // Returns the last uploaded image (usually the most recent profile pic)
+            return mediaList.get(mediaList.size() - 1);
+        }
+
         return null;
     }
 }

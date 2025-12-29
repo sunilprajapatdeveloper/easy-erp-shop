@@ -51,8 +51,9 @@ public class UserResponse {
                                 .lastname(user.getLastname())
                                 .phone(user.getPhone())
                                 .status(user.getStatus())
-                                .profileId(mediaResponse.getId())
-                                .profile(mediaResponse.getUrl())
+                                // SAFE CHECKS ADDED HERE
+                                .profileId(mediaResponse != null ? mediaResponse.getId() : null)
+                                .profile(mediaResponse != null ? mediaResponse.getUrl() : null)
                                 .roleId(user.getRole() != null ? user.getRole().getId() : null)
                                 .roleName(user.getRole() != null ? user.getRole().getName() : null)
                                 .rolePermissions(user.getRole() != null
