@@ -3,7 +3,7 @@ import axios from "axios";
 import { getAuthToken } from "./authService";
 
 const api = axios.create({
-  baseURL: "https://liberal-tick-quiet.ngrok-free.app/api/v1",
+  baseURL: "http://139.59.28.233:9091/api/v1",
   timeout: 30000, // Increased timeout for scanner operations
   headers: {
     "ngrok-skip-browser-warning": "true",
