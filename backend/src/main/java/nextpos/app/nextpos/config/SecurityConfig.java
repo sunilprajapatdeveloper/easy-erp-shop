@@ -7,6 +7,7 @@ import nextpos.app.nextpos.security.jwt.JwtFilter;
 import nextpos.app.nextpos.security.jwt.JwtUtils;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -22,7 +23,7 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.io.IOException;
-import java.util.Arrays;
+import java.util.List;
 
 @Configuration
 @RequiredArgsConstructor
@@ -37,23 +38,22 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
+                        // Allow preflight requests
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+
+                        // Public endpoints
                         .requestMatchers(
-                                "/api/v1/users/register",
                                 "/api/v1/users/login",
+                                "/api/v1/users/register",
                                 "/actuator/**",
                                 "/api/v1/media/**",
                                 "/v2/api-docs",
-                                "/v3/api-docs",
                                 "/v3/api-docs/**",
-                                "/swagger-resources",
-                                "/swagger-resources/**",
-                                "/configuration/ui",
-                                "/configuration/security",
                                 "/swagger-ui/**",
-                                "/webjars/**",
                                 "/swagger-ui.html",
-                                "/ws-scanner/**",
-                                "/ws-scanner")
+                                "/swagger-resources/**",
+                                "/webjars/**",
+                                "/ws-scanner/**")
                         .permitAll()
                         .requestMatchers("/api/v1/**").authenticated()
                         .anyRequest().permitAll())
@@ -90,16 +90,23 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
 
-        // Add all your allowed origins
-        config.setAllowedOrigins(Arrays.asList(
-                "http://localhost:8080",
-                "http://localhost:3000",
-                "http://localhost:5173",
-                "https://noncondensible-catchingly-beatriz.ngrok-free.dev",
-                "https://liberal-tick-quiet.ngrok-free.app"));
+        config.setAllowedOriginPatterns(List.of(
+                "http://localhost:*",
+                "https://*.ngrok-free.app",
+                "https://*.ngrok-free.dev"));
 
-        config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD"));
-        config.setAllowedHeaders(Arrays.asList("*"));
+        config.setAllowedMethods(List.of(
+                "GET", "POST", "PUT", "DELETE", "OPTIONS"));
+
+        config.setAllowedHeaders(List.of(
+                "Authorization",
+                "Content-Type",
+                "X-Company-Id",
+                "ngrok-skip-browser-warning"));
+
+        config.setExposedHeaders(List.of(
+                "Authorization"));
+
         config.setAllowCredentials(true);
         config.setMaxAge(3600L);
 
