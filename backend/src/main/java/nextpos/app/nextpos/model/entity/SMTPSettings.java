@@ -39,7 +39,7 @@ public class SMTPSettings {
     private SMTPProvider provider;
 
     /**
-     * SMTP host (e.g., smtp.gmail.com).
+     * SMTP host (e.g., smtp.sendgrid.net).
      */
     @Column(nullable = false, length = 150)
     private String host;

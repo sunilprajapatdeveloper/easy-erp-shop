@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class PaymentQueuePublisher {
 
-    private final KafkaTemplate<String, CreatePaymentRequest> kafkaTemplate;
+    private final KafkaTemplate<String, Object> kafkaTemplate;
 
     private static final String PAYMENT_TOPIC = "payment-processing-topic";
 

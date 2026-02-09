@@ -13,6 +13,8 @@ version = "0.0.1-SNAPSHOT"
 
 noArg {
     annotation("jakarta.persistence.Entity")
+    annotation("jakarta.persistence.MappedSuperclass")
+    annotation("jakarta.persistence.Embeddable")
 }
 
 java {
@@ -25,8 +27,8 @@ repositories {
     maven {
         url = uri("https://repo.maven.apache.org/maven2/")
     }
-    mavenCentral() // This is where google-cloud-storage actually lives
-    maven("https://maven.google.com") // The 'google()' repository
+    mavenCentral()
+    maven("https://maven.google.com")
 }
 
 dependencies {
@@ -75,8 +77,11 @@ dependencies {
     runtimeOnly("io.jsonwebtoken:jjwt-impl:0.11.5")
     runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.11.5")
 
-    compileOnly("org.projectlombok:lombok")
-    annotationProcessor("org.projectlombok:lombok")
+    compileOnly("org.projectlombok:lombok:1.18.32")
+    annotationProcessor("org.projectlombok:lombok:1.18.32")
+    testCompileOnly("org.projectlombok:lombok:1.18.32")
+    testAnnotationProcessor("org.projectlombok:lombok:1.18.32")
+
     runtimeOnly("org.postgresql:postgresql")
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
@@ -94,6 +99,18 @@ dependencies {
 
     // SpringDoc OpenAPI for Swagger/OpenAPI documentation
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.6.0")
+    
+    // Jakarta Persistence API (required for Spring Boot 3+)
+    implementation("jakarta.persistence:jakarta.persistence-api:3.1.0")
+    
+    // Jackson for JSON serialization in Kafka
+    implementation("com.fasterxml.jackson.core:jackson-databind")  // ADD THIS LINE
+    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310")
+    implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
+
+    // Retry support
+    implementation("org.springframework.retry:spring-retry:2.0.5")
+    implementation("org.springframework:spring-aspects:6.1.5")
 }
 
 tasks.withType<Test> {
@@ -105,4 +122,9 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
         jvmTarget = "20"
         freeCompilerArgs = listOf("-Xjsr305=strict")
     }
+}
+
+tasks.withType<JavaCompile> {
+    options.encoding = "UTF-8"
+    options.compilerArgs.add("-parameters")
 }
