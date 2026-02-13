@@ -2,12 +2,20 @@ package nextpos.app.nextpos.service.email;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import nextpos.app.nextpos.model.dto.request.EmailRequest;
 import nextpos.app.nextpos.model.enums.VerificationType;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
+import org.springframework.util.FileCopyUtils;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 @RequiredArgsConstructor
@@ -16,169 +24,129 @@ public class VerificationEmailService {
 
     private final MailService mailService;
 
+    @Value("${app.verification.email.default-from:easyerpshop@gmail.com}")
+    private String defaultFrom;
+
+    @Value("${app.verification.email.support:easyerpshop@gmail.com}")
+    private String supportEmail;
+
+    @Value("${app.verification.email.app-name:EasyErpShop}")
+    private String appName;
+
+    @Value("#{${app.verification.email.subjects:{}}}")
+    private Map<VerificationType, String> subjects;
+
+    private static final Map<VerificationType, String> TEMPLATE_PATHS = Map.of(
+            VerificationType.USER_REGISTRATION, "templates/email/verification.html",
+            VerificationType.PASSWORD_RESET, "templates/email/verification.html",
+            VerificationType.EMAIL_OTP_LOGIN, "templates/email/verification.html",
+            VerificationType.EMAIL_CHANGE_CONFIRMATION, "templates/email/verification.html",
+            VerificationType.COMPANY_VERIFICATION, "templates/email/company-verification.html",
+            VerificationType.WAREHOUSE_VERIFICATION, "templates/email/warehouse-verification.html",
+            VerificationType.TWO_FACTOR_AUTH, "templates/email/2fa.html");
+
+    private final Map<String, String> pathCache = new ConcurrentHashMap<>();
+
     public void sendVerificationEmail(UUID verificationId, String email, String token,
             VerificationType type, Duration expiryDuration) {
         try {
+            if (!isVerificationType(type)) {
+                log.warn("Attempted to send non‑verification email via VerificationEmailService: {}", type);
+                return;
+            }
+
             String subject = getEmailSubject(type);
+            String from = getFromAddress(type);
+            String displayedToken = formatToken(token);
+            String htmlContent = populateTemplate(type, getActionDescription(type), displayedToken,
+                    expiryDuration.toMinutes());
 
-            // Check if token is a numeric OTP or a Base64 Secure Token
-            String displayedToken = formatTokenBasedOnType(token);
+            EmailRequest request = EmailRequest.builder()
+                    .companyId(null)
+                    .to(List.of(email))
+                    .subject(subject)
+                    .content(htmlContent)
+                    .isHtml(true)
+                    .from(from)
+                    .replyTo(supportEmail)
+                    .build();
 
-            String htmlContent = buildVerificationEmailHtml(displayedToken, type, expiryDuration);
-
-            mailService.sendHtmlEmail(email, subject, htmlContent);
-            log.info("Verification email successfully sent to {} for id: {}", email, verificationId);
+            mailService.sendEmail(request);
+            log.info("Verification email sent to {} (type={}, from={})", email, type, from);
         } catch (Exception e) {
-            log.error("CRITICAL: Failed to send verification email to {}: {}", email, e.getMessage());
+            log.error("Failed to send verification email to {}: {}", email, e.getMessage(), e);
             throw new RuntimeException("Failed to send verification email", e);
         }
     }
 
-    private String formatTokenBasedOnType(String token) {
-        if (token == null)
-            return "";
-
-        // If it's a numeric OTP (e.g., "123456"), format with spaces for readability
-        if (token.matches("\\d+")) {
-            return formatNumericOtp(token);
+    private String getTemplatePath(VerificationType type) {
+        String path = TEMPLATE_PATHS.get(type);
+        if (path == null) {
+            throw new IllegalArgumentException(
+                    "No email template configured for verification type: " + type + ". " +
+                            "Please add an entry in the TEMPLATE_PATHS map inside VerificationEmailService.");
         }
-
-        // If it's a Base64 Secure Token, do NOT change case or add spaces.
-        return token;
+        return path;
     }
 
-    private String formatNumericOtp(String token) {
-        StringBuilder formatted = new StringBuilder();
-        for (int i = 0; i < token.length(); i++) {
-            if (i > 0 && i % 4 == 0) {
-                formatted.append(" ");
+    private String getTemplateContent(String path) {
+        return pathCache.computeIfAbsent(path, p -> {
+            try {
+                ClassPathResource resource = new ClassPathResource(p);
+                byte[] bytes = FileCopyUtils.copyToByteArray(resource.getInputStream());
+                String content = new String(bytes, StandardCharsets.UTF_8);
+                log.debug("Loaded email template: {}", p);
+                return content;
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to load email template: " + p, e);
             }
-            formatted.append(token.charAt(i));
-        }
-        return formatted.toString();
+        });
     }
 
-    private String getEmailSubject(VerificationType type) {
+    private String populateTemplate(VerificationType type, String action, String token, long expiryMinutes) {
+        String path = getTemplatePath(type);
+        String template = getTemplateContent(path);
+        return template
+                .replace("${action}", action)
+                .replace("${token}", token)
+                .replace("${expiryMinutes}", String.valueOf(expiryMinutes))
+                .replace("${supportEmail}", supportEmail)
+                .replace("${appName}", appName)
+                .replace("${currentYear}", String.valueOf(LocalDateTime.now().getYear()));
+    }
+
+    private String getFromAddress(VerificationType type) {
         return switch (type) {
-            case USER_REGISTRATION -> "Verify Your Account - EasyErpShop";
-            case PASSWORD_RESET -> "Password Reset Request - EasyErpShop";
-            case EMAIL_OTP_LOGIN -> "Your Login Code - EasyErpShop";
-            case EMAIL_CHANGE_CONFIRMATION -> "Confirm Email Change - EasyErpShop";
-            case COMPANY_VERIFICATION -> "Company Verification Required - EasyErpShop";
-            case WAREHOUSE_VERIFICATION -> "Warehouse Access Verification - EasyErpShop";
-            case TWO_FACTOR_AUTH -> "Two-Factor Authentication Code - EasyErpShop";
-            case TRANSACTION_CONFIRMATION -> "Transaction Confirmation - EasyErpShop";
-            case DOCUMENT_APPROVAL -> "Document Approval Required - EasyErpShop";
-            default -> "Verification Required - EasyErpShop";
+            case COMPANY_VERIFICATION, WAREHOUSE_VERIFICATION -> "easyerpshop@gmail.com";
+            case TWO_FACTOR_AUTH -> "easyerpshop@gmail.com";
+            default -> defaultFrom;
         };
     }
 
-    private String buildVerificationEmailHtml(String token, VerificationType type, Duration expiryDuration) {
-        String action = getActionDescription(type);
-        long expiryMinutes = expiryDuration.toMinutes();
-        int currentYear = LocalDateTime.now().getYear();
+    private String getEmailSubject(VerificationType type) {
+        if (subjects != null && subjects.containsKey(type)) {
+            return subjects.get(type);
+        }
 
-        return String.format(
-                """
-                        <!DOCTYPE html>
-                        <html lang="en">
-                        <head>
-                            <meta charset="UTF-8">
-                            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                            <title>Verification Required</title>
-                            <style>
-                                body {
-                                    font-family: Arial, sans-serif;
-                                    line-height: 1.6;
-                                    color: #333;
-                                    margin: 0;
-                                    padding: 0;
-                                    background-color: #f4f4f4;
-                                }
-                                .container {
-                                    max-width: 600px;
-                                    margin: 0 auto;
-                                    padding: 0;
-                                    background: white;
-                                }
-                                .header {
-                                    background: linear-gradient(135deg, #667eea 0%%, #764ba2 100%%);
-                                    color: white;
-                                    padding: 30px;
-                                    text-align: center;
-                                }
-                                .content {
-                                    padding: 30px;
-                                }
-                                .token {
-                                    background: white;
-                                    padding: 20px;
-                                    margin: 20px 0;
-                                    border-radius: 5px;
-                                    border-left: 4px solid #667eea;
-                                    font-family: monospace;
-                                    font-size: 24px;
-                                    font-weight: bold;
-                                    text-align: center;
-                                    letter-spacing: 2px;
-                                    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-                                }
-                                .warning {
-                                    background: #fff3cd;
-                                    border: 1px solid #ffeaa7;
-                                    padding: 15px;
-                                    border-radius: 5px;
-                                    margin: 20px 0;
-                                }
-                                .footer {
-                                    margin-top: 30px;
-                                    padding-top: 20px;
-                                    border-top: 1px solid #ddd;
-                                    color: #666;
-                                    font-size: 12px;
-                                    text-align: center;
-                                }
-                                h1 { margin: 0; }
-                                h2 { color: #2c3e50; }
-                                p { margin-bottom: 15px; }
-                                ul { margin: 10px 0; padding-left: 20px; }
-                                li { margin-bottom: 5px; }
-                            </style>
-                        </head>
-                        <body>
-                            <div class="container">
-                                <div class="header">
-                                    <h1>Verification Required</h1>
-                                </div>
-                                <div class="content">
-                                    <h2>%s</h2>
-                                    <p>Please use the following verification code to complete your request:</p>
+        return switch (type) {
+            case USER_REGISTRATION -> "Verify Your Account - " + appName;
+            case PASSWORD_RESET -> "Password Reset Request - " + appName;
+            case EMAIL_OTP_LOGIN -> "Your Login Code - " + appName;
+            case EMAIL_CHANGE_CONFIRMATION -> "Confirm Email Change - " + appName;
+            case COMPANY_VERIFICATION -> "Company Verification Required - " + appName;
+            case WAREHOUSE_VERIFICATION -> "Warehouse Access Verification - " + appName;
+            case TWO_FACTOR_AUTH -> "Two-Factor Authentication Code - " + appName;
+            default -> "Verification Required - " + appName;
+        };
+    }
 
-                                    <div class="token">%s</div>
-
-                                    <div class="warning">
-                                        <strong>Important:</strong>
-                                        <ul>
-                                            <li>This code will expire in %d minutes</li>
-                                            <li>Do not share this code with anyone</li>
-                                            <li>If you didn't request this, please ignore this email</li>
-                                        </ul>
-                                    </div>
-
-                                    <p style="font-size: 14px;">If you have any issues, please contact <a href="mailto:support@easyerpshop.app">support@easyerpshop.app</a></p>
-                                </div>
-                                <div class="footer">
-                                    <p>© %d EasyErpShop. All rights reserved.</p>
-                                    <p>This is an automated message, please do not reply to this email.</p>
-                                </div>
-                            </div>
-                        </body>
-                        </html>
-                        """,
-                action,
-                token,
-                expiryMinutes,
-                currentYear);
+    private String formatToken(String token) {
+        if (token == null)
+            return "";
+        if (token.matches("\\d+")) {
+            return token.replaceAll("(.{4})", "$1 ").trim();
+        }
+        return token;
     }
 
     private String getActionDescription(VerificationType type) {
@@ -190,10 +158,17 @@ public class VerificationEmailService {
             case COMPANY_VERIFICATION -> "Verify Your Company Account";
             case WAREHOUSE_VERIFICATION -> "Verify Warehouse Access";
             case TWO_FACTOR_AUTH -> "Two-Factor Authentication";
-            case TRANSACTION_CONFIRMATION -> "Confirm Transaction";
-            case DOCUMENT_APPROVAL -> "Approve Document";
             default -> "Complete Verification";
         };
     }
 
+    private boolean isVerificationType(VerificationType type) {
+        return switch (type) {
+            case USER_REGISTRATION, PASSWORD_RESET, EMAIL_OTP_LOGIN,
+                    EMAIL_CHANGE_CONFIRMATION, COMPANY_VERIFICATION,
+                    WAREHOUSE_VERIFICATION, TWO_FACTOR_AUTH ->
+                true;
+            default -> false;
+        };
+    }
 }

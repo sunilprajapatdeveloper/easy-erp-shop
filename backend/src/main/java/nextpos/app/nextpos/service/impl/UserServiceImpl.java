@@ -45,6 +45,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 @Slf4j
 @Service
@@ -159,9 +160,25 @@ public class UserServiceImpl implements UserService {
 
         // Send password email asynchronously
         if (!isBlank(request.getEmail())) {
-            String content = mailService.buildPasswordEmail(rawPassword);
-            emailQueuePublisher.publishEmail(
-                    new EmailRequest(request.getEmail(), "Your Account Password", content, true));
+            String companyName = "EasyErpShop";
+            if (currentUser.getCompanyId() != null) {
+                Company company = companyRepository.findById(currentUser.getCompanyId()).orElse(null);
+                if (company != null && StringUtils.hasText(company.getCompanyName())) {
+                    companyName = company.getCompanyName();
+                }
+            }
+
+            String content = mailService.buildPasswordEmail(rawPassword, companyName);
+
+            EmailRequest emailRequest = EmailRequest.builder()
+                    .companyId(null)
+                    .to(List.of(request.getEmail()))
+                    .subject("Your Account Password")
+                    .content(content)
+                    .isHtml(true)
+                    .build();
+
+            emailQueuePublisher.publishEmail(emailRequest);
         }
 
         // Save final state

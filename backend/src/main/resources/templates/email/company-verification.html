@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=2.0, user-scalable=yes"
+    />
+    <meta name="color-scheme" content="light" />
+    <title>Verify your company – ${appName}</title>
+    <style>
+      /* (same base styles as verification.html – reuse for consistency) */
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family:
+          "Inter",
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          Roboto,
+          sans-serif;
+        background-color: #f6f9fc;
+        color: #1a2b3c;
+        line-height: 1.6;
+        padding: 24px 16px;
+      }
+      .email-wrapper {
+        max-width: 560px;
+        margin: 0 auto;
+        background-color: #ffffff;
+        border-radius: 24px;
+        box-shadow: 0 20px 40px -12px rgba(0, 20, 30, 0.12);
+        overflow: hidden;
+      }
+      .email-header {
+        background: linear-gradient(145deg, #0d3d2c 0%, #1a6e4b 100%);
+        padding: 40px 32px;
+        text-align: center;
+      }
+      .app-name {
+        font-size: 28px;
+        font-weight: 700;
+        color: white;
+        letter-spacing: -0.5px;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+      .email-body {
+        padding: 40px 32px;
+      }
+      h2 {
+        font-size: 24px;
+        font-weight: 600;
+        color: #0d3d2c;
+        margin-bottom: 16px;
+      }
+      .message {
+        font-size: 16px;
+        color: #405b6c;
+        margin-bottom: 24px;
+      }
+      .token-box {
+        background: #e8f4ee;
+        border: 2px solid #c0e0d4;
+        border-radius: 16px;
+        padding: 24px 16px;
+        margin: 32px 0;
+        text-align: center;
+        font-family: "SF Mono", monospace;
+        font-size: 32px;
+        font-weight: 700;
+        color: #0d3d2c;
+        letter-spacing: 8px;
+        word-break: break-word;
+      }
+      .info-box {
+        background: #e6f2fc;
+        border-left: 6px solid #2a7faa;
+        border-radius: 12px;
+        padding: 20px 24px;
+        margin: 32px 0;
+        color: #1a4b6c;
+      }
+      .info-box strong {
+        display: block;
+        font-size: 16px;
+        margin-bottom: 12px;
+        color: #0d3d2c;
+      }
+      .footer {
+        background: #f8fafd;
+        padding: 32px;
+        text-align: center;
+        border-top: 1px solid #e2eaf0;
+        font-size: 14px;
+        color: #658097;
+      }
+      .footer a {
+        color: #1a6e4b;
+        text-decoration: none;
+        font-weight: 500;
+      }
+      @media (max-width: 480px) {
+        .email-header {
+          padding: 32px 20px;
+        }
+        .email-body {
+          padding: 32px 20px;
+        }
+        .token-box {
+          font-size: 24px;
+          letter-spacing: 4px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="email-wrapper">
+      <div class="email-header">
+        <div class="app-name">${appName}</div>
+      </div>
+      <div class="email-body">
+        <h2>${action}</h2>
+        <p class="message">
+          Your company account is almost ready. To complete the verification
+          process and activate your company profile, please enter the
+          verification code below.
+        </p>
+
+        <div class="token-box">${token}</div>
+
+        <div class="info-box">
+          <strong>🏢 What happens next?</strong>
+          <ul style="margin: 0; padding-left: 20px">
+            <li>Your company will be verified and gain full access.</li>
+            <li>You can set up your team members and warehouses.</li>
+            <li>Start managing inventory, sales, and purchases.</li>
+          </ul>
+          <p style="margin-top: 16px; margin-bottom: 0">
+            This code expires in <strong>${expiryMinutes} minutes</strong>.
+          </p>
+        </div>
+
+        <p style="font-size: 15px; color: #405b6c">
+          Need assistance? Contact our business support team at
+          <a
+            href="mailto:${supportEmail}"
+            style="color: #1a6e4b; font-weight: 500"
+            >${supportEmail}</a
+          >.
+        </p>
+      </div>
+      <div class="footer">
+        <p style="margin-bottom: 12px">
+          © ${currentYear} ${appName}. All rights reserved.
+        </p>
+        <p style="margin-bottom: 8px">
+          <a href="mailto:${supportEmail}">${supportEmail}</a> ·
+          <a href="#">Business Terms</a> ·
+          <a href="#">Privacy</a>
+        </p>
+        <p style="margin-top: 16px; font-size: 13px; color: #8099aa">
+          This is an automated message from the company verification system.
+        </p>
+      </div>
+    </div>
+  </body>
+</html>
