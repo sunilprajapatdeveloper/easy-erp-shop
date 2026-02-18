@@ -34,8 +34,8 @@ public class PaymentGatewaySettings {
     /**
      * Company to which this gateway config belongs
      */
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "company_id", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "company_id")
     private Company company;
 
     /**
