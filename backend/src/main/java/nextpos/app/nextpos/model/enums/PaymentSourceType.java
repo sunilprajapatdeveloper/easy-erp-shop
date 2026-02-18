@@ -4,5 +4,6 @@ public enum PaymentSourceType {
     SALE,
     PURCHASE,
     SALE_RETURN,
-    PURCHASE_RETURN
+    PURCHASE_RETURN,
+    SUBSCRIPTION
 }

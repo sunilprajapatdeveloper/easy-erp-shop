@@ -41,10 +41,14 @@ public class SecurityConfig {
                         // Allow preflight requests
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
+                        // Specific Public GET request for Subscription Plans
+                        .requestMatchers(HttpMethod.GET, "/api/v1/subscription-plans/**").permitAll()
+
                         // Public endpoints
                         .requestMatchers(
                                 "/api/v1/users/login",
                                 "/api/v1/users/register",
+                                "/api/v1/verifications/**",
                                 "/actuator/**",
                                 "/api/v1/media/**",
                                 "/v2/api-docs",
