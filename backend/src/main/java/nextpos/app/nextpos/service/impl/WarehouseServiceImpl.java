@@ -32,7 +32,15 @@ public class WarehouseServiceImpl implements WarehouseService {
         @Override
         @Transactional
         public WarehouseResponse createWarehouse(CreateWarehouseRequest request) {
-                User createdBy = UserContext.getAuthenticatedUser(userRepository);
+                User currentUser = UserContext.getAuthenticatedUser(userRepository);
+                Long companyId = currentUser.getCompanyId();
+
+                // Check uniqueness of warehouse name within the company
+                warehouseRepository.findByNameAndCompanyIdAndIsDeletedFalse(request.getName(), companyId)
+                                .ifPresent(w -> {
+                                        throw new RuntimeException("Warehouse with name '" + request.getName()
+                                                        + "' already exists in this company");
+                                });
 
                 Currency currency = currencyRepository.findById(request.getCurrencyId())
                                 .orElseThrow(() -> new ResourceNotFoundException(
@@ -50,21 +58,30 @@ public class WarehouseServiceImpl implements WarehouseService {
                                 .zipCode(request.getZipCode())
                                 .headquarter(Boolean.TRUE.equals(request.getHeadquarter()))
                                 .isDefault(Boolean.TRUE.equals(request.getIsDefault()))
-                                .active(Boolean.TRUE.equals(request.getActive()))
-                                .applyTax(Boolean.TRUE.equals(request.getApplyTax()))
-                                .applyTds(Boolean.TRUE.equals(request.getApplyTds()))
-                                .trackInventory(Boolean.TRUE.equals(request.getTrackInventory()))
+                                .active(request.getActive() != null ? request.getActive() : true)
+                                .applyTax(request.getApplyTax() != null ? request.getApplyTax() : true)
+                                .applyTds(request.getApplyTds() != null ? request.getApplyTds() : false)
+                                .trackInventory(request.getTrackInventory() != null ? request.getTrackInventory() : true)
                                 .invoicePrefix(request.getInvoicePrefix())
-                                .timezone(request.getTimezone())
+                                .timezone(request.getTimezone() != null ? request.getTimezone() : "UTC")
                                 .currency(currency)
-                                .companyId(request.getCompanyId() != null ? request.getCompanyId()
-                                                : createdBy.getCompanyId())
-                                .createdBy(createdBy.getId())
+                                .companyId(companyId)
+                                .createdBy(currentUser.getId())
                                 .build();
+
+                // If this warehouse is marked as default, ensure no other default exists for
+                // the company
+                if (warehouse.isDefault()) {
+                        warehouseRepository.findByCompanyIdAndIsDefaultTrueAndIsDeletedFalse(companyId)
+                                        .ifPresent(existingDefault -> {
+                                                existingDefault.setDefault(false);
+                                                warehouseRepository.save(existingDefault);
+                                        });
+                }
 
                 Warehouse saved = warehouseRepository.save(warehouse);
                 log.info("Warehouse [{}] created by user [{}] in company [{}]",
-                                saved.getId(), createdBy.getId(), saved.getCompanyId());
+                                saved.getId(), currentUser.getId(), companyId);
 
                 return new WarehouseResponse(saved);
         }
@@ -72,9 +89,10 @@ public class WarehouseServiceImpl implements WarehouseService {
         @Override
         public WarehouseResponse getWarehouseById(Long id) {
                 User currentUser = UserContext.getAuthenticatedUser(userRepository);
+                Long companyId = currentUser.getCompanyId();
 
                 Warehouse warehouse = warehouseRepository
-                                .findByIdAndCompanyIdAndIsDeletedFalse(id, currentUser.getCompanyId())
+                                .findByIdAndCompanyIdAndIsDeletedFalse(id, companyId)
                                 .orElseThrow(() -> new ResourceNotFoundException("Warehouse not found with id " + id));
 
                 return new WarehouseResponse(warehouse);
@@ -83,8 +101,9 @@ public class WarehouseServiceImpl implements WarehouseService {
         @Override
         public List<WarehouseResponse> getAllWarehouses() {
                 User currentUser = UserContext.getAuthenticatedUser(userRepository);
+                Long companyId = currentUser.getCompanyId();
 
-                return warehouseRepository.findAllByCompanyIdAndIsDeletedFalse(currentUser.getCompanyId())
+                return warehouseRepository.findAllByCompanyIdAndIsDeletedFalse(companyId)
                                 .stream()
                                 .map(WarehouseResponse::new)
                                 .collect(Collectors.toList());
@@ -93,9 +112,10 @@ public class WarehouseServiceImpl implements WarehouseService {
         @Override
         public List<WarehouseResponse> findAllByCreatedBy(Long userId) {
                 User currentUser = UserContext.getAuthenticatedUser(userRepository);
+                Long companyId = currentUser.getCompanyId();
 
                 return warehouseRepository
-                                .findAllByCreatedByAndCompanyIdAndIsDeletedFalse(userId, currentUser.getCompanyId())
+                                .findAllByCreatedByAndCompanyIdAndIsDeletedFalse(userId, companyId)
                                 .stream()
                                 .map(WarehouseResponse::new)
                                 .collect(Collectors.toList());
@@ -104,15 +124,24 @@ public class WarehouseServiceImpl implements WarehouseService {
         @Override
         @Transactional
         public WarehouseResponse updateWarehouse(Long id, UpdateWarehouseRequest request) {
-                User updatedBy = UserContext.getAuthenticatedUser(userRepository);
+                User currentUser = UserContext.getAuthenticatedUser(userRepository);
+                Long companyId = currentUser.getCompanyId();
 
                 Warehouse warehouse = warehouseRepository
-                                .findByIdAndCompanyIdAndIsDeletedFalse(id, updatedBy.getCompanyId())
+                                .findByIdAndCompanyIdAndIsDeletedFalse(id, companyId)
                                 .orElseThrow(() -> new ResourceNotFoundException("Warehouse not found with id " + id));
 
-                // Partial updates
-                if (request.getName() != null)
+                // If name is being updated, check uniqueness
+                if (request.getName() != null && !request.getName().equals(warehouse.getName())) {
+                        warehouseRepository.findByNameAndCompanyIdAndIsDeletedFalse(request.getName(), companyId)
+                                        .ifPresent(w -> {
+                                                throw new RuntimeException("Warehouse with name '" + request.getName()
+                                                                + "' already exists in this company");
+                                        });
                         warehouse.setName(request.getName());
+                }
+
+                // Partial updates
                 if (request.getPhone() != null)
                         warehouse.setPhone(request.getPhone());
                 if (request.getEmail() != null)
@@ -131,8 +160,18 @@ public class WarehouseServiceImpl implements WarehouseService {
                         warehouse.setZipCode(request.getZipCode());
                 if (request.getHeadquarter() != null)
                         warehouse.setHeadquarter(request.getHeadquarter());
-                if (request.getIsDefault() != null)
-                        warehouse.setDefault(request.getIsDefault());
+                if (request.getIsDefault() != null) {
+                        boolean newDefault = request.getIsDefault();
+                        if (newDefault && !warehouse.isDefault()) {
+                                // unset any existing default
+                                warehouseRepository.findByCompanyIdAndIsDefaultTrueAndIsDeletedFalse(companyId)
+                                                .ifPresent(existingDefault -> {
+                                                        existingDefault.setDefault(false);
+                                                        warehouseRepository.save(existingDefault);
+                                                });
+                        }
+                        warehouse.setDefault(newDefault);
+                }
                 if (request.getActive() != null)
                         warehouse.setActive(request.getActive());
                 if (request.getApplyTax() != null)
@@ -153,11 +192,11 @@ public class WarehouseServiceImpl implements WarehouseService {
                         warehouse.setCurrency(currency);
                 }
 
-                warehouse.setUpdatedBy(updatedBy.getId());
+                warehouse.setUpdatedBy(currentUser.getId());
 
                 Warehouse saved = warehouseRepository.save(warehouse);
                 log.info("Warehouse [{}] updated by user [{}] in company [{}]",
-                                saved.getId(), updatedBy.getId(), saved.getCompanyId());
+                                saved.getId(), currentUser.getId(), companyId);
 
                 return new WarehouseResponse(saved);
         }
@@ -166,9 +205,10 @@ public class WarehouseServiceImpl implements WarehouseService {
         @Transactional
         public void deleteWarehouse(Long id) {
                 User currentUser = UserContext.getAuthenticatedUser(userRepository);
+                Long companyId = currentUser.getCompanyId();
 
                 Warehouse warehouse = warehouseRepository
-                                .findByIdAndCompanyIdAndIsDeletedFalse(id, currentUser.getCompanyId())
+                                .findByIdAndCompanyIdAndIsDeletedFalse(id, companyId)
                                 .orElseThrow(() -> new ResourceNotFoundException("Warehouse not found with id " + id));
 
                 warehouse.setDeleted(true);
@@ -176,6 +216,6 @@ public class WarehouseServiceImpl implements WarehouseService {
 
                 warehouseRepository.save(warehouse);
                 log.info("Warehouse [{}] soft-deleted by user [{}] in company [{}]",
-                                id, currentUser.getId(), warehouse.getCompanyId());
+                                id, currentUser.getId(), companyId);
         }
 }

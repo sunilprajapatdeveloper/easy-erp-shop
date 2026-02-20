@@ -9,11 +9,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-/**
- * Request DTO for creating a new Warehouse.
- * Enterprise-level: supports multi-company, multi-currency,
- * inventory tracking, tax rules, and invoice customization.
- */
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
@@ -24,10 +19,10 @@ public class CreateWarehouseRequest {
     @Size(max = 150)
     private String name;
 
-    @Size(max = 30, message = "Phone number must be at most 30 characters")
+    @Size(max = 30)
     private String phone;
 
-    @Email(message = "Invalid email format")
+    @Email
     @Size(max = 150)
     private String email;
 
@@ -51,67 +46,30 @@ public class CreateWarehouseRequest {
     @Size(max = 15)
     private String zipCode;
 
-    /**
-     * Mark if this warehouse is the default for the company
-     */
     @Builder.Default
     private Boolean isDefault = false;
 
-    /**
-     * Mark if this warehouse is the head office / HQ
-     */
     @Builder.Default
     private Boolean headquarter = false;
 
-    /**
-     * Each warehouse operates in one currency.
-     */
     @NotNull(message = "Currency ID is required")
     private Long currencyId;
 
-    /**
-     * Timezone of the warehouse (e.g., "Asia/Kolkata")
-     */
-    @NotBlank(message = "Timezone is required")
     @Size(max = 50)
-    @Builder.Default
-    private String timezone = "UTC";
+    private String timezone;
 
     @Builder.Default
     private Boolean active = true;
 
-    /**
-     * Whether this warehouse applies GST/VAT/Service Tax locally
-     */
     @Builder.Default
     private Boolean applyTax = true;
 
-    /**
-     * Whether this warehouse applies TDS (withholding tax)
-     */
     @Builder.Default
     private Boolean applyTds = false;
 
-    /**
-     * Whether to track stock in this warehouse
-     */
     @Builder.Default
     private Boolean trackInventory = true;
 
-    /**
-     * Optional invoice prefix for generated invoices (e.g., "DELHI-INV")
-     */
     @Size(max = 20)
     private String invoicePrefix;
-
-    /**
-     * Owning company (multi-tenant context)
-     */
-    @NotNull(message = "Company ID is required")
-    private Long companyId;
-
-    /**
-     * User creating this warehouse (audit)
-     */
-    private Long createdBy;
 }

@@ -63,12 +63,6 @@ public class WarehouseController {
     public ResponseEntity<WarehouseResponse> updateWarehouse(
             @PathVariable Long id,
             @Valid @RequestBody UpdateWarehouseRequest request) {
-        // Ensure the path variable ID matches the request ID (optional safety check)
-        if (!id.equals(request.getId())) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(null); // Or throw custom exception
-        }
-
         WarehouseResponse response = warehouseService.updateWarehouse(id, request);
         return ResponseEntity.ok(response);
     }
