@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import nextpos.app.nextpos.model.entity.User;
+import nextpos.app.nextpos.model.entity.UserProfile;
 
 import java.time.LocalDateTime;
 import java.util.Set;
@@ -31,27 +32,20 @@ public class UserResponse {
         private final Long updatedBy;
         private final LocalDateTime updatedAt;
         private final Long companyId;
-
-        /**
-         * Branch/warehouse assignments for the user.
-         */
         private final Set<Long> warehouseIds;
-
-        /**
-         * Default warehouse ID for the user.
-         */
         private final Long defaultWarehouseId;
 
         public static UserResponse fromEntity(User user, MediaResponse mediaResponse) {
+                UserProfile profile = user.getProfile();
+
                 return UserResponse.builder()
                                 .id(user.getId())
                                 .email(user.getEmail())
                                 .username(user.getUsername())
-                                .firstname(user.getFirstname())
-                                .lastname(user.getLastname())
+                                .firstname(profile != null ? profile.getFirstname() : null)
+                                .lastname(profile != null ? profile.getLastname() : null)
                                 .phone(user.getPhone())
                                 .status(user.getStatus())
-                                // SAFE CHECKS ADDED HERE
                                 .profileId(mediaResponse != null ? mediaResponse.getId() : null)
                                 .profile(mediaResponse != null ? mediaResponse.getUrl() : null)
                                 .roleId(user.getRole() != null ? user.getRole().getId() : null)

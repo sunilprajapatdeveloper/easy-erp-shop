@@ -2,13 +2,7 @@ package nextpos.app.nextpos.service.impl;
 
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import jakarta.transaction.Transactional;
@@ -23,17 +17,9 @@ import nextpos.app.nextpos.model.dto.request.UpdatePasswordRequest;
 import nextpos.app.nextpos.model.dto.response.JwtResponse;
 import nextpos.app.nextpos.model.dto.response.MediaResponse;
 import nextpos.app.nextpos.model.dto.response.UserResponse;
-import nextpos.app.nextpos.model.entity.Company;
-import nextpos.app.nextpos.model.entity.Role;
-import nextpos.app.nextpos.model.entity.User;
-import nextpos.app.nextpos.model.entity.UserWarehouse;
-import nextpos.app.nextpos.model.entity.Warehouse;
+import nextpos.app.nextpos.model.entity.*;
 import nextpos.app.nextpos.model.enums.UserRole;
-import nextpos.app.nextpos.repository.CompanyRepository;
-import nextpos.app.nextpos.repository.RoleRepository;
-import nextpos.app.nextpos.repository.UserRepository;
-import nextpos.app.nextpos.repository.UserWarehouseRepository;
-import nextpos.app.nextpos.repository.WarehouseRepository;
+import nextpos.app.nextpos.repository.*;
 import nextpos.app.nextpos.security.jwt.JwtUtils;
 import nextpos.app.nextpos.service.email.MailService;
 import nextpos.app.nextpos.service.interf.MediaService;
@@ -53,6 +39,7 @@ import org.springframework.util.StringUtils;
 public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
+    private final UserProfileRepository userProfileRepository;
     private final RoleRepository roleRepository;
     private final CompanyRepository companyRepository;
     private final WarehouseRepository warehouseRepository;
@@ -96,9 +83,12 @@ public class UserServiceImpl implements UserService {
         Role role = roleRepository.findById(request.getRoleId())
                 .orElseThrow(() -> new RuntimeException("Role not found"));
 
-        // Create user entity
+        // Create core User
         User user = new User();
-        applyCreateRequest(user, request);
+        user.setUsername(request.getUsername());
+        user.setEmail(request.getEmail());
+        user.setPhone(request.getPhone());
+        user.setMfaEnabled(request.getMfaEnabled() != null ? request.getMfaEnabled() : false);
 
         String rawPassword = generateStrongPassword(12);
         user.setPassword(passwordEncoder.encode(rawPassword));
@@ -107,10 +97,30 @@ public class UserServiceImpl implements UserService {
         user.setCompanyId(currentUser.getCompanyId());
         user.setCreatedBy(currentUser.getId());
 
-        // Save user first to generate ID (needed for assignments)
         User savedUser = userRepository.save(user);
 
-        // Assign warehouses efficiently and avoid duplicates
+        // Create UserProfile
+        UserProfile profile = UserProfile.builder()
+                .user(savedUser)
+                .firstname(request.getFirstname())
+                .middleName(request.getMiddleName())
+                .lastname(request.getLastname())
+                .profileImageUrl(request.getProfileImageUrl())
+                .addressLine1(request.getAddressLine1())
+                .addressLine2(request.getAddressLine2())
+                .city(request.getCity())
+                .state(request.getState())
+                .country(request.getCountry())
+                .postalCode(request.getPostalCode())
+                .timezone(request.getTimezone())
+                .language(request.getLanguage())
+                .gender(request.getGender())
+                .department(request.getDepartment())
+                .positionTitle(request.getPositionTitle())
+                .build();
+        userProfileRepository.save(profile);
+        savedUser.setProfile(profile);
+
         if (request.getWarehouseIds() != null && !request.getWarehouseIds().isEmpty()) {
             Set<UserWarehouse> assignments = new HashSet<>();
             for (Long whId : request.getWarehouseIds()) {
@@ -131,7 +141,7 @@ public class UserServiceImpl implements UserService {
             assignments.forEach(savedUser::addUserWarehouse);
         }
 
-        // Determine default warehouse
+        // Default warehouse
         Warehouse defaultWarehouse = null;
 
         if (request.getDefaultWarehouseId() != null) {
@@ -181,10 +191,7 @@ public class UserServiceImpl implements UserService {
             emailQueuePublisher.publishEmail(emailRequest);
         }
 
-        // Save final state
-        savedUser = userRepository.save(savedUser);
-
-        // Get full media response
+        // Get profile image from media service
         MediaResponse mediaResponse = null;
         try {
             mediaResponse = getProfileImageFromMedia(savedUser.getId(), savedUser.getCompanyId());
@@ -214,7 +221,7 @@ public class UserServiceImpl implements UserService {
             throw new RuntimeException("Phone number already in use");
         }
 
-        // Create a new company for this user
+        // Create company
         Company newCompany = Company.builder()
                 .companyName("Company for " + nv(request.getFirstname()) + " " + nv(request.getLastname()))
                 .phone(request.getPhone())
@@ -228,34 +235,37 @@ public class UserServiceImpl implements UserService {
         Role defaultRole = roleRepository.findByName(UserRole.COMPANY_OWNER.name())
                 .orElseThrow(() -> new RuntimeException("Default COMPANY_OWNER role not found"));
 
-        // Build user entity
+        // Create core User
         User user = new User();
-        user.setFirstname(request.getFirstname());
-        user.setLastname(request.getLastname());
         user.setUsername(request.getUsername());
         user.setEmail(request.getEmail());
         user.setPhone(request.getPhone());
-
-        // Password encryption
         user.setPassword(passwordEncoder.encode(request.getPassword()));
-
-        // System fields
         user.setStatus(Boolean.TRUE);
         user.setRole(defaultRole);
         user.setCompanyId(savedCompany.getId());
-        user.setCreatedAt(LocalDateTime.now());
 
-        User saved = userRepository.save(user);
+        User savedUser = userRepository.save(user);
 
-        // Get full media response
+        // Create UserProfile
+        UserProfile profile = UserProfile.builder()
+                .user(savedUser)
+                .firstname(request.getFirstname())
+                .lastname(request.getLastname())
+                .build();
+
+        userProfileRepository.save(profile);
+        savedUser.setProfile(profile);
+
+        // Get profile image (if any)
         MediaResponse mediaResponse = null;
         try {
-            mediaResponse = getProfileImageFromMedia(saved.getId(), saved.getCompanyId());
+            mediaResponse = getProfileImageFromMedia(savedUser.getId(), savedUser.getCompanyId());
         } catch (Exception e) {
             log.warn("Could not retrieve profile image for new user: {}", e.getMessage());
         }
 
-        return UserResponse.fromEntity(saved, mediaResponse);
+        return UserResponse.fromEntity(savedUser, mediaResponse);
     }
 
     @Override
@@ -263,12 +273,15 @@ public class UserServiceImpl implements UserService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        // Get full media response
+        // Ensure profile is loaded (optional, but response needs it)
+        if (user.getProfile() == null) {
+            log.warn("User {} has no profile", userId);
+        }
         MediaResponse mediaResponse = null;
         try {
             mediaResponse = getProfileImageFromMedia(userId, user.getCompanyId());
         } catch (Exception e) {
-            log.warn("Could not retrieve profile image for new user: {}", e.getMessage());
+            log.warn("Could not retrieve profile image: {}", e.getMessage());
         }
 
         return UserResponse.fromEntity(user, mediaResponse);
@@ -362,15 +375,67 @@ public class UserServiceImpl implements UserService {
             user.setRole(role);
         }
 
-        // Apply other updates
-        applyUpdateRequest(user, request);
+        // Update core User fields
+        if (!isBlank(request.getUsername()))
+            user.setUsername(request.getUsername());
+        if (!isBlank(request.getEmail()))
+            user.setEmail(request.getEmail());
+        if (!isBlank(request.getPhone()))
+            user.setPhone(request.getPhone());
+        if (request.getMfaEnabled() != null)
+            user.setMfaEnabled(request.getMfaEnabled());
+        // companyId update? allowed? We'll keep as is.
+        if (request.getCompanyId() != null)
+            user.setCompanyId(request.getCompanyId());
+
         user.setUpdatedBy(currentUser.getId());
         user.setUpdatedAt(LocalDateTime.now());
 
         // Save user first
         User savedUser = userRepository.save(user);
 
-        // Update warehouses
+        // Update UserProfile (create if not exists)
+        UserProfile profile = savedUser.getProfile();
+        if (profile == null) {
+            profile = new UserProfile();
+            profile.setUser(savedUser);
+        }
+        // apply profile fields from request
+        if (!isBlank(request.getFirstname()))
+            profile.setFirstname(request.getFirstname());
+        if (!isBlank(request.getMiddleName()))
+            profile.setMiddleName(request.getMiddleName());
+        if (!isBlank(request.getLastname()))
+            profile.setLastname(request.getLastname());
+        if (!isBlank(request.getProfileImageUrl()))
+            profile.setProfileImageUrl(request.getProfileImageUrl());
+        if (!isBlank(request.getAddressLine1()))
+            profile.setAddressLine1(request.getAddressLine1());
+        if (!isBlank(request.getAddressLine2()))
+            profile.setAddressLine2(request.getAddressLine2());
+        if (!isBlank(request.getCity()))
+            profile.setCity(request.getCity());
+        if (!isBlank(request.getState()))
+            profile.setState(request.getState());
+        if (!isBlank(request.getCountry()))
+            profile.setCountry(request.getCountry());
+        if (!isBlank(request.getPostalCode()))
+            profile.setPostalCode(request.getPostalCode());
+        if (!isBlank(request.getTimezone()))
+            profile.setTimezone(request.getTimezone());
+        if (!isBlank(request.getLanguage()))
+            profile.setLanguage(request.getLanguage());
+        if (!isBlank(request.getGender()))
+            profile.setGender(request.getGender());
+        if (!isBlank(request.getDepartment()))
+            profile.setDepartment(request.getDepartment());
+        if (!isBlank(request.getPositionTitle()))
+            profile.setPositionTitle(request.getPositionTitle());
+
+        userProfileRepository.save(profile);
+        savedUser.setProfile(profile); // ensure in-memory consistency
+
+        // Warehouse handling
         if (request.getWarehouseIds() != null) {
             // Remove warehouses not in the new list (safe delete)
             Set<Long> newWarehouseIds = new HashSet<>(request.getWarehouseIds());
@@ -423,7 +488,7 @@ public class UserServiceImpl implements UserService {
         try {
             mediaResponse = getProfileImageFromMedia(savedUser.getId(), savedUser.getCompanyId());
         } catch (Exception e) {
-            log.warn("Could not retrieve profile image for new user: {}", e.getMessage());
+            log.warn("Could not retrieve profile image: {}", e.getMessage());
         }
 
         return UserResponse.fromEntity(savedUser, mediaResponse);
@@ -459,18 +524,18 @@ public class UserServiceImpl implements UserService {
                 .orElseThrow(() -> new RuntimeException("User not found"));
         Long companyId = user.getCompanyId();
 
-        // Delete user's media first
+        // Delete user's media
         try {
             mediaService.deleteMediaByEntity(companyId, "USER", userId, userId);
         } catch (Exception e) {
             log.error("Failed to delete media for user {}: {}", userId, e.getMessage());
-            // Continue with user deletion even if media deletion fails
         }
 
         // Delete warehouse assignments
         userWarehouseRepository.deleteByUserId(userId);
 
-        // Delete user
+        // The profile will be deleted automatically due to cascade = ALL, orphanRemoval
+        // = true
         userRepository.deleteById(userId);
     }
 
@@ -503,143 +568,12 @@ public class UserServiceImpl implements UserService {
         try {
             mediaResponse = getProfileImageFromMedia(user.getId(), user.getCompanyId());
         } catch (Exception e) {
-            log.warn("Could not retrieve profile image for new user: {}", e.getMessage());
+            log.warn("Could not retrieve profile image: {}", e.getMessage());
         }
 
         return new JwtResponse(token, expiresIn, UserResponse.fromEntity(user, mediaResponse));
     }
 
-    // private void assignWarehouses(User user, Set<Long> warehouseIds, Long
-    // createdBy) {
-    // Set<Long> existingIds = user.getUserWarehouses().stream()
-    // .map(uw -> uw.getWarehouse().getId())
-    // .collect(Collectors.toSet());
-
-    // List<UserWarehouse> newAssignments = warehouseIds.stream()
-    // .filter(id -> !existingIds.contains(id))
-    // .map(id -> {
-    // Warehouse warehouse = warehouseRepository.findById(id)
-    // .orElseThrow(() -> new RuntimeException("Warehouse not found: " + id));
-    // UserWarehouse uw = new UserWarehouse();
-    // uw.setUser(user);
-    // uw.setWarehouse(warehouse);
-    // uw.setActive(true);
-    // uw.setCreatedAt(LocalDateTime.now());
-    // uw.setCreatedBy(createdBy);
-    // return uw;
-    // })
-    // .toList();
-
-    // newAssignments.forEach(user::addUserWarehouse);
-    // }
-
-    private void applyCreateRequest(final User user, final CreateUserRequest r) {
-        // Identity
-        if (!isBlank(r.getFirstname()))
-            user.setFirstname(r.getFirstname());
-        if (!isBlank(r.getMiddleName()))
-            user.setMiddleName(r.getMiddleName());
-        if (!isBlank(r.getLastname()))
-            user.setLastname(r.getLastname());
-        if (!isBlank(r.getUsername()))
-            user.setUsername(r.getUsername());
-        if (!isBlank(r.getEmail()))
-            user.setEmail(r.getEmail());
-        if (!isBlank(r.getPhone()))
-            user.setPhone(r.getPhone());
-
-        // Profile
-        if (!isBlank(r.getProfileImageUrl()))
-            user.setProfileImageUrl(r.getProfileImageUrl());
-
-        // Contact / Locale
-        if (!isBlank(r.getAddressLine1()))
-            user.setAddressLine1(r.getAddressLine1());
-        if (!isBlank(r.getAddressLine2()))
-            user.setAddressLine2(r.getAddressLine2());
-        if (!isBlank(r.getCity()))
-            user.setCity(r.getCity());
-        if (!isBlank(r.getState()))
-            user.setState(r.getState());
-        if (!isBlank(r.getCountry()))
-            user.setCountry(r.getCountry());
-        if (!isBlank(r.getPostalCode()))
-            user.setPostalCode(r.getPostalCode());
-        if (!isBlank(r.getTimezone()))
-            user.setTimezone(r.getTimezone());
-        if (!isBlank(r.getLanguage()))
-            user.setLanguage(r.getLanguage());
-        if (!isBlank(r.getGender()))
-            user.setGender(r.getGender());
-
-        // Org
-        if (!isBlank(r.getDepartment()))
-            user.setDepartment(r.getDepartment());
-        if (!isBlank(r.getPositionTitle()))
-            user.setPositionTitle(r.getPositionTitle());
-
-        // Company
-        if (r.getCompanyId() != null)
-            user.setCompanyId(r.getCompanyId());
-
-        // Security
-        if (r.getMfaEnabled() != null)
-            user.setMfaEnabled(r.getMfaEnabled());
-    }
-
-    private void applyUpdateRequest(final User user, final UpdateUserRequest r) {
-        // Identity
-        if (!isBlank(r.getFirstname()))
-            user.setFirstname(r.getFirstname());
-        if (!isBlank(r.getMiddleName()))
-            user.setMiddleName(r.getMiddleName());
-        if (!isBlank(r.getLastname()))
-            user.setLastname(r.getLastname());
-        if (!isBlank(r.getUsername()))
-            user.setUsername(r.getUsername());
-        if (!isBlank(r.getEmail()))
-            user.setEmail(r.getEmail());
-        if (!isBlank(r.getPhone()))
-            user.setPhone(r.getPhone());
-
-        // Profile
-        if (!isBlank(r.getProfileImageUrl()))
-            user.setProfileImageUrl(r.getProfileImageUrl());
-
-        // Contact / Locale
-        if (!isBlank(r.getAddressLine1()))
-            user.setAddressLine1(r.getAddressLine1());
-        if (!isBlank(r.getAddressLine2()))
-            user.setAddressLine2(r.getAddressLine2());
-        if (!isBlank(r.getCity()))
-            user.setCity(r.getCity());
-        if (!isBlank(r.getState()))
-            user.setState(r.getState());
-        if (!isBlank(r.getCountry()))
-            user.setCountry(r.getCountry());
-        if (!isBlank(r.getPostalCode()))
-            user.setPostalCode(r.getPostalCode());
-        if (!isBlank(r.getTimezone()))
-            user.setTimezone(r.getTimezone());
-        if (!isBlank(r.getLanguage()))
-            user.setLanguage(r.getLanguage());
-        if (!isBlank(r.getGender()))
-            user.setGender(r.getGender());
-
-        // Org
-        if (!isBlank(r.getDepartment()))
-            user.setDepartment(r.getDepartment());
-        if (!isBlank(r.getPositionTitle()))
-            user.setPositionTitle(r.getPositionTitle());
-
-        // Company
-        if (r.getCompanyId() != null)
-            user.setCompanyId(r.getCompanyId());
-
-        // Security
-        if (r.getMfaEnabled() != null)
-            user.setMfaEnabled(r.getMfaEnabled());
-    }
 
     private String generateStrongPassword(final int length) {
         final String upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
