@@ -65,11 +65,8 @@ export interface CreateCompanyRequest {
   address?: string;
   postalCode?: string;
   timezone?: string;
-
   enableOnlineOrdering?: boolean;
   enableLoyaltyProgram?: boolean;
-
-  createdBy: number;
 }
 
 export interface UpdateCompanyRequest {
@@ -77,18 +74,14 @@ export interface UpdateCompanyRequest {
   phone?: string;
   email?: string;
   registrationNumber?: string;
-
   country?: string;
   state?: string;
   city?: string;
   address?: string;
   postalCode?: string;
   timezone?: string;
-
   enableOnlineOrdering?: boolean;
   enableLoyaltyProgram?: boolean;
-
-  updatedBy: number;
   isActive?: boolean;
   isDeleted?: boolean;
 }
