@@ -31,14 +31,7 @@ public class UpdateCompanyRequest {
     private Boolean enableOnlineOrdering;
     private Boolean enableLoyaltyProgram;
 
-    /**
-     * ID of the user performing the update (maps to updatedBy in entity).
-     */
-    private Long updatedBy;
-
-    /**
-     * Active/deleted flags can be updated by admins if needed.
-     */
+    // Status flags
     private Boolean isActive;
     private Boolean isDeleted;
 }

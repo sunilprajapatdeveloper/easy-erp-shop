@@ -30,6 +30,7 @@ import nextpos.app.nextpos.model.entity.ShippingProviderSettings;
 import nextpos.app.nextpos.model.entity.SocialMediaSettings;
 import nextpos.app.nextpos.model.entity.SubscriptionPlan;
 import nextpos.app.nextpos.model.entity.TaxSetting;
+import nextpos.app.nextpos.model.entity.User;
 import nextpos.app.nextpos.repository.BrandingSettingsRepository;
 import nextpos.app.nextpos.repository.CompanyCurrencyRepository;
 import nextpos.app.nextpos.repository.CompanyRepository;
@@ -40,6 +41,8 @@ import nextpos.app.nextpos.repository.SecuritySettingsRepository;
 import nextpos.app.nextpos.repository.ShippingProviderSettingsRepository;
 import nextpos.app.nextpos.repository.SocialMediaSettingsRepository;
 import nextpos.app.nextpos.repository.TaxSettingRepository;
+import nextpos.app.nextpos.repository.UserRepository;
+import nextpos.app.nextpos.security.context.UserContext;
 import nextpos.app.nextpos.service.interf.CompanyService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -69,10 +72,13 @@ public class CompanyServiceImpl implements CompanyService {
     private final TaxSettingRepository taxSettingRepository;
     private final CompanyCurrencyRepository companyCurrencyRepository;
     private final CompanySubscriptionRepository companySubscriptionRepository;
+    private final UserRepository userRepository;
 
     @Override
-    public CompanyResponse createCompany(CreateCompanyRequest request, Long createdBy) {
-        log.info("Creating company '{}'", request.getCompanyName());
+    public CompanyResponse createCompany(CreateCompanyRequest request) {
+        User currentUser = UserContext.getAuthenticatedUser(userRepository);
+        Long createdBy = currentUser.getId();
+        log.info("Creating company '{}' by user {}", request.getCompanyName(), createdBy);
 
         Company company = Company.builder()
                 .companyName(request.getCompanyName())
@@ -128,8 +134,10 @@ public class CompanyServiceImpl implements CompanyService {
     }
 
     @Override
-    public CompanyResponse updateCompany(Long companyId, UpdateCompanyRequest request, Long updatedBy) {
-        log.info("Updating company id={}", companyId);
+    public CompanyResponse updateCompany(Long companyId, UpdateCompanyRequest request) {
+        User currentUser = UserContext.getAuthenticatedUser(userRepository);
+        Long updatedBy = currentUser.getId();
+        log.info("Updating company id={} by user {}", companyId, updatedBy);
 
         Company company = companyRepository.findById(companyId)
                 .orElseThrow(() -> new EntityNotFoundException("Company not found with id: " + companyId));
@@ -280,8 +288,11 @@ public class CompanyServiceImpl implements CompanyService {
     }
 
     @Override
-    public void deleteCompany(Long companyId, Long deletedBy) {
-        log.info("Soft deleting company id={}", companyId);
+    public void deleteCompany(Long companyId) {
+        User currentUser = UserContext.getAuthenticatedUser(userRepository);
+        Long deletedBy = currentUser.getId();
+        log.info("Soft deleting company id={} by user {}", companyId, deletedBy);
+
         Company company = companyRepository.findById(companyId)
                 .orElseThrow(() -> new EntityNotFoundException("Company not found with id: " + companyId));
 

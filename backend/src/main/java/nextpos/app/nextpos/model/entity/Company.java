@@ -116,22 +116,13 @@ public class Company {
     @OneToOne(mappedBy = "company", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private TaxSetting taxSetting;
 
-    /**
-     * Updated mapping: a company can have multiple currencies
-     */
     @OneToMany(mappedBy = "company", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @Builder.Default
     private List<CompanyCurrency> currencies = new ArrayList<>();
 
-    /**
-     * This allows multiple companies to share the same plan
-     */
     @OneToOne(mappedBy = "company", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private CompanySubscription companySubscription;
 
-    /**
-     * Helper method to get default currency easily
-     */
     public CompanyCurrency getDefaultCurrency() {
         return currencies.stream()
                 .filter(CompanyCurrency::isDefaultCurrency)
