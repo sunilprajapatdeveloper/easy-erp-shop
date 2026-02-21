@@ -3,11 +3,9 @@ import { MediaResponse } from "./Media";
 export interface User {
   id: number;
   firstname: string;
-  middleName?: string;
   lastname: string;
-  username: string;
   email: string;
-  phone?: string;
+  phone: string;
   status: boolean;
   profile?: string;
   profileImageUrl?: string;
@@ -27,22 +25,18 @@ export interface User {
 export interface UserListItem {
   id: number;
   email: string;
-  username: string;
   firstname: string;
   lastname: string;
-  phone?: string;
+  phone: string;
   roleName: string;
   status: boolean;
 }
 
 export interface CreateUserRequest {
   firstname: string;
-  middleName?: string;
   lastname: string;
-  username: string;
   email: string;
-  phone?: string;
-  password: string;
+  phone: string;
   mfaEnabled?: boolean;
   profileImageUrl?: string;
   addressLine1?: string;
@@ -57,20 +51,15 @@ export interface CreateUserRequest {
   roleId: number;
   department?: string;
   positionTitle?: string;
-  companyId: number;
   warehouseIds?: number[];
   defaultWarehouseId?: number;
 }
 
 export interface UpdateUserRequest {
-  id: number;
   firstname?: string;
-  middleName?: string;
   lastname?: string;
-  username?: string;
   email?: string;
   phone?: string;
-  password?: string;
   mfaEnabled?: boolean;
   profileImageUrl?: string;
   profileId?: string;
@@ -86,7 +75,6 @@ export interface UpdateUserRequest {
   roleId?: number;
   department?: string;
   positionTitle?: string;
-  companyId?: number;
   warehouseIds?: number[];
   defaultWarehouseId?: number;
 }
@@ -94,10 +82,8 @@ export interface UpdateUserRequest {
 export interface UserRegisterRequest {
   firstname: string;
   lastname: string;
-  username: string;
   email: string;
-  password: string;
-  phone?: string;
+  phone: string;
 }
 
 export interface LoginRequest {

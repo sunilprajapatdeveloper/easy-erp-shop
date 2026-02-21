@@ -28,9 +28,6 @@ export const useUserStore = defineStore("user", {
     userPermissions: (state): string[] =>
       state.currentUser?.rolePermissions || [],
 
-    /**
-     * Quick access to current user's default warehouse
-     */
     defaultWarehouseId: (state): number | null =>
       state.currentUser?.defaultWarehouseId ?? null,
   },
@@ -69,7 +66,6 @@ export const useUserStore = defineStore("user", {
         this.users.push({
           id: created.id,
           email: created.email,
-          username: created.username,
           firstname: created.firstname,
           lastname: created.lastname,
           phone: created.phone,
@@ -164,11 +160,10 @@ export const useUserStore = defineStore("user", {
       }
     },
 
-    // Add this action to your existing user store:
     async updateProfileWithImage(
       userId: number,
       userData: UpdateUserRequest,
-      imageFile?: File
+      imageFile?: File,
     ): Promise<User> {
       try {
         let profileImageUrl = userData.profileImageUrl;
@@ -204,10 +199,10 @@ export const useUserStore = defineStore("user", {
     },
 
     async fetchUserWithMedia(
-      userId: number
+      userId: number,
     ): Promise<UserProfileWithMedia | null> {
       try {
-        const user = await this.fetchUserById(userId); // Your existing method
+        const user = await this.fetchUserById(userId);
         if (!user) return null;
 
         // Fetch media if profileId exists

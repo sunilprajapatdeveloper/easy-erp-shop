@@ -34,10 +34,10 @@ export interface CompanyDetail {
   postalCode?: string;
   timezone?: string;
 
-  createdBy: number;
+  createdBy: number | null;
   createdAt: string;
-  updatedBy?: number;
-  updatedAt?: string | null;
+  updatedBy: number | null;
+  updatedAt: string | null;
 
   isActive: boolean;
   isDeleted: boolean;
