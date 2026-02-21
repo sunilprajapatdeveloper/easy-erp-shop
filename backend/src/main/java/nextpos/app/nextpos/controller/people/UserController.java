@@ -22,7 +22,6 @@ import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/v1/users")
-// @CrossOrigin(origins = "*")
 @RequiredArgsConstructor
 public class UserController {
 
@@ -57,8 +56,9 @@ public class UserController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<UserResponse> signup(@Valid @RequestBody UserRegisterRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(userService.signup(request));
+    public ResponseEntity<UserResponse> signup(@Valid @RequestBody UserRegisterRequest request,
+            @RequestHeader("X-Company-Id") Long companyId) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(userService.signup(request, companyId));
     }
 
     @PostMapping("/login")
@@ -71,32 +71,6 @@ public class UserController {
         userService.updatePassword(request);
         return ResponseEntity.ok().build();
     }
-
-    // @PostMapping("/{userId}/upload-profile")
-    // public ResponseEntity<MediaResponse> uploadProfileImage(
-    //         @PathVariable Long userId,
-    //         @RequestParam("file") MultipartFile file,
-    //         @RequestHeader("X-User-Id") Long currentUserId,
-    //         @RequestHeader("X-Company-Id") Long companyId) throws IOException {
-
-    //     MediaUploadRequest request = MediaUploadRequest.builder()
-    //             .companyId(companyId)
-    //             .mediaType(MediaType.USER_PROFILE)
-    //             .entityType("USER")
-    //             .entityId(userId)
-    //             .isPublic(true)
-    //             .generateThumbnail(true)
-    //             .build();
-
-    //     MediaResponse mediaResponse = mediaService.uploadFile(file, request, currentUserId);
-
-    //     // Update user entity with media reference
-    //     UserResponse user = userService.getUserById(userId);
-    //     user.setProfile(mediaResponse.getUrl());
-    //     userService.updateUser(user.getId(), );
-
-    //     return ResponseEntity.ok(mediaResponse);
-    // }
 
     @GetMapping("/{userId}/profile-image")
     public ResponseEntity<MediaResponse> getProfileImage(

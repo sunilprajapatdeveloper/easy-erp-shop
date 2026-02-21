@@ -7,6 +7,7 @@ import nextpos.app.nextpos.model.dto.response.QuotationResponse.ProductDetail;
 import nextpos.app.nextpos.model.entity.*;
 import nextpos.app.nextpos.model.enums.ShipmentStatus;
 import nextpos.app.nextpos.repository.*;
+import nextpos.app.nextpos.security.context.UserContext;
 import nextpos.app.nextpos.service.interf.QuotationService;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -30,9 +31,7 @@ public class QuotationServiceImpl implements QuotationService {
         @Override
         @Transactional
         public QuotationResponse createQuotation(CreateQuotationRequest request) {
-                String username = SecurityContextHolder.getContext().getAuthentication().getName();
-                User createdBy = userRepository.findByUsername(username)
-                                .orElseThrow(() -> new RuntimeException("User not found: " + username));
+                User user = UserContext.getAuthenticatedUser(userRepository);
 
                 Customer customer = customerRepository.findById(request.getCustomerId())
                                 .orElseThrow(() -> new RuntimeException("Customer not found"));
@@ -50,7 +49,7 @@ public class QuotationServiceImpl implements QuotationService {
                 quotation.setDiscount(Optional.ofNullable(request.getDiscount()).orElse(BigDecimal.ZERO));
                 quotation.setShippingCost(Optional.ofNullable(request.getShippingCost()).orElse(BigDecimal.ZERO));
                 quotation.setStatus(status);
-                quotation.setCreatedBy(createdBy.getId());
+                quotation.setCreatedBy(user.getId());
 
                 List<QuotationProduct> products = request.getProducts().stream().map(p -> {
                         QuotationProduct qp = new QuotationProduct();
@@ -141,10 +140,9 @@ public class QuotationServiceImpl implements QuotationService {
                         quotation.setWarehouseId(warehouse.getId());
                 }
 
-                String username = SecurityContextHolder.getContext().getAuthentication().getName();
-                User updatedBy = userRepository.findByUsername(username)
-                                .orElseThrow(() -> new RuntimeException("User not found: " + username));
-                quotation.setUpdatedBy(updatedBy.getId());
+                User user = UserContext.getAuthenticatedUser(userRepository);
+
+                quotation.setUpdatedBy(user.getId());
 
                 Quotation saved = quotationRepository.save(quotation);
 

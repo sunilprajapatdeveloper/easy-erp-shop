@@ -24,17 +24,14 @@ public class User {
     @EqualsAndHashCode.Include
     private Long id;
 
-    @Column(unique = true, length = 100, nullable = false)
-    private String username;
-
     @Column(unique = true, length = 150, nullable = false)
     private String email;
 
+    @Column(unique = true, length = 15, nullable = false)
+    private String phone;
+
     @Column(nullable = false, length = 255)
     private String password;
-
-    @Column(unique = true, length = 15)
-    private String phone;
 
     @Column(nullable = false)
     @Builder.Default

@@ -29,10 +29,8 @@ public final class UserContext {
 
         String identifier = authentication.getName();
 
-        Optional<User> optionalUser = userRepository.findByUsername(identifier);
-
-        if (optionalUser.isEmpty())
-            optionalUser = userRepository.findByEmail(identifier);
+        // Try email first, then phone
+        Optional<User> optionalUser = userRepository.findByEmail(identifier);
 
         if (optionalUser.isEmpty())
             optionalUser = userRepository.findByPhone(identifier);

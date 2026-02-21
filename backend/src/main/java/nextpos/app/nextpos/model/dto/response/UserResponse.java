@@ -17,13 +17,12 @@ public class UserResponse {
 
         private final Long id;
         private final String email;
-        private final String username;
+        private final String phone;
         private final String firstname;
         private final String lastname;
-        private final String phone;
         private final Boolean status;
         private final String profileId;
-        private final String profile; // profile picture or avatar
+        private final String profile;
         private final Long roleId;
         private final String roleName;
         private final Set<String> rolePermissions;
@@ -41,10 +40,9 @@ public class UserResponse {
                 return UserResponse.builder()
                                 .id(user.getId())
                                 .email(user.getEmail())
-                                .username(user.getUsername())
+                                .phone(user.getPhone())
                                 .firstname(profile != null ? profile.getFirstname() : null)
                                 .lastname(profile != null ? profile.getLastname() : null)
-                                .phone(user.getPhone())
                                 .status(user.getStatus())
                                 .profileId(mediaResponse != null ? mediaResponse.getId() : null)
                                 .profile(mediaResponse != null ? mediaResponse.getUrl() : null)

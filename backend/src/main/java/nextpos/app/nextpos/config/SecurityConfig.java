@@ -41,6 +41,9 @@ public class SecurityConfig {
                         // Allow preflight requests
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
+                        // Allow Company Creation (Signup Step 1)
+                        .requestMatchers(HttpMethod.POST, "/api/v1/companies").permitAll()
+
                         // Specific Public GET request for Subscription Plans
                         .requestMatchers(HttpMethod.GET, "/api/v1/subscription-plans/**").permitAll()
 

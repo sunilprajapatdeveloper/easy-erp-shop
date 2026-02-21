@@ -19,24 +19,8 @@ public class UserDetailsServiceImpl implements UserDetailsService {
     @Override
     public UserDetails loadUserByUsername(String identifier) throws UsernameNotFoundException {
         User user = userRepository.findByEmail(identifier)
-                .or(() -> userRepository.findByUsername(identifier))
                 .or(() -> userRepository.findByPhone(identifier))
                 .orElseThrow(() -> new UsernameNotFoundException("User not found with identifier: " + identifier));
-
-        String principalName = user.getUsername();
-
-        if (principalName == null || principalName.isBlank()) {
-            principalName = user.getEmail();
-        }
-
-        if (principalName == null || principalName.isBlank()) {
-            principalName = user.getPhone();
-        }
-
-        if (principalName == null || principalName.isBlank()) {
-            throw new UsernameNotFoundException(
-                    "No valid username/email/phone found for user with identifier: " + identifier);
-        }
 
         String roleName = (user.getRole() != null) ? user.getRole().getName() : "GUEST";
 

@@ -12,11 +12,18 @@ import java.util.List;
 
 public interface UserService {
     UserResponse createUser(CreateUserRequest request);
-    UserResponse signup(UserRegisterRequest request);
+
+    UserResponse signup(UserRegisterRequest request, Long companyId);
+
     UserResponse getUserById(Long id);
+
     List<UserResponse> getAllUsers();
+
     UserResponse updateUser(Long id, UpdateUserRequest request);
+
     void updatePassword(UpdatePasswordRequest request);
+
     void deleteUser(Long id);
+
     JwtResponse authenticateAndGenerateToken(LoginRequest loginRequest);
 }

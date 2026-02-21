@@ -7,6 +7,7 @@ import nextpos.app.nextpos.model.entity.Customer;
 import nextpos.app.nextpos.model.entity.User;
 import nextpos.app.nextpos.repository.CustomerRepository;
 import nextpos.app.nextpos.repository.UserRepository;
+import nextpos.app.nextpos.security.context.UserContext;
 import nextpos.app.nextpos.service.interf.CustomerService;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -23,9 +24,7 @@ public class CustomerServiceImpl implements CustomerService {
 
     @Override
     public CustomerResponse createCustomer(CreateCustomerRequest request) {
-        String username = SecurityContextHolder.getContext().getAuthentication().getName();
-        User createdBy = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        User user = UserContext.getAuthenticatedUser(userRepository);
 
         Customer customer = new Customer();
         customer.setName(request.getName());
@@ -33,7 +32,7 @@ public class CustomerServiceImpl implements CustomerService {
         customer.setPhone(request.getPhone());
         customer.setCountry(request.getCountry());
         customer.setCity(request.getCity());
-        customer.setCreatedBy(createdBy.getId());
+        customer.setCreatedBy(user.getId());
 
         return new CustomerResponse(customerRepository.save(customer));
     }
@@ -78,16 +77,14 @@ public class CustomerServiceImpl implements CustomerService {
         Customer customer = customerRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Customer not found"));
 
-        String username = SecurityContextHolder.getContext().getAuthentication().getName();
-        User updatedBy = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        User user = UserContext.getAuthenticatedUser(userRepository);
 
         customer.setName(request.getName());
         customer.setEmail(request.getEmail());
         customer.setPhone(request.getPhone());
         customer.setCountry(request.getCountry());
         customer.setCity(request.getCity());
-        customer.setUpdatedBy(updatedBy.getId());
+        customer.setUpdatedBy(user.getId());
 
         return new CustomerResponse(customerRepository.save(customer));
     }

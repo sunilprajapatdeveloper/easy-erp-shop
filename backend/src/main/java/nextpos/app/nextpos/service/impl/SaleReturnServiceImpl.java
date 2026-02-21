@@ -455,10 +455,7 @@ public class SaleReturnServiceImpl implements SaleReturnService {
         @Override
         @Transactional(readOnly = true)
         public List<SaleReturnResponse> getMySaleReturns() {
-                String username = SecurityContextHolder.getContext().getAuthentication().getName();
-                User user = userRepository.findByUsername(username)
-                                .orElseThrow(() -> new RuntimeException("User not found: " + username));
-
+                User user = UserContext.getAuthenticatedUser(userRepository);
                 List<SaleReturn> saleReturns = saleReturnRepository.findByCreatedBy(user.getId());
 
                 return saleReturns.stream()

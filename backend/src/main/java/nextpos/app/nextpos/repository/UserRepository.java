@@ -22,9 +22,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByEmail(@NonNull String email);
 
     @NonNull
-    Optional<User> findByUsername(@NonNull String username);
-
-    @NonNull
     Optional<User> findByPhone(@NonNull String phone);
 
     @Query("SELECT u FROM User u WHERE u.createdBy = :creatorId OR u.createdBy IN (SELECT u2.id FROM User u2 WHERE u2.createdBy = :creatorId)")

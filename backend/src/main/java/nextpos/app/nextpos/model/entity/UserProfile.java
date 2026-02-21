@@ -25,9 +25,6 @@ public class UserProfile {
     @Column(length = 100, nullable = false)
     private String firstname;
 
-    @Column(length = 100)
-    private String middleName;
-
     @Column(length = 100, nullable = false)
     private String lastname;
 

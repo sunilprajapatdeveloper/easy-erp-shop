@@ -76,9 +76,16 @@ public class CompanyServiceImpl implements CompanyService {
 
     @Override
     public CompanyResponse createCompany(CreateCompanyRequest request) {
-        User currentUser = UserContext.getAuthenticatedUser(userRepository);
-        Long createdBy = currentUser.getId();
-        log.info("Creating company '{}' by user {}", request.getCompanyName(), createdBy);
+        log.info("Creating company '{}' (public registration)", request.getCompanyName());
+
+        // Uniqueness checks (email and phone must be unique across companies)
+        if (companyRepository.findByEmail(request.getEmail()).isPresent()) {
+            throw new RuntimeException("Email already in use");
+        }
+
+        if (companyRepository.findByPhone(request.getPhone()).isPresent()) {
+            throw new RuntimeException("Phone number already in use");
+        }
 
         Company company = Company.builder()
                 .companyName(request.getCompanyName())
@@ -90,26 +97,20 @@ public class CompanyServiceImpl implements CompanyService {
                 .city(request.getCity())
                 .postalCode(request.getPostalCode())
                 .timezone(request.getTimezone())
-                .createdBy(createdBy)
+                .createdBy(null)
                 .createdAt(LocalDateTime.now())
                 .isActive(true)
                 .isDeleted(false)
                 .build();
 
-        // Save company first to get generated ID (so settings can reference it if
-        // needed)
         Company saved = companyRepository.save(company);
 
-        // Optionally seed minimal settings objects if request indicates toggles.
-        // (We keep seeding logic minimal here; separate setting services/controllers
-        // should be used
-        // for advanced setups.)
-        // Example: if client wants to enable online ordering at creation time
+        // Seed minimal settings if requested (still using null for createdBy)
         if (Boolean.TRUE.equals(request.getEnableOnlineOrdering())) {
             OnlineOrderingSettings oos = OnlineOrderingSettings.builder()
                     .company(saved)
                     .enabled(true)
-                    .createdBy(createdBy)
+                    .createdBy(null)
                     .createdAt(LocalDateTime.now())
                     .build();
             onlineOrderingSettingsRepository.save(oos);
@@ -120,14 +121,14 @@ public class CompanyServiceImpl implements CompanyService {
             LoyaltySettings ls = LoyaltySettings.builder()
                     .company(saved)
                     .enabled(true)
-                    .createdBy(createdBy)
+                    .createdBy(null)
                     .createdAt(LocalDateTime.now())
                     .build();
             loyaltySettingsRepository.save(ls);
             saved.setLoyaltySettings(ls);
         }
 
-        // refresh from db to ensure all relations load (optional)
+        // Refresh to load relationships
         saved = companyRepository.findById(saved.getId()).orElse(saved);
 
         return mapToResponse(saved);

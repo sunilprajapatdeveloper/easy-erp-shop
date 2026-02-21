@@ -6,33 +6,28 @@ import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Getter
+@NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class UserRegisterRequest {
 
     @NotBlank
     @Size(max = 100)
-    private final String firstname;
+    private String firstname;
 
     @NotBlank
     @Size(max = 100)
-    private final String lastname;
-
-    @NotBlank
-    @Size(max = 100)
-    private final String username;
+    private String lastname;
 
     @Email
     @NotBlank
     @Size(max = 150)
-    private final String email;
+    private String email;
 
     @NotBlank
-    @Size(min = 8, max = 255)
-    private final String password;
-
     @Size(max = 15)
-    private final String phone;
+    private String phone;
 }

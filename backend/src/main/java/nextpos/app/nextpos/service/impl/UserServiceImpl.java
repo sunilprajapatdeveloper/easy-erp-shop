@@ -55,20 +55,16 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public UserResponse createUser(final CreateUserRequest request) {
 
-        if (isBlank(request.getEmail()) && isBlank(request.getPhone()) && isBlank(request.getUsername())) {
-            throw new RuntimeException("At least one of email, phone, or username must be provided.");
+        if (isBlank(request.getEmail()) || isBlank(request.getPhone())) {
+            throw new RuntimeException("Email and phone are required.");
         }
 
-        if (!isBlank(request.getEmail()) && userRepository.findByEmail(request.getEmail()).isPresent()) {
+        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
             throw new RuntimeException("Email already in use");
         }
 
-        if (!isBlank(request.getPhone()) && userRepository.findByPhone(request.getPhone()).isPresent()) {
+        if (userRepository.findByPhone(request.getPhone()).isPresent()) {
             throw new RuntimeException("Phone number already in use");
-        }
-
-        if (!isBlank(request.getUsername()) && userRepository.findByUsername(request.getUsername()).isPresent()) {
-            throw new RuntimeException("Username already in use");
         }
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -77,7 +73,7 @@ public class UserServiceImpl implements UserService {
             throw new RuntimeException("Unauthenticated creation is not allowed.");
         }
 
-        User currentUser = userRepository.findByUsername(authentication.getName())
+        User currentUser = userRepository.findByEmail(authentication.getName())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         Role role = roleRepository.findById(request.getRoleId())
@@ -85,7 +81,6 @@ public class UserServiceImpl implements UserService {
 
         // Create core User
         User user = new User();
-        user.setUsername(request.getUsername());
         user.setEmail(request.getEmail());
         user.setPhone(request.getPhone());
         user.setMfaEnabled(request.getMfaEnabled() != null ? request.getMfaEnabled() : false);
@@ -103,7 +98,6 @@ public class UserServiceImpl implements UserService {
         UserProfile profile = UserProfile.builder()
                 .user(savedUser)
                 .firstname(request.getFirstname())
-                .middleName(request.getMiddleName())
                 .lastname(request.getLastname())
                 .profileImageUrl(request.getProfileImageUrl())
                 .addressLine1(request.getAddressLine1())
@@ -204,50 +198,46 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public UserResponse signup(final UserRegisterRequest request) {
-        // Require at least one identifier (email or username)
-        if (isBlank(request.getEmail()) && isBlank(request.getUsername())) {
-            throw new RuntimeException("At least one of email or username must be provided.");
+    public UserResponse signup(final UserRegisterRequest request, final Long companyId) {
+        // Validate required fields
+        if (isBlank(request.getEmail()) || isBlank(request.getPhone())) {
+            throw new RuntimeException("Email and phone are required.");
         }
 
-        // Check uniqueness
-        if (!isBlank(request.getEmail()) && userRepository.findByEmail(request.getEmail()).isPresent()) {
+        // Check uniqueness for user
+        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
             throw new RuntimeException("Email already in use");
         }
-        if (!isBlank(request.getUsername()) && userRepository.findByUsername(request.getUsername()).isPresent()) {
-            throw new RuntimeException("Username already in use");
-        }
-        if (!isBlank(request.getPhone()) && userRepository.findByPhone(request.getPhone()).isPresent()) {
+
+        if (userRepository.findByPhone(request.getPhone()).isPresent()) {
             throw new RuntimeException("Phone number already in use");
         }
 
-        // Create company
-        Company newCompany = Company.builder()
-                .companyName("Company for " + nv(request.getFirstname()) + " " + nv(request.getLastname()))
-                .phone(request.getPhone())
-                .email(request.getEmail())
-                .createdAt(LocalDateTime.now())
-                .build();
-
-        Company savedCompany = companyRepository.save(newCompany);
+        // Validate that the company exists
+        Company company = companyRepository.findById(companyId)
+                .orElseThrow(() -> new RuntimeException("Company not found with id: " + companyId));
 
         // Assign default role: COMPANY_OWNER
         Role defaultRole = roleRepository.findByName(UserRole.COMPANY_OWNER.name())
                 .orElseThrow(() -> new RuntimeException("Default COMPANY_OWNER role not found"));
 
-        // Create core User
-        User user = new User();
-        user.setUsername(request.getUsername());
-        user.setEmail(request.getEmail());
-        user.setPhone(request.getPhone());
-        user.setPassword(passwordEncoder.encode(request.getPassword()));
-        user.setStatus(Boolean.TRUE);
-        user.setRole(defaultRole);
-        user.setCompanyId(savedCompany.getId());
+        // Generate random password
+        String rawPassword = generateStrongPassword(12);
+        String encodedPassword = passwordEncoder.encode(rawPassword);
+
+        // Create user
+        User user = User.builder()
+                .email(request.getEmail())
+                .phone(request.getPhone())
+                .password(encodedPassword)
+                .status(true)
+                .role(defaultRole)
+                .companyId(companyId)
+                .build();
 
         User savedUser = userRepository.save(user);
 
-        // Create UserProfile
+        // Create user profile
         UserProfile profile = UserProfile.builder()
                 .user(savedUser)
                 .firstname(request.getFirstname())
@@ -256,6 +246,18 @@ public class UserServiceImpl implements UserService {
 
         userProfileRepository.save(profile);
         savedUser.setProfile(profile);
+
+        // Send password email
+        String content = mailService.buildPasswordEmail(rawPassword, company.getCompanyName());
+        EmailRequest emailRequest = EmailRequest.builder()
+                .companyId(companyId)
+                .to(List.of(request.getEmail()))
+                .subject("Your Account Password")
+                .content(content)
+                .isHtml(true)
+                .build();
+
+        emailQueuePublisher.publishEmail(emailRequest);
 
         // Get profile image (if any)
         MediaResponse mediaResponse = null;
@@ -293,8 +295,8 @@ public class UserServiceImpl implements UserService {
         if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getPrincipal())) {
             throw new RuntimeException("Unauthorized");
         }
-        final String username = auth.getName();
-        final User currentUser = userRepository.findByUsername(username)
+        final String email = auth.getName();
+        final User currentUser = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Logged-in user not found"));
 
         // Include all associated users + self
@@ -338,7 +340,7 @@ public class UserServiceImpl implements UserService {
             throw new RuntimeException("Unauthorized");
         }
 
-        User currentUser = userRepository.findByUsername(authentication.getName())
+        User currentUser = userRepository.findByEmail(authentication.getName())
                 .orElseThrow(() -> new RuntimeException("Authenticated user not found"));
 
         // Load target user
@@ -360,13 +362,6 @@ public class UserServiceImpl implements UserService {
                 }
             });
         }
-        if (!isBlank(request.getUsername())) {
-            userRepository.findByUsername(request.getUsername()).ifPresent(existing -> {
-                if (!existing.getId().equals(userId)) {
-                    throw new RuntimeException("Username already in use");
-                }
-            });
-        }
 
         // Role update
         if (request.getRoleId() != null) {
@@ -376,17 +371,12 @@ public class UserServiceImpl implements UserService {
         }
 
         // Update core User fields
-        if (!isBlank(request.getUsername()))
-            user.setUsername(request.getUsername());
         if (!isBlank(request.getEmail()))
             user.setEmail(request.getEmail());
         if (!isBlank(request.getPhone()))
             user.setPhone(request.getPhone());
         if (request.getMfaEnabled() != null)
             user.setMfaEnabled(request.getMfaEnabled());
-        // companyId update? allowed? We'll keep as is.
-        if (request.getCompanyId() != null)
-            user.setCompanyId(request.getCompanyId());
 
         user.setUpdatedBy(currentUser.getId());
         user.setUpdatedAt(LocalDateTime.now());
@@ -403,8 +393,6 @@ public class UserServiceImpl implements UserService {
         // apply profile fields from request
         if (!isBlank(request.getFirstname()))
             profile.setFirstname(request.getFirstname());
-        if (!isBlank(request.getMiddleName()))
-            profile.setMiddleName(request.getMiddleName());
         if (!isBlank(request.getLastname()))
             profile.setLastname(request.getLastname());
         if (!isBlank(request.getProfileImageUrl()))
@@ -502,8 +490,8 @@ public class UserServiceImpl implements UserService {
             throw new RuntimeException("User is not authenticated");
         }
 
-        final String username = auth.getName();
-        final User user = userRepository.findByUsername(username)
+        final String email = auth.getName();
+        final User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Authenticated user not found"));
 
         if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
@@ -544,22 +532,20 @@ public class UserServiceImpl implements UserService {
         final String identifier = loginRequest.getIdentifier();
         final String password = loginRequest.getPassword();
 
-        // Resolve identifier to username for authentication
-        Optional<User> opt = userRepository.findByUsername(identifier);
-        if (opt.isEmpty())
-            opt = userRepository.findByEmail(identifier);
+        // Resolve identifier to email or phone
+        Optional<User> opt = userRepository.findByEmail(identifier);
         if (opt.isEmpty())
             opt = userRepository.findByPhone(identifier);
 
         final User user = opt.orElseThrow(() -> new RuntimeException("Invalid login credentials"));
-        final String usernameForAuth = user.getUsername();
+        final String emailForAuth = user.getEmail();
 
         final Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(usernameForAuth, password));
+                new UsernamePasswordAuthenticationToken(emailForAuth, password));
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
-        final String token = jwtUtils.generateToken(usernameForAuth);
+        final String token = jwtUtils.generateToken(emailForAuth);
         final Date expiration = jwtUtils.getExpirationFromToken(token);
         final long expiresIn = (expiration.getTime() - System.currentTimeMillis()) / 1000;
 
@@ -573,7 +559,6 @@ public class UserServiceImpl implements UserService {
 
         return new JwtResponse(token, expiresIn, UserResponse.fromEntity(user, mediaResponse));
     }
-
 
     private String generateStrongPassword(final int length) {
         final String upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
