@@ -58,13 +58,9 @@ export interface CreateWarehouseRequest {
   applyTds?: boolean;
   trackInventory?: boolean;
   invoicePrefix?: string;
-
-  companyId: number;
-  createdBy?: number;
 }
 
 export interface UpdateWarehouseRequest {
-  id: number; // required for update
   name?: string;
   phone?: string;
   email?: string;
@@ -84,9 +80,6 @@ export interface UpdateWarehouseRequest {
   applyTds?: boolean;
   trackInventory?: boolean;
   invoicePrefix?: string;
-
-  companyId?: number;
-  updatedBy?: number;
 }
 
 export type Warehouse = WarehouseDetail;
