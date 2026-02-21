@@ -2,33 +2,32 @@ import { MediaResponse } from "./Media";
 
 export interface User {
   id: number;
-  firstname: string;
-  lastname: string;
   email: string;
   phone: string;
+  firstname: string | null;
+  lastname: string | null;
   status: boolean;
-  profile?: string;
-  profileImageUrl?: string;
-  profileId?: string;
-  roleId: number;
-  roleName: string;
+  profileId: string | null;
+  profile: string | null;
+  roleId: number | null;
+  roleName: string | null;
   rolePermissions: string[];
-  createdBy?: number;
-  createdAt?: string;
-  updatedBy?: number;
-  updatedAt?: string;
+  createdBy: number | null;
+  createdAt: string;
+  updatedBy: number | null;
+  updatedAt: string;
   companyId: number;
   warehouseIds: number[];
-  defaultWarehouseId?: number;
+  defaultWarehouseId: number | null;
 }
 
 export interface UserListItem {
   id: number;
   email: string;
-  firstname: string;
-  lastname: string;
+  firstname: string | null;
+  lastname: string | null;
   phone: string;
-  roleName: string;
+  roleName: string | null;
   status: boolean;
 }
 
@@ -62,7 +61,6 @@ export interface UpdateUserRequest {
   phone?: string;
   mfaEnabled?: boolean;
   profileImageUrl?: string;
-  profileId?: string;
   addressLine1?: string;
   addressLine2?: string;
   city?: string;

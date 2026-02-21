@@ -22,6 +22,12 @@ const getHeaders = () => {
   return { headers };
 };
 
+const getCompanyHeaders = (companyId: number) => ({
+  headers: {
+    "X-Company-Id": String(companyId),
+  },
+});
+
 export const userService = {
   getAllUsers: async (): Promise<UserListItem[]> => {
     const res = await api.get<UserListItem[]>("/users", getHeaders());
@@ -40,12 +46,12 @@ export const userService = {
 
   updateUser: async (
     id: number,
-    payload: UpdateUserRequest
+    payload: UpdateUserRequest,
   ): Promise<UserResponse> => {
     const res = await api.put<UserResponse>(
       `/users/${id}`,
       payload,
-      getHeaders()
+      getHeaders(),
     );
     return res.data;
   },
@@ -54,8 +60,15 @@ export const userService = {
     await api.delete(`/users/${id}`, getHeaders());
   },
 
-  register: async (payload: UserRegisterRequest): Promise<UserResponse> => {
-    const res = await api.post<UserResponse>("/users/register", payload);
+  register: async (
+    payload: UserRegisterRequest,
+    companyId: number,
+  ): Promise<UserResponse> => {
+    const res = await api.post<UserResponse>(
+      "/users/register",
+      payload,
+      getCompanyHeaders(companyId),
+    );
     return res.data;
   },
 

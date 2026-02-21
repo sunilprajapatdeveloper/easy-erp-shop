@@ -113,15 +113,15 @@ export const useUserStore = defineStore("user", {
       }
     },
 
-    async register(payload: UserRegisterRequest) {
+    async register(payload: UserRegisterRequest, companyId: number) {
       this.loading = true;
       this.error = null;
       try {
-        const user = await userService.register(payload);
+        const user = await userService.register(payload, companyId);
         this.currentUser = user;
         return user;
       } catch (err: any) {
-        this.error = err?.message || "Register failed";
+        this.error = err?.message || "Registration failed";
         throw err;
       } finally {
         this.loading = false;
@@ -147,7 +147,7 @@ export const useUserStore = defineStore("user", {
       }
     },
 
-    async updatePassword(payload: UpdatePasswordRequest & { userId?: number }) {
+    async updatePassword(payload: UpdatePasswordRequest) {
       this.loading = true;
       this.error = null;
       try {
@@ -167,7 +167,6 @@ export const useUserStore = defineStore("user", {
     ): Promise<User> {
       try {
         let profileImageUrl = userData.profileImageUrl;
-        let profileId = userData.profileId;
 
         // If there's a new image file, upload it
         if (imageFile) {
@@ -180,14 +179,12 @@ export const useUserStore = defineStore("user", {
           });
 
           profileImageUrl = mediaResponse.url;
-          profileId = mediaResponse.id;
         }
 
         // Update user with new image info
         const updateData: UpdateUserRequest = {
           ...userData,
           profileImageUrl,
-          profileId,
         };
 
         const user = await this.updateUser(userId, updateData);
