@@ -24,17 +24,6 @@
             </div>
           </div>
 
-          <!-- Username -->
-          <div class="col-lg-6">
-            <div class="form-group mb-25">
-              <label class="d-block fs-14 text-black mb-2">Username</label>
-              <input v-model="user.username" type="text"
-                class="w-100 d-block shadow-none fs-14 bg-white rounded-1 text-title" placeholder="Enter Username"
-                required />
-            </div>
-          </div>
-
-          <!-- Email -->
           <div class="col-lg-6">
             <div class="form-group mb-25">
               <label class="d-block fs-14 text-black mb-2">Email</label>
@@ -103,12 +92,12 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, onMounted, computed, watch, getCurrentInstance } from "vue";
+import { defineComponent, ref, onMounted, computed, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useUserStore } from "@/stores/userStore";
 import { useRoleStore } from "@/stores/roleStore";
 import { useWarehouseStore } from "@/stores/warehouseStore";
-import type { CreateUserRequest, UpdateUserRequest } from "@/types/User";
+import type { CreateUserRequest, UpdateUserRequest, User } from "@/types/User";
 
 import Multiselect from "vue-multiselect";
 import "vue-multiselect/dist/vue-multiselect.css";
@@ -127,19 +116,12 @@ export default defineComponent({
     const userId = route.params.id ? Number(route.params.id) : null;
     const isEditMode = computed(() => !!userId);
 
-    // Popup from plugin
-    const { appContext } = getCurrentInstance()!;
-
-    // Editable user model
-    type EditableUser = Partial<CreateUserRequest> & { id?: number };
-    const user = ref<EditableUser>({
+    const user = ref<CreateUserRequest>({
       firstname: "",
       lastname: "",
-      username: "",
       email: "",
       phone: "",
       roleId: 0,
-      companyId: userStore.currentUser?.companyId ?? 0,
       warehouseIds: [],
       defaultWarehouseId: undefined,
     });
@@ -153,39 +135,47 @@ export default defineComponent({
       user.value = {
         firstname: "",
         lastname: "",
-        username: "",
         email: "",
         phone: "",
         roleId: 0,
-        companyId: userStore.currentUser?.companyId ?? 0,
         warehouseIds: [],
         defaultWarehouseId: undefined,
       };
       selectedWarehouses.value = [];
     };
 
-    // Sync selectedWarehouses <-> user.warehouseIds
+    // Sync selectedWarehouses -> user.warehouseIds
     watch(selectedWarehouses, (newVal) => {
       user.value.warehouseIds = newVal.map((w) => w.id);
       if (!user.value.defaultWarehouseId && newVal.length > 0) {
         user.value.defaultWarehouseId = newVal[0].id;
       }
-    }, { immediate: true });
+    });
 
     // Load user if edit mode
     const loadUser = async () => {
       if (userId) {
         try {
-          const fetched = await userStore.fetchUserById(userId);
+          const fetched: User | null = await userStore.fetchUserById(userId);
           if (fetched) {
-            user.value = { ...fetched };
+            // FIX: Map User (with nulls) to CreateUserRequest (with strings/undefined)
+            user.value = {
+              firstname: fetched.firstname ?? "",
+              lastname: fetched.lastname ?? "",
+              email: fetched.email,
+              phone: fetched.phone,
+              roleId: fetched.roleId ?? 0,
+              warehouseIds: fetched.warehouseIds ?? [],
+              defaultWarehouseId: fetched.defaultWarehouseId ?? undefined,
+            };
+
             selectedWarehouses.value = warehouseStore.warehouses.filter(w =>
-              user.value.warehouseIds?.includes(w.id)
+              fetched.warehouseIds?.includes(w.id)
             );
           }
         } catch (err: any) {
           console.error(err);
-          showPopup("error", err?.response?.data?.error || "Failed to load user.");
+          showPopup("error", "Failed to load user.");
         }
       }
     };
@@ -206,12 +196,11 @@ export default defineComponent({
           showPopup("success", "User updated successfully!");
           router.push('/user-list');
         } else {
-          await userStore.addUser(user.value as CreateUserRequest);
+          await userStore.addUser(user.value);
           showPopup("success", "User created successfully!");
           resetForm();
         }
       } catch (err: any) {
-        console.error(err);
         showPopup("error", err?.response?.data?.error || "Failed to save user.");
       }
     };
