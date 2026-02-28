@@ -26,11 +26,8 @@ public class SecuritySettingsController {
     @PostMapping("/company/{companyId}")
     public ResponseEntity<SecuritySettingsResponse> createSecuritySettings(
             @PathVariable Long companyId,
-            @Valid @RequestBody CreateSecuritySettingsRequest request,
-            @RequestParam Long createdBy // You may replace this with current user from auth
-    ) {
-        SecuritySettingsResponse response = securitySettingsService.createSecuritySettings(request, companyId,
-                createdBy);
+            @Valid @RequestBody CreateSecuritySettingsRequest request) {
+        SecuritySettingsResponse response = securitySettingsService.createSecuritySettings(companyId, request);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
@@ -40,11 +37,8 @@ public class SecuritySettingsController {
     @PutMapping("/company/{companyId}")
     public ResponseEntity<SecuritySettingsResponse> updateSecuritySettings(
             @PathVariable Long companyId,
-            @Valid @RequestBody UpdateSecuritySettingsRequest request,
-            @RequestParam Long updatedBy // You may replace this with current user from auth
-    ) {
-        SecuritySettingsResponse response = securitySettingsService.updateSecuritySettings(companyId, request,
-                updatedBy);
+            @Valid @RequestBody UpdateSecuritySettingsRequest request) {
+        SecuritySettingsResponse response = securitySettingsService.updateSecuritySettings(companyId, request);
         return ResponseEntity.ok(response);
     }
 

@@ -23,11 +23,9 @@ public class ProductTaxController {
      */
     @PostMapping
     public ResponseEntity<ProductTaxResponse> createProductTax(
-            @RequestHeader("X-Company-Id") Long companyId,
-            @RequestHeader("X-User-Id") Long createdBy,
             @Valid @RequestBody CreateProductTaxRequest request) {
 
-        ProductTaxResponse response = productTaxService.createProductTax(companyId, createdBy, request);
+        ProductTaxResponse response = productTaxService.createProductTax(request);
         return ResponseEntity.ok(response);
     }
 
@@ -36,12 +34,10 @@ public class ProductTaxController {
      */
     @PutMapping("/{taxId}")
     public ResponseEntity<ProductTaxResponse> updateProductTax(
-            @RequestHeader("X-Company-Id") Long companyId,
-            @RequestHeader("X-User-Id") Long updatedBy,
             @PathVariable Long taxId,
             @Valid @RequestBody UpdateProductTaxRequest request) {
 
-        ProductTaxResponse response = productTaxService.updateProductTax(companyId, updatedBy, taxId, request);
+        ProductTaxResponse response = productTaxService.updateProductTax(taxId, request);
         return ResponseEntity.ok(response);
     }
 
@@ -50,10 +46,9 @@ public class ProductTaxController {
      */
     @GetMapping("/{taxId}")
     public ResponseEntity<ProductTaxResponse> getProductTaxById(
-            @RequestHeader("X-Company-Id") Long companyId,
             @PathVariable Long taxId) {
 
-        ProductTaxResponse response = productTaxService.getProductTaxById(companyId, taxId);
+        ProductTaxResponse response = productTaxService.getProductTaxById(taxId);
         return ResponseEntity.ok(response);
     }
 
@@ -62,10 +57,9 @@ public class ProductTaxController {
      */
     @GetMapping("/product/{productId}")
     public ResponseEntity<List<ProductTaxResponse>> getTaxesByProduct(
-            @RequestHeader("X-Company-Id") Long companyId,
             @PathVariable Long productId) {
 
-        List<ProductTaxResponse> responses = productTaxService.listTaxesByProduct(companyId, productId);
+        List<ProductTaxResponse> responses = productTaxService.listTaxesByProduct(productId);
         return ResponseEntity.ok(responses);
     }
 
@@ -74,10 +68,9 @@ public class ProductTaxController {
      */
     @GetMapping("/warehouse/{warehouseId}")
     public ResponseEntity<List<ProductTaxResponse>> getTaxesByWarehouse(
-            @RequestHeader("X-Company-Id") Long companyId,
             @PathVariable Long warehouseId) {
 
-        List<ProductTaxResponse> responses = productTaxService.listTaxesByWarehouse(companyId, warehouseId);
+        List<ProductTaxResponse> responses = productTaxService.listTaxesByWarehouse(warehouseId);
         return ResponseEntity.ok(responses);
     }
 
@@ -85,10 +78,9 @@ public class ProductTaxController {
      * Get all product taxes for the company
      */
     @GetMapping
-    public ResponseEntity<List<ProductTaxResponse>> getAllTaxes(
-            @RequestHeader("X-Company-Id") Long companyId) {
+    public ResponseEntity<List<ProductTaxResponse>> getAllTaxes() {
 
-        List<ProductTaxResponse> responses = productTaxService.listAllTaxes(companyId);
+        List<ProductTaxResponse> responses = productTaxService.listAllTaxes();
         return ResponseEntity.ok(responses);
     }
 
@@ -97,11 +89,9 @@ public class ProductTaxController {
      */
     @DeleteMapping("/{taxId}")
     public ResponseEntity<Void> deleteProductTax(
-            @RequestHeader("X-Company-Id") Long companyId,
-            @RequestHeader("X-User-Id") Long deletedBy,
             @PathVariable Long taxId) {
 
-        productTaxService.deleteProductTax(companyId, deletedBy, taxId);
+        productTaxService.deleteProductTax(taxId);
         return ResponseEntity.noContent().build();
     }
 
@@ -110,13 +100,12 @@ public class ProductTaxController {
      */
     @GetMapping("/effective")
     public ResponseEntity<ProductTaxResponse> getEffectiveTax(
-            @RequestHeader("X-Company-Id") Long companyId,
             @RequestParam Long productId,
             @RequestParam(required = false) Long warehouseId,
             @RequestParam String taxCode) {
 
         ProductTaxResponse response = productTaxService
-                .findEffectiveTax(companyId, productId, warehouseId, taxCode)
+                .findEffectiveTax(productId, warehouseId, taxCode)
                 .orElseThrow(() -> new IllegalArgumentException("Effective tax not found for given criteria"));
 
         return ResponseEntity.ok(response);

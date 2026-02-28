@@ -61,8 +61,7 @@ public class TransferServiceImpl implements TransferService {
                                                         "Product not found with ID: " + p.getProductId()));
 
                         // Use ProductStockService to get stock
-                        int currentStock = productStockService.getStock(user.getCompanyId(), product.getId(),
-                                        from.getId());
+                        int currentStock = productStockService.getStock(product.getId(), from.getId());
                         int transferredQty = Optional.ofNullable(p.getTransferredQty()).orElse(0);
                         int newStock = currentStock - transferredQty;
 
@@ -71,8 +70,7 @@ public class TransferServiceImpl implements TransferService {
                         }
 
                         // Adjust stock via ProductStockService instead of direct product update
-                        productStockService.adjustStock(user.getCompanyId(), user.getId(), product.getId(),
-                                        from.getId(), -transferredQty);
+                        productStockService.adjustStock(product.getId(), from.getId(), -transferredQty);
 
                         TransferProduct tp = new TransferProduct();
                         tp.setTransfer(transfer);
@@ -149,8 +147,8 @@ public class TransferServiceImpl implements TransferService {
 
                 // Revert stock from existing products
                 for (TransferProduct tp : transfer.getProducts()) {
-                        productStockService.adjustStock(user.getCompanyId(), user.getId(),
-                                        tp.getProductId(), transfer.getFromWarehouse().getId(), tp.getTransferredQty());
+                        productStockService.adjustStock(tp.getProductId(), transfer.getFromWarehouse().getId(),
+                                        tp.getTransferredQty());
                 }
 
                 transfer.getProducts().clear();
@@ -163,15 +161,13 @@ public class TransferServiceImpl implements TransferService {
 
                 List<TransferProduct> updatedProducts = request.getProducts().stream().map(p -> {
                         int transferredQty = Optional.ofNullable(p.getTransferredQty()).orElse(0);
-                        int currentStock = productStockService.getStock(user.getCompanyId(), p.getProductId(),
-                                        from.getId());
+                        int currentStock = productStockService.getStock(p.getProductId(), from.getId());
 
                         if (currentStock < transferredQty) {
                                 throw new RuntimeException("Insufficient stock for product ID: " + p.getProductId());
                         }
 
-                        productStockService.adjustStock(user.getCompanyId(), user.getId(),
-                                        p.getProductId(), from.getId(), -transferredQty);
+                        productStockService.adjustStock(p.getProductId(), from.getId(), -transferredQty);
 
                         TransferProduct tp = new TransferProduct();
                         tp.setTransfer(transfer);
@@ -230,9 +226,8 @@ public class TransferServiceImpl implements TransferService {
                                 .orElseThrow(() -> new RuntimeException("Transfer not found"));
 
                 for (TransferProduct tp : transfer.getProducts()) {
-                        productStockService.adjustStock(UserContext.getAuthenticatedUser(userRepository).getCompanyId(),
-                                        UserContext.getAuthenticatedUser(userRepository).getId(),
-                                        tp.getProductId(), transfer.getFromWarehouse().getId(), tp.getTransferredQty());
+                        productStockService.adjustStock(tp.getProductId(), transfer.getFromWarehouse().getId(),
+                                        tp.getTransferredQty());
                 }
 
                 transferRepository.delete(transfer);

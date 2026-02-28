@@ -24,16 +24,13 @@ public class SubscriptionPlanController {
 
     /**
      * Create a new subscription plan.
-     * Header:
-     * X-User-Id : id of user performing the action (used as createdBy)
      */
     @PostMapping
     public ResponseEntity<SubscriptionPlanResponse> createSubscriptionPlan(
-            @RequestHeader("X-User-Id") Long userId,
             @Valid @RequestBody CreateSubscriptionPlanRequest request) {
 
-        log.info("CreateSubscriptionPlan request by userId={}", userId);
-        SubscriptionPlanResponse response = subscriptionPlanService.createSubscriptionPlan(request, userId);
+        log.info("CreateSubscriptionPlan request");
+        SubscriptionPlanResponse response = subscriptionPlanService.createSubscriptionPlan(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -57,35 +54,26 @@ public class SubscriptionPlanController {
 
     /**
      * Update an existing subscription plan.
-     * Header:
-     * X-User-Id : id of user performing the action (used as updatedBy)
      */
     @PutMapping("/{id}")
     public ResponseEntity<SubscriptionPlanResponse> updateSubscriptionPlan(
             @PathVariable("id") Long id,
-            @RequestHeader("X-User-Id") Long userId,
             @Valid @RequestBody UpdateSubscriptionPlanRequest request) {
 
-        log.info("UpdateSubscriptionPlan id={} by userId={}", id, userId);
-        // Set updatedBy in request DTO to ensure service has the correct audit info
-        request.setUpdatedBy(userId);
-
+        log.info("UpdateSubscriptionPlan id={}", id);
         SubscriptionPlanResponse response = subscriptionPlanService.updateSubscriptionPlan(id, request);
         return ResponseEntity.ok(response);
     }
 
     /**
      * Soft-delete a subscription plan (mark as deleted).
-     * Header:
-     * X-User-Id : id of user performing the action (used as deletedBy)
      */
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteSubscriptionPlan(
-            @PathVariable("id") Long id,
-            @RequestHeader("X-User-Id") Long userId) {
+            @PathVariable("id") Long id) {
 
-        log.info("Delete(soft) SubscriptionPlan id={} by userId={}", id, userId);
-        subscriptionPlanService.deleteSubscriptionPlan(id, userId);
+        log.info("Delete(soft) SubscriptionPlan id={}", id);
+        subscriptionPlanService.deleteSubscriptionPlan(id);
         return ResponseEntity.noContent().build();
     }
 }

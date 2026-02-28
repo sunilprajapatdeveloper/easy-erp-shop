@@ -100,7 +100,6 @@ public class PosServiceImpl implements PosService {
 
                         // Stock validation
                         ProductStockResponse stock = productStockService.getByProductAndWarehouse(
-                                        user.getCompanyId(),
                                         product.getId(),
                                         warehouse.getId());
 
@@ -109,7 +108,7 @@ public class PosServiceImpl implements PosService {
                         }
 
                         // Deduct stock atomically
-                        productStockService.adjustStock(user.getCompanyId(), user.getId(), product.getId(),
+                        productStockService.adjustStock(product.getId(),
                                         warehouse.getId(), -qty);
 
                         BigDecimal unitPrice = Optional.ofNullable(p.getProductUnitPrice()).orElse(BigDecimal.ZERO);
@@ -228,8 +227,6 @@ public class PosServiceImpl implements PosService {
                         // Restore old product quantities using ProductStockService
                         for (SaleProduct oldProduct : sale.getProducts()) {
                                 productStockService.adjustStock(
-                                                user.getCompanyId(),
-                                                user.getId(),
                                                 oldProduct.getProduct().getId(),
                                                 warehouse.getId(),
                                                 oldProduct.getSaleQty() // add back old quantity
@@ -249,7 +246,6 @@ public class PosServiceImpl implements PosService {
 
                                 // Validate stock using ProductStockService
                                 ProductStockResponse stock = productStockService.getByProductAndWarehouse(
-                                                user.getCompanyId(),
                                                 product.getId(),
                                                 warehouse.getId());
 
@@ -259,7 +255,7 @@ public class PosServiceImpl implements PosService {
                                 }
 
                                 // Deduct new quantity atomically
-                                productStockService.adjustStock(user.getCompanyId(), user.getId(), product.getId(),
+                                productStockService.adjustStock(product.getId(),
                                                 warehouse.getId(), -qty);
 
                                 BigDecimal unitPrice = Optional.ofNullable(p.getProductUnitPrice())

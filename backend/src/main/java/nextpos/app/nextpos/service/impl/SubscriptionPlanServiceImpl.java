@@ -7,8 +7,11 @@ import nextpos.app.nextpos.model.dto.request.CreateRequest.CreateSubscriptionPla
 import nextpos.app.nextpos.model.dto.request.UpdateRequest.UpdateSubscriptionPlanRequest;
 import nextpos.app.nextpos.model.dto.response.SubscriptionPlanResponse;
 import nextpos.app.nextpos.model.entity.SubscriptionPlan;
+import nextpos.app.nextpos.model.entity.User;
 import nextpos.app.nextpos.model.enums.PlanStatus;
 import nextpos.app.nextpos.repository.SubscriptionPlanRepository;
+import nextpos.app.nextpos.repository.UserRepository;
+import nextpos.app.nextpos.security.context.UserContext;
 import nextpos.app.nextpos.service.interf.SubscriptionPlanService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,9 +26,13 @@ import java.util.List;
 public class SubscriptionPlanServiceImpl implements SubscriptionPlanService {
 
     private final SubscriptionPlanRepository subscriptionPlanRepository;
+    private final UserRepository userRepository;
 
     @Override
-    public SubscriptionPlanResponse createSubscriptionPlan(CreateSubscriptionPlanRequest request, Long createdBy) {
+    public SubscriptionPlanResponse createSubscriptionPlan(CreateSubscriptionPlanRequest request) {
+        User user = UserContext.getAuthenticatedUser(userRepository);
+        Long currentUserId = user.getId();
+
         // Ensure unique plan name + billingCycle
         if (subscriptionPlanRepository.existsByNameAndBillingCycleAndIsDeletedFalse(
                 request.getName(), request.getBillingCycle())) {
@@ -47,8 +54,8 @@ public class SubscriptionPlanServiceImpl implements SubscriptionPlanService {
                 .availableRegions(request.getAvailableRegions())
                 .status(PlanStatus.ACTIVE)
                 .isDeleted(false)
-                .createdBy(createdBy)
-                .updatedBy(createdBy)
+                .createdBy(currentUserId)
+                .updatedBy(currentUserId)
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
                 .build();
@@ -80,6 +87,9 @@ public class SubscriptionPlanServiceImpl implements SubscriptionPlanService {
 
     @Override
     public SubscriptionPlanResponse updateSubscriptionPlan(Long id, UpdateSubscriptionPlanRequest request) {
+        User user = UserContext.getAuthenticatedUser(userRepository);
+        Long currentUserId = user.getId();
+
         SubscriptionPlan plan = subscriptionPlanRepository.findById(id)
                 .filter(p -> !p.isDeleted())
                 .orElseThrow(() -> new EntityNotFoundException("SubscriptionPlan not found with id " + id));
@@ -109,7 +119,7 @@ public class SubscriptionPlanServiceImpl implements SubscriptionPlanService {
         if (request.getStatus() != null)
             plan.setStatus(request.getStatus());
 
-        plan.setUpdatedBy(request.getUpdatedBy());
+        plan.setUpdatedBy(currentUserId);
         plan.setUpdatedAt(LocalDateTime.now());
 
         SubscriptionPlan updated = subscriptionPlanRepository.save(plan);
@@ -119,13 +129,16 @@ public class SubscriptionPlanServiceImpl implements SubscriptionPlanService {
     }
 
     @Override
-    public void deleteSubscriptionPlan(Long id, Long deletedBy) {
+    public void deleteSubscriptionPlan(Long id) {
+        User user = UserContext.getAuthenticatedUser(userRepository);
+        Long currentUserId = user.getId();
+
         SubscriptionPlan plan = subscriptionPlanRepository.findById(id)
                 .filter(p -> !p.isDeleted())
                 .orElseThrow(() -> new EntityNotFoundException("SubscriptionPlan not found with id " + id));
 
         plan.setDeleted(true);
-        plan.setUpdatedBy(deletedBy);
+        plan.setUpdatedBy(currentUserId);
         plan.setUpdatedAt(LocalDateTime.now());
 
         subscriptionPlanRepository.save(plan);

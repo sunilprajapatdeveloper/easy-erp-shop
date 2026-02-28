@@ -103,7 +103,7 @@ public class QuotationServiceImpl implements QuotationService {
                 List<QuotationProduct> updatedProducts = request.getProducts().stream().map(p -> {
                         QuotationProduct qp = new QuotationProduct();
 
-                        Product product = productRepository.findById(qp.getProduct().getId())
+                        Product product = productRepository.findById(p.getProductId())
                                         .orElseThrow(() -> new RuntimeException(
                                                         "Product not found with ID: " + p.getProductId()));
 
@@ -155,7 +155,7 @@ public class QuotationServiceImpl implements QuotationService {
 
         @Override
         @Transactional
-        public void deleteQuotation(Long id, Long deletedByUserId) {
+        public void deleteQuotation(Long id) {
                 Quotation quotation = quotationRepository.findById(id)
                                 .orElseThrow(() -> new RuntimeException("Quotation not found"));
                 quotationRepository.delete(quotation);

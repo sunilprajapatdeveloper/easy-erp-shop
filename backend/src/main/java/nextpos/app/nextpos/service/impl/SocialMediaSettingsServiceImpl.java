@@ -7,8 +7,11 @@ import nextpos.app.nextpos.model.dto.request.UpdateRequest.UpdateSocialMediaSett
 import nextpos.app.nextpos.model.dto.response.SocialMediaSettingsResponse;
 import nextpos.app.nextpos.model.entity.Company;
 import nextpos.app.nextpos.model.entity.SocialMediaSettings;
+import nextpos.app.nextpos.model.entity.User;
 import nextpos.app.nextpos.repository.CompanyRepository;
 import nextpos.app.nextpos.repository.SocialMediaSettingsRepository;
+import nextpos.app.nextpos.repository.UserRepository;
+import nextpos.app.nextpos.security.context.UserContext;
 import nextpos.app.nextpos.service.interf.SocialMediaSettingsService;
 
 import org.apache.kafka.common.errors.ResourceNotFoundException;
@@ -26,13 +29,16 @@ public class SocialMediaSettingsServiceImpl implements SocialMediaSettingsServic
 
     private final SocialMediaSettingsRepository repository;
     private final CompanyRepository companyRepository;
+    private final UserRepository userRepository;
 
     @Override
-    public SocialMediaSettingsResponse createSocialMediaSettings(CreateSocialMediaSettingsRequest request,
-            Long createdBy) {
-        Company company = companyRepository.findById(request.getCompanyId())
-                .orElseThrow(
-                        () -> new ResourceNotFoundException("Company not found with id " + request.getCompanyId()));
+    public SocialMediaSettingsResponse createSocialMediaSettings(CreateSocialMediaSettingsRequest request) {
+        User user = UserContext.getAuthenticatedUser(userRepository);
+        Long companyId = user.getCompanyId();
+        Long currentUserId = user.getId();
+
+        Company company = companyRepository.findById(companyId)
+                .orElseThrow(() -> new ResourceNotFoundException("Company not found with id " + companyId));
 
         SocialMediaSettings entity = SocialMediaSettings.builder()
                 .company(company)
@@ -44,7 +50,7 @@ public class SocialMediaSettingsServiceImpl implements SocialMediaSettingsServic
                 .accessToken(request.getAccessToken())
                 .enabled(request.getEnabled() != null ? request.getEnabled() : Boolean.TRUE)
                 .providerConfig(request.getProviderConfig())
-                .createdBy(createdBy)
+                .createdBy(currentUserId)
                 .build();
 
         SocialMediaSettings saved = repository.save(entity);
@@ -53,8 +59,11 @@ public class SocialMediaSettingsServiceImpl implements SocialMediaSettingsServic
     }
 
     @Override
-    public SocialMediaSettingsResponse updateSocialMediaSettings(Long id, Long companyId,
-            UpdateSocialMediaSettingsRequest request, Long updatedBy) {
+    public SocialMediaSettingsResponse updateSocialMediaSettings(Long id, UpdateSocialMediaSettingsRequest request) {
+        User user = UserContext.getAuthenticatedUser(userRepository);
+        Long companyId = user.getCompanyId();
+        Long currentUserId = user.getId();
+
         SocialMediaSettings entity = repository.findById(id)
                 .filter(s -> s.getCompany().getId().equals(companyId))
                 .orElseThrow(() -> new ResourceNotFoundException(
@@ -75,7 +84,7 @@ public class SocialMediaSettingsServiceImpl implements SocialMediaSettingsServic
         if (request.getProviderConfig() != null)
             entity.setProviderConfig(request.getProviderConfig());
 
-        entity.setUpdatedBy(updatedBy);
+        entity.setUpdatedBy(currentUserId);
 
         SocialMediaSettings saved = repository.save(entity);
         return mapToResponse(saved);
@@ -83,7 +92,10 @@ public class SocialMediaSettingsServiceImpl implements SocialMediaSettingsServic
 
     @Override
     @Transactional(readOnly = true)
-    public SocialMediaSettingsResponse getSocialMediaSettings(Long id, Long companyId) {
+    public SocialMediaSettingsResponse getSocialMediaSettings(Long id) {
+        User user = UserContext.getAuthenticatedUser(userRepository);
+        Long companyId = user.getCompanyId();
+
         SocialMediaSettings entity = repository.findById(id)
                 .filter(s -> s.getCompany().getId().equals(companyId))
                 .orElseThrow(() -> new ResourceNotFoundException(
@@ -93,7 +105,10 @@ public class SocialMediaSettingsServiceImpl implements SocialMediaSettingsServic
 
     @Override
     @Transactional(readOnly = true)
-    public List<SocialMediaSettingsResponse> listSocialMediaSettings(Long companyId) {
+    public List<SocialMediaSettingsResponse> listSocialMediaSettings() {
+        User user = UserContext.getAuthenticatedUser(userRepository);
+        Long companyId = user.getCompanyId();
+
         Company company = companyRepository.findById(companyId)
                 .orElseThrow(() -> new ResourceNotFoundException("Company not found with id " + companyId));
 

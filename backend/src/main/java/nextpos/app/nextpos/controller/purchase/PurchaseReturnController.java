@@ -4,9 +4,6 @@ import lombok.RequiredArgsConstructor;
 import nextpos.app.nextpos.model.dto.request.CreateRequest.CreatePurchaseReturnRequest;
 import nextpos.app.nextpos.model.dto.request.UpdateRequest.UpdatePurchaseReturnRequest;
 import nextpos.app.nextpos.model.dto.response.PurchaseReturnResponse;
-import nextpos.app.nextpos.model.entity.User;
-import nextpos.app.nextpos.repository.UserRepository;
-import nextpos.app.nextpos.security.context.UserContext;
 import nextpos.app.nextpos.service.interf.PurchaseReturnService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -20,7 +17,6 @@ import java.util.List;
 public class PurchaseReturnController {
 
     private final PurchaseReturnService purchaseReturnService;
-    private final UserRepository userRepository;
 
     /**
      * Create a new purchase return
@@ -45,13 +41,8 @@ public class PurchaseReturnController {
      */
     @GetMapping
     public ResponseEntity<List<PurchaseReturnResponse>> getAllPurchaseReturns(
-            @RequestParam(required = false) Long supplierId,
-            @RequestParam(required = false) Long warehouseId) {
-
-        User user = UserContext.getAuthenticatedUser(userRepository);
-        List<PurchaseReturnResponse> responses = purchaseReturnService.getAllPurchaseReturns(user.getCompanyId(),
-                supplierId, warehouseId);
-
+            @RequestParam(required = false) Long supplierId, @RequestParam(required = false) Long warehouseId) {
+        List<PurchaseReturnResponse> responses = purchaseReturnService.getAllPurchaseReturns(supplierId, warehouseId);
         return ResponseEntity.ok(responses);
     }
 

@@ -8,13 +8,13 @@ import java.util.List;
 
 public interface CompanyCurrencyService {
 
-    CompanyCurrencyResponse createCompanyCurrency(Long companyId, CreateCompanyCurrencyRequest request);
+    CompanyCurrencyResponse createCompanyCurrency(CreateCompanyCurrencyRequest request);
 
-    CompanyCurrencyResponse getCompanyCurrency(Long id, Long companyId);
+    CompanyCurrencyResponse getCompanyCurrency(Long id);
 
-    List<CompanyCurrencyResponse> listCompanyCurrencies(Long companyId);
+    List<CompanyCurrencyResponse> listCompanyCurrencies();
 
-    CompanyCurrencyResponse updateCompanyCurrency(Long id, Long companyId, UpdateCompanyCurrencyRequest request);
+    CompanyCurrencyResponse updateCompanyCurrency(Long id, UpdateCompanyCurrencyRequest request);
 
-    void deleteCompanyCurrency(Long id, Long companyId);
+    void deleteCompanyCurrency(Long id);
 }

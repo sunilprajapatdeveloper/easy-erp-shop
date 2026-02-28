@@ -45,8 +45,9 @@ public class CategoryServiceImpl implements CategoryService {
     }
 
     @Override
-    public List<CategoryResponse> findAllByCreatedBy(Long userId) {
-        return categoryRepository.findAllByCreatedBy(userId).stream()
+    public List<CategoryResponse> findAllByCreatedBy() {
+        User user = UserContext.getAuthenticatedUser(userRepository);
+        return categoryRepository.findAllByCreatedBy(user.getId()).stream()
                 .map(CategoryResponse::new)
                 .collect(Collectors.toList());
     }

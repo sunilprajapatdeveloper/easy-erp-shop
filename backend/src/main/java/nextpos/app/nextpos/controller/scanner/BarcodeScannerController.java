@@ -23,39 +23,33 @@ public class BarcodeScannerController {
 
     @PostMapping("/register")
     public ResponseEntity<ScannerRegistrationResponse> registerScanner(
-            @Valid @RequestBody ScannerRegistrationRequest request,
-            @RequestHeader("X-Company-Id") Long companyId) {
+            @Valid @RequestBody ScannerRegistrationRequest request) {
 
-        request.setCompanyId(companyId);
         ScannerRegistrationResponse response = scannerService.registerScanner(request);
         return ResponseEntity.ok(response);
     }
 
     @PostMapping("/scan")
     public ResponseEntity<BarcodeScanResponse> processBarcodeScan(
-            @Valid @RequestBody BarcodeScanRequest request,
-            @RequestHeader("X-Company-Id") Long companyId) {
+            @Valid @RequestBody BarcodeScanRequest request) {
 
-        request.setCompanyId(companyId);
         BarcodeScanResponse response = scannerService.processBarcodeScan(request);
         return ResponseEntity.ok(response);
     }
 
     @GetMapping("/warehouse/{warehouseId}")
     public ResponseEntity<List<BarcodeScanner>> getWarehouseScanners(
-            @PathVariable Long warehouseId,
-            @RequestHeader("X-Company-Id") Long companyId) {
+            @PathVariable Long warehouseId) {
 
-        List<BarcodeScanner> scanners = scannerService.getScannersByWarehouse(warehouseId, companyId);
+        List<BarcodeScanner> scanners = scannerService.getScannersByWarehouse(warehouseId);
         return ResponseEntity.ok(scanners);
     }
 
     @PostMapping("/{scannerId}/disconnect")
     public ResponseEntity<Void> disconnectScanner(
-            @PathVariable String scannerId,
-            @RequestHeader("X-Company-Id") Long companyId) {
+            @PathVariable String scannerId) {
 
-        scannerService.disconnectScanner(scannerId, companyId);
+        scannerService.disconnectScanner(scannerId);
         return ResponseEntity.ok().build();
     }
 }

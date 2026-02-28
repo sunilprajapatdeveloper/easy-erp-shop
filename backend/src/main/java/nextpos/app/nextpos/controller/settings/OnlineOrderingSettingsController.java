@@ -22,29 +22,24 @@ public class OnlineOrderingSettingsController {
 
     @PostMapping
     public ResponseEntity<OnlineOrderingSettingsResponse> createSettings(
-            @Valid @RequestBody CreateOnlineOrderingSettingsRequest request,
-            @RequestHeader("X-User-Id") Long createdBy) {
-        log.info("Creating OnlineOrderingSettings by userId={}", createdBy);
-        OnlineOrderingSettingsResponse response = onlineOrderingSettingsService.createOnlineOrderingSettings(request,
-                createdBy);
+            @Valid @RequestBody CreateOnlineOrderingSettingsRequest request) {
+        log.info("Creating OnlineOrderingSettings");
+        OnlineOrderingSettingsResponse response = onlineOrderingSettingsService.createOnlineOrderingSettings(request);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
-    @PutMapping("/{companyId}")
+    @PutMapping
     public ResponseEntity<OnlineOrderingSettingsResponse> updateSettings(
-            @PathVariable Long companyId,
-            @Valid @RequestBody UpdateOnlineOrderingSettingsRequest request,
-            @RequestHeader("X-User-Id") Long updatedBy) {
-        log.info("Updating OnlineOrderingSettings for companyId={} by userId={}", companyId, updatedBy);
-        OnlineOrderingSettingsResponse response = onlineOrderingSettingsService.updateOnlineOrderingSettings(request,
-                updatedBy);
+            @Valid @RequestBody UpdateOnlineOrderingSettingsRequest request) {
+        log.info("Updating OnlineOrderingSettings");
+        OnlineOrderingSettingsResponse response = onlineOrderingSettingsService.updateOnlineOrderingSettings(request);
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/{companyId}")
-    public ResponseEntity<OnlineOrderingSettingsResponse> getSettings(@PathVariable Long companyId) {
-        log.info("Fetching OnlineOrderingSettings for companyId={}", companyId);
-        OnlineOrderingSettingsResponse response = onlineOrderingSettingsService.getOnlineOrderingSettings(companyId);
+    @GetMapping
+    public ResponseEntity<OnlineOrderingSettingsResponse> getSettings() {
+        log.info("Fetching OnlineOrderingSettings");
+        OnlineOrderingSettingsResponse response = onlineOrderingSettingsService.getOnlineOrderingSettings();
         return ResponseEntity.ok(response);
     }
 }

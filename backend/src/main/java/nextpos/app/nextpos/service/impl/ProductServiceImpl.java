@@ -32,6 +32,7 @@ import nextpos.app.nextpos.repository.ProductStockRepository;
 import nextpos.app.nextpos.repository.ProductTaxRepository;
 import nextpos.app.nextpos.repository.ProductUnitRepository;
 import nextpos.app.nextpos.repository.UserRepository;
+import nextpos.app.nextpos.security.context.UserContext;
 import nextpos.app.nextpos.service.helper.BarcodeHelper;
 import nextpos.app.nextpos.service.interf.MediaService;
 import nextpos.app.nextpos.service.interf.ProductService;
@@ -53,13 +54,10 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     @Transactional
-    public ProductResponse createProduct(Long companyId, Long createdBy, CreateProductRequest request) {
-        User user = userRepository.findById(createdBy)
-                .orElseThrow(() -> new IllegalArgumentException("User not found with id: " + createdBy));
-
-        if (!companyId.equals(user.getCompanyId())) {
-            throw new SecurityException("User does not belong to this company");
-        }
+    public ProductResponse createProduct(CreateProductRequest request) {
+        User user = UserContext.getAuthenticatedUser(userRepository);
+        Long companyId = user.getCompanyId();
+        Long currentUserId = user.getId();
 
         // Generate code and barcode if not provided
         String codeToUse = (request.getCode() != null && !request.getCode().isBlank())
@@ -82,8 +80,8 @@ public class ProductServiceImpl implements ProductService {
         Product product = new Product();
         product.setCode(codeToUse);
         product.setBarcode(barcodeToUse);
-        product.setCreatedBy(createdBy);
-        product.setUpdatedBy(createdBy);
+        product.setCreatedBy(currentUserId);
+        product.setUpdatedBy(currentUserId);
         product.setCompanyId(companyId);
 
         // Directly map request fields
@@ -163,7 +161,9 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     @Transactional(readOnly = true)
-    public ProductResponse getProductById(Long companyId, Long id) {
+    public ProductResponse getProductById(Long id) {
+        User user = UserContext.getAuthenticatedUser(userRepository);
+        Long companyId = user.getCompanyId();
 
         Product product = productRepository.findByIdAndCompanyIdAndIsDeletedFalse(id, companyId)
                 .orElseThrow(() -> new IllegalArgumentException("Product not found with id: " + id));
@@ -177,7 +177,9 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     @Transactional(readOnly = true)
-    public ProductResponse getProductByCode(Long companyId, String code) {
+    public ProductResponse getProductByCode(String code) {
+        User user = UserContext.getAuthenticatedUser(userRepository);
+        Long companyId = user.getCompanyId();
 
         Product product = productRepository
                 .findByCodeAndCompanyIdAndIsDeletedFalse(code, companyId)
@@ -191,7 +193,9 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     @Transactional(readOnly = true)
-    public ProductResponse getProductByBarcode(Long companyId, String barcode) {
+    public ProductResponse getProductByBarcode(String barcode) {
+        User user = UserContext.getAuthenticatedUser(userRepository);
+        Long companyId = user.getCompanyId();
 
         Product product = productRepository
                 .findByBarcodeAndCompanyIdAndIsDeletedFalse(barcode, companyId)
@@ -205,7 +209,9 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<ProductResponse> getAllProducts(Long companyId) {
+    public List<ProductResponse> getAllProducts() {
+        User user = UserContext.getAuthenticatedUser(userRepository);
+        Long companyId = user.getCompanyId();
 
         List<Product> products = productRepository
                 .findAllByCompanyIdAndIsDeletedFalse(companyId);
@@ -220,13 +226,10 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     @Transactional
-    public ProductResponse updateProduct(Long companyId, Long updatedBy, Long id, UpdateProductRequest request) {
-        User updater = userRepository.findById(updatedBy)
-                .orElseThrow(() -> new IllegalArgumentException("User not found with id: " + updatedBy));
-
-        if (!companyId.equals(updater.getCompanyId())) {
-            throw new SecurityException("User does not belong to this company");
-        }
+    public ProductResponse updateProduct(Long id, UpdateProductRequest request) {
+        User user = UserContext.getAuthenticatedUser(userRepository);
+        Long companyId = user.getCompanyId();
+        Long currentUserId = user.getId();
 
         Product product = productRepository.findByIdAndCompanyIdAndIsDeletedFalse(id, companyId)
                 .orElseThrow(() -> new IllegalArgumentException("Product not found with id: " + id));
@@ -314,7 +317,7 @@ public class ProductServiceImpl implements ProductService {
         if (request.getIsDeleted() != null)
             product.setIsDeleted(request.getIsDeleted());
 
-        product.setUpdatedBy(updatedBy);
+        product.setUpdatedBy(currentUserId);
         product.setUpdatedAt(LocalDateTime.now());
 
         // Fetch media for THIS product
@@ -325,20 +328,17 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     @Transactional
-    public void deleteProduct(Long companyId, Long deletedBy, Long id) {
-        User deleter = userRepository.findById(deletedBy)
-                .orElseThrow(() -> new IllegalArgumentException("User not found with id: " + deletedBy));
-
-        if (!companyId.equals(deleter.getCompanyId())) {
-            throw new SecurityException("User does not belong to this company");
-        }
+    public void deleteProduct(Long id) {
+        User user = UserContext.getAuthenticatedUser(userRepository);
+        Long companyId = user.getCompanyId();
+        Long currentUserId = user.getId();
 
         Product product = productRepository.findByIdAndCompanyIdAndIsDeletedFalse(id, companyId)
                 .orElseThrow(() -> new IllegalArgumentException("Product not found with id: " + id));
 
         product.setIsDeleted(true);
         product.setStatus(ProductStatus.INACTIVE);
-        product.setUpdatedBy(deletedBy);
+        product.setUpdatedBy(currentUserId);
         product.setUpdatedAt(LocalDateTime.now());
 
         productRepository.save(product);
@@ -351,12 +351,13 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<ProductResponse> getProducts(Long companyId,
-            Long warehouseId,
+    public List<ProductResponse> getProducts(Long warehouseId,
             Long userId,
             boolean includePrice,
             boolean includeStock,
             boolean includeTax) {
+        User user = UserContext.getAuthenticatedUser(userRepository);
+        Long companyId = user.getCompanyId();
 
         // 1. Fetch all products for company in one query
         List<Product> products = productRepository.findAllByCompanyIdAndIsDeletedFalse(companyId);
@@ -452,7 +453,6 @@ public class ProductServiceImpl implements ProductService {
 
     private List<MediaResponse> getProductImagesFromMedia(Long productId, Long companyId) {
         Map<Long, List<MediaResponse>> mediaMap = mediaService.getMediaForEntities(
-                companyId,
                 "PRODUCT",
                 Collections.singletonList(productId));
 

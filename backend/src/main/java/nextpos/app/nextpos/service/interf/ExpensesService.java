@@ -11,5 +11,5 @@ public interface ExpensesService {
 
     ExpensesResponse updateExpenses(Long id, UpdateExpensesRequest request);
 
-    void deleteExpenses(Long id, Long deletedByUserId);
+    void deleteExpenses(Long id);
 }

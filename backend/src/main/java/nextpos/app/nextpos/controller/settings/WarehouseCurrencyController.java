@@ -21,64 +21,54 @@ public class WarehouseCurrencyController {
 
     @PostMapping
     public ResponseEntity<WarehouseCurrencyResponse> createWarehouseCurrency(
-            @RequestHeader("X-Company-Id") Long companyId,
-            @RequestHeader("X-Warehouse-Id") Long warehouseId,
+            @RequestParam Long warehouseId,
             @Valid @RequestBody CreateWarehouseCurrencyRequest request) {
 
-        WarehouseCurrencyResponse response = warehouseCurrencyService.createWarehouseCurrency(companyId, warehouseId,
-                request);
+        WarehouseCurrencyResponse response = warehouseCurrencyService.createWarehouseCurrency(warehouseId, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<WarehouseCurrencyResponse> getWarehouseCurrency(
-            @RequestHeader("X-Company-Id") Long companyId,
-            @RequestHeader("X-Warehouse-Id") Long warehouseId,
+            @RequestParam Long warehouseId,
             @PathVariable Long id) {
 
-        WarehouseCurrencyResponse response = warehouseCurrencyService.getWarehouseCurrency(id, companyId, warehouseId);
+        WarehouseCurrencyResponse response = warehouseCurrencyService.getWarehouseCurrency(id, warehouseId);
         return ResponseEntity.ok(response);
     }
 
     @GetMapping("/default")
     public ResponseEntity<WarehouseCurrencyResponse> getDefaultWarehouseCurrency(
-            @RequestHeader("X-Company-Id") Long companyId,
-            @RequestHeader("X-Warehouse-Id") Long warehouseId) {
+            @RequestParam Long warehouseId) {
 
-        WarehouseCurrencyResponse response = warehouseCurrencyService.getDefaultWarehouseCurrency(companyId,
-                warehouseId);
+        WarehouseCurrencyResponse response = warehouseCurrencyService.getDefaultWarehouseCurrency(warehouseId);
         return ResponseEntity.ok(response);
     }
 
     @GetMapping
     public ResponseEntity<List<WarehouseCurrencyResponse>> listWarehouseCurrencies(
-            @RequestHeader("X-Company-Id") Long companyId,
-            @RequestHeader("X-Warehouse-Id") Long warehouseId) {
+            @RequestParam Long warehouseId) {
 
-        List<WarehouseCurrencyResponse> response = warehouseCurrencyService.listWarehouseCurrencies(companyId,
-                warehouseId);
+        List<WarehouseCurrencyResponse> response = warehouseCurrencyService.listWarehouseCurrencies(warehouseId);
         return ResponseEntity.ok(response);
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<WarehouseCurrencyResponse> updateWarehouseCurrency(
-            @RequestHeader("X-Company-Id") Long companyId,
-            @RequestHeader("X-Warehouse-Id") Long warehouseId,
+            @RequestParam Long warehouseId,
             @PathVariable Long id,
             @Valid @RequestBody UpdateWarehouseCurrencyRequest request) {
 
-        WarehouseCurrencyResponse response = warehouseCurrencyService.updateWarehouseCurrency(id, companyId,
-                warehouseId, request);
+        WarehouseCurrencyResponse response = warehouseCurrencyService.updateWarehouseCurrency(id, warehouseId, request);
         return ResponseEntity.ok(response);
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteWarehouseCurrency(
-            @RequestHeader("X-Company-Id") Long companyId,
-            @RequestHeader("X-Warehouse-Id") Long warehouseId,
+            @RequestParam Long warehouseId,
             @PathVariable Long id) {
 
-        warehouseCurrencyService.deleteWarehouseCurrency(id, companyId, warehouseId);
+        warehouseCurrencyService.deleteWarehouseCurrency(id, warehouseId);
         return ResponseEntity.noContent().build();
     }
 }

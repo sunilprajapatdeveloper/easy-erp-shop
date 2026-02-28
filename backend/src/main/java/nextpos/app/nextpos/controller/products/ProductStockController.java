@@ -24,25 +24,21 @@ public class ProductStockController {
      */
     @PostMapping
     public ResponseEntity<ProductStockResponse> createProductStock(
-            @RequestHeader("X-Company-Id") Long companyId,
-            @RequestHeader("X-User-Id") Long createdBy,
             @Valid @RequestBody CreateProductStockRequest request) {
 
-        ProductStockResponse response = productStockService.createProductStock(companyId, createdBy, request);
+        ProductStockResponse response = productStockService.createProductStock(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @PutMapping("/{stockId}")
     public ResponseEntity<ProductStockResponse> updateProductStock(
-            @RequestHeader("X-Company-Id") Long companyId,
-            @RequestHeader("X-User-Id") Long updatedBy,
             @PathVariable Long stockId,
             @Valid @RequestBody UpdateProductStockRequest request) {
 
         // set path variable ID explicitly
         request.setId(stockId);
 
-        ProductStockResponse response = productStockService.updateProductStock(companyId, updatedBy, request);
+        ProductStockResponse response = productStockService.updateProductStock(request);
 
         return ResponseEntity.ok(response);
     }
@@ -52,10 +48,9 @@ public class ProductStockController {
      */
     @GetMapping("/{stockId}")
     public ResponseEntity<ProductStockResponse> getProductStockById(
-            @RequestHeader("X-Company-Id") Long companyId,
             @PathVariable Long stockId) {
 
-        ProductStockResponse response = productStockService.getProductStockById(companyId, stockId);
+        ProductStockResponse response = productStockService.getProductStockById(stockId);
         return ResponseEntity.ok(response);
     }
 
@@ -64,11 +59,10 @@ public class ProductStockController {
      */
     @GetMapping("/by-product-warehouse")
     public ResponseEntity<ProductStockResponse> getByProductAndWarehouse(
-            @RequestHeader("X-Company-Id") Long companyId,
             @RequestParam Long productId,
             @RequestParam Long warehouseId) {
 
-        ProductStockResponse response = productStockService.getByProductAndWarehouse(companyId, productId, warehouseId);
+        ProductStockResponse response = productStockService.getByProductAndWarehouse(productId, warehouseId);
         return ResponseEntity.ok(response);
     }
 
@@ -76,10 +70,9 @@ public class ProductStockController {
      * List all ProductStocks for a company
      */
     @GetMapping
-    public ResponseEntity<List<ProductStockResponse>> listStocksByCompany(
-            @RequestHeader("X-Company-Id") Long companyId) {
+    public ResponseEntity<List<ProductStockResponse>> listStocksByCompany() {
 
-        List<ProductStockResponse> stocks = productStockService.listStocksByCompany(companyId);
+        List<ProductStockResponse> stocks = productStockService.listStocksByCompany();
         return ResponseEntity.ok(stocks);
     }
 
@@ -88,14 +81,11 @@ public class ProductStockController {
      */
     @PatchMapping("/adjust")
     public ResponseEntity<ProductStockResponse> adjustStock(
-            @RequestHeader("X-Company-Id") Long companyId,
-            @RequestHeader("X-User-Id") Long updatedBy,
             @RequestParam Long productId,
             @RequestParam Long warehouseId,
             @RequestParam int delta) {
 
-        ProductStockResponse response = productStockService.adjustStock(companyId, updatedBy, productId, warehouseId,
-                delta);
+        ProductStockResponse response = productStockService.adjustStock(productId, warehouseId, delta);
         return ResponseEntity.ok(response);
     }
 
@@ -104,11 +94,9 @@ public class ProductStockController {
      */
     @DeleteMapping("/{stockId}")
     public ResponseEntity<Void> deleteProductStock(
-            @RequestHeader("X-Company-Id") Long companyId,
-            @RequestHeader("X-User-Id") Long userId,
             @PathVariable Long stockId) {
 
-        productStockService.deleteProductStock(companyId, userId, stockId);
+        productStockService.deleteProductStock(stockId);
         return ResponseEntity.noContent().build();
     }
 }

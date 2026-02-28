@@ -6,13 +6,11 @@ import nextpos.app.nextpos.model.dto.response.OnlineOrderingSettingsResponse;
 
 public interface OnlineOrderingSettingsService {
 
-    OnlineOrderingSettingsResponse createOnlineOrderingSettings(CreateOnlineOrderingSettingsRequest request,
-            Long createdBy);
+        OnlineOrderingSettingsResponse createOnlineOrderingSettings(CreateOnlineOrderingSettingsRequest request);
 
-    OnlineOrderingSettingsResponse updateOnlineOrderingSettings(UpdateOnlineOrderingSettingsRequest request,
-            Long updatedBy);
+        OnlineOrderingSettingsResponse updateOnlineOrderingSettings(UpdateOnlineOrderingSettingsRequest request);
 
-    OnlineOrderingSettingsResponse getOnlineOrderingSettings(Long companyId);
+        OnlineOrderingSettingsResponse getOnlineOrderingSettings();
 
-    void deleteOnlineOrderingSettings(Long companyId, Long deletedBy);
+        void deleteOnlineOrderingSettings();
 }

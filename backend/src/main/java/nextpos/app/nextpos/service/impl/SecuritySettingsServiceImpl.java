@@ -7,8 +7,11 @@ import nextpos.app.nextpos.model.dto.request.UpdateRequest.UpdateSecuritySetting
 import nextpos.app.nextpos.model.dto.response.SecuritySettingsResponse;
 import nextpos.app.nextpos.model.entity.Company;
 import nextpos.app.nextpos.model.entity.SecuritySettings;
+import nextpos.app.nextpos.model.entity.User;
 import nextpos.app.nextpos.repository.CompanyRepository;
 import nextpos.app.nextpos.repository.SecuritySettingsRepository;
+import nextpos.app.nextpos.repository.UserRepository;
+import nextpos.app.nextpos.security.context.UserContext;
 import nextpos.app.nextpos.service.interf.SecuritySettingsService;
 
 import org.apache.kafka.common.errors.ResourceNotFoundException;
@@ -26,10 +29,18 @@ public class SecuritySettingsServiceImpl implements SecuritySettingsService {
 
     private final SecuritySettingsRepository securitySettingsRepository;
     private final CompanyRepository companyRepository;
+    private final UserRepository userRepository;
 
     @Override
-    public SecuritySettingsResponse createSecuritySettings(CreateSecuritySettingsRequest request, Long companyId,
-            Long createdBy) {
+    public SecuritySettingsResponse createSecuritySettings(Long companyId, CreateSecuritySettingsRequest request) {
+        User user = UserContext.getAuthenticatedUser(userRepository);
+        Long currentUserId = user.getId();
+
+        // Validate that the user belongs to the specified company
+        if (!user.getCompanyId().equals(companyId)) {
+            throw new SecurityException("You can only create security settings for your own company");
+        }
+
         log.info("Creating SecuritySettings for companyId={}", companyId);
 
         Company company = companyRepository.findById(companyId)
@@ -51,7 +62,7 @@ public class SecuritySettingsServiceImpl implements SecuritySettingsService {
                 .passwordExpiryDays(request.getPasswordExpiryDays())
                 .requireStrongPasswords(request.getRequireStrongPasswords())
                 .allowDeviceTrust(request.getAllowDeviceTrust())
-                .createdBy(createdBy)
+                .createdBy(currentUserId)
                 .build();
 
         securitySettingsRepository.save(settings);
@@ -59,8 +70,15 @@ public class SecuritySettingsServiceImpl implements SecuritySettingsService {
     }
 
     @Override
-    public SecuritySettingsResponse updateSecuritySettings(Long companyId, UpdateSecuritySettingsRequest request,
-            Long updatedBy) {
+    public SecuritySettingsResponse updateSecuritySettings(Long companyId, UpdateSecuritySettingsRequest request) {
+        User user = UserContext.getAuthenticatedUser(userRepository);
+        Long currentUserId = user.getId();
+
+        // Validate that the user belongs to the specified company
+        if (!user.getCompanyId().equals(companyId)) {
+            throw new SecurityException("You can only update security settings for your own company");
+        }
+
         log.info("Updating SecuritySettings for companyId={}", companyId);
 
         Company company = companyRepository.findById(companyId)
@@ -80,7 +98,7 @@ public class SecuritySettingsServiceImpl implements SecuritySettingsService {
         settings.setPasswordExpiryDays(request.getPasswordExpiryDays());
         settings.setRequireStrongPasswords(request.getRequireStrongPasswords());
         settings.setAllowDeviceTrust(request.getAllowDeviceTrust());
-        settings.setUpdatedBy(updatedBy);
+        settings.setUpdatedBy(currentUserId);
 
         securitySettingsRepository.save(settings);
         return mapToResponse(settings);
@@ -89,6 +107,13 @@ public class SecuritySettingsServiceImpl implements SecuritySettingsService {
     @Override
     @Transactional(readOnly = true)
     public SecuritySettingsResponse getSecuritySettings(Long companyId) {
+        User user = UserContext.getAuthenticatedUser(userRepository);
+
+        // Validate that the user belongs to the specified company
+        if (!user.getCompanyId().equals(companyId)) {
+            throw new SecurityException("You can only view security settings for your own company");
+        }
+
         log.info("Fetching SecuritySettings for companyId={}", companyId);
 
         Company company = companyRepository.findById(companyId)

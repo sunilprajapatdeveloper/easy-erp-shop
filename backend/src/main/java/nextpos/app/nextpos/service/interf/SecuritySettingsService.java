@@ -8,11 +8,9 @@ import java.util.List;
 
 public interface SecuritySettingsService {
 
-    SecuritySettingsResponse createSecuritySettings(CreateSecuritySettingsRequest request, Long companyId,
-            Long createdBy);
+    SecuritySettingsResponse createSecuritySettings(Long companyId, CreateSecuritySettingsRequest request);
 
-    SecuritySettingsResponse updateSecuritySettings(Long companyId, UpdateSecuritySettingsRequest request,
-            Long updatedBy);
+    SecuritySettingsResponse updateSecuritySettings(Long companyId, UpdateSecuritySettingsRequest request);
 
     SecuritySettingsResponse getSecuritySettings(Long companyId);
 

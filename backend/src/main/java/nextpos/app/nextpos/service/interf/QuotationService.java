@@ -11,5 +11,5 @@ public interface QuotationService {
 
     QuotationResponse updateQuotation(Long id, CreateQuotationRequest request);
 
-    void deleteQuotation(Long id, Long deletedByUserId);
+    void deleteQuotation(Long id);
 }

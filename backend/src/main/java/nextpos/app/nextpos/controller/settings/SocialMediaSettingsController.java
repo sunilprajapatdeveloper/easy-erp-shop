@@ -24,9 +24,8 @@ public class SocialMediaSettingsController {
      */
     @PostMapping
     public ResponseEntity<SocialMediaSettingsResponse> create(
-            @Valid @RequestBody CreateSocialMediaSettingsRequest request,
-            @RequestParam Long createdBy) {
-        SocialMediaSettingsResponse response = service.createSocialMediaSettings(request, createdBy);
+            @Valid @RequestBody CreateSocialMediaSettingsRequest request) {
+        SocialMediaSettingsResponse response = service.createSocialMediaSettings(request);
         return ResponseEntity.ok(response);
     }
 
@@ -36,10 +35,8 @@ public class SocialMediaSettingsController {
     @PutMapping("/{id}")
     public ResponseEntity<SocialMediaSettingsResponse> update(
             @PathVariable Long id,
-            @RequestParam Long companyId,
-            @Valid @RequestBody UpdateSocialMediaSettingsRequest request,
-            @RequestParam Long updatedBy) {
-        SocialMediaSettingsResponse response = service.updateSocialMediaSettings(id, companyId, request, updatedBy);
+            @Valid @RequestBody UpdateSocialMediaSettingsRequest request) {
+        SocialMediaSettingsResponse response = service.updateSocialMediaSettings(id, request);
         return ResponseEntity.ok(response);
     }
 
@@ -48,9 +45,8 @@ public class SocialMediaSettingsController {
      */
     @GetMapping("/{id}")
     public ResponseEntity<SocialMediaSettingsResponse> get(
-            @PathVariable Long id,
-            @RequestParam Long companyId) {
-        SocialMediaSettingsResponse response = service.getSocialMediaSettings(id, companyId);
+            @PathVariable Long id) {
+        SocialMediaSettingsResponse response = service.getSocialMediaSettings(id);
         return ResponseEntity.ok(response);
     }
 
@@ -58,9 +54,8 @@ public class SocialMediaSettingsController {
      * List all social media settings for a company
      */
     @GetMapping
-    public ResponseEntity<List<SocialMediaSettingsResponse>> list(
-            @RequestParam Long companyId) {
-        List<SocialMediaSettingsResponse> responseList = service.listSocialMediaSettings(companyId);
+    public ResponseEntity<List<SocialMediaSettingsResponse>> list() {
+        List<SocialMediaSettingsResponse> responseList = service.listSocialMediaSettings();
         return ResponseEntity.ok(responseList);
     }
 }

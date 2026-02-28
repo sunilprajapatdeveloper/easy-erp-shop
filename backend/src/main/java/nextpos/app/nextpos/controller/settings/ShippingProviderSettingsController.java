@@ -26,12 +26,10 @@ public class ShippingProviderSettingsController {
      */
     @PostMapping
     public ResponseEntity<ShippingProviderSettingsResponse> create(
-            @Validated @RequestBody CreateShippingProviderSettingsRequest request,
-            @RequestParam("createdBy") Long createdBy) {
-        log.info("Creating shipping provider settings for companyId={} warehouseId={}",
-                request.getCompanyId(), request.getWarehouseId());
+            @Validated @RequestBody CreateShippingProviderSettingsRequest request) {
+        log.info("Creating shipping provider settings for warehouseId={}", request.getWarehouseId());
         ShippingProviderSettingsResponse response = shippingProviderSettingsService
-                .createShippingProviderSettings(request, createdBy);
+                .createShippingProviderSettings(request);
         return ResponseEntity.ok(response);
     }
 
@@ -41,14 +39,11 @@ public class ShippingProviderSettingsController {
     @PutMapping("/{id}")
     public ResponseEntity<ShippingProviderSettingsResponse> update(
             @PathVariable Long id,
-            @RequestParam Long companyId,
             @RequestParam Long warehouseId,
-            @Validated @RequestBody UpdateShippingProviderSettingsRequest request,
-            @RequestParam("updatedBy") Long updatedBy) {
-        log.info("Updating shipping provider settings id={} for companyId={} warehouseId={}", id, companyId,
-                warehouseId);
+            @Validated @RequestBody UpdateShippingProviderSettingsRequest request) {
+        log.info("Updating shipping provider settings id={} for warehouseId={}", id, warehouseId);
         ShippingProviderSettingsResponse response = shippingProviderSettingsService.updateShippingProviderSettings(id,
-                companyId, warehouseId, request, updatedBy);
+                warehouseId, request);
         return ResponseEntity.ok(response);
     }
 
@@ -58,20 +53,19 @@ public class ShippingProviderSettingsController {
     @GetMapping("/{id}")
     public ResponseEntity<ShippingProviderSettingsResponse> get(
             @PathVariable Long id,
-            @RequestParam Long companyId,
             @RequestParam Long warehouseId) {
         ShippingProviderSettingsResponse response = shippingProviderSettingsService.getShippingProviderSettings(id,
-                companyId, warehouseId);
+                warehouseId);
         return ResponseEntity.ok(response);
     }
 
     /**
      * List all shipping provider settings for a company.
      */
-    @GetMapping("/company/{companyId}")
-    public ResponseEntity<List<ShippingProviderSettingsResponse>> listByCompany(@PathVariable Long companyId) {
+    @GetMapping("/company")
+    public ResponseEntity<List<ShippingProviderSettingsResponse>> listByCompany() {
         List<ShippingProviderSettingsResponse> responseList = shippingProviderSettingsService
-                .listShippingProviderSettingsByCompany(companyId);
+                .listShippingProviderSettingsByCompany();
         return ResponseEntity.ok(responseList);
     }
 
@@ -80,10 +74,9 @@ public class ShippingProviderSettingsController {
      */
     @GetMapping("/warehouse")
     public ResponseEntity<List<ShippingProviderSettingsResponse>> listByWarehouse(
-            @RequestParam Long companyId,
             @RequestParam Long warehouseId) {
         List<ShippingProviderSettingsResponse> responseList = shippingProviderSettingsService
-                .listShippingProviderSettingsByWarehouse(companyId, warehouseId);
+                .listShippingProviderSettingsByWarehouse(warehouseId);
         return ResponseEntity.ok(responseList);
     }
 }

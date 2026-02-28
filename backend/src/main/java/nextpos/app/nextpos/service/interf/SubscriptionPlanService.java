@@ -8,7 +8,7 @@ import java.util.List;
 
 public interface SubscriptionPlanService {
 
-    SubscriptionPlanResponse createSubscriptionPlan(CreateSubscriptionPlanRequest request, Long createdBy);
+    SubscriptionPlanResponse createSubscriptionPlan(CreateSubscriptionPlanRequest request);
 
     SubscriptionPlanResponse getSubscriptionPlan(Long id);
 
@@ -16,5 +16,5 @@ public interface SubscriptionPlanService {
 
     SubscriptionPlanResponse updateSubscriptionPlan(Long id, UpdateSubscriptionPlanRequest request);
 
-    void deleteSubscriptionPlan(Long id, Long deletedBy);
+    void deleteSubscriptionPlan(Long id);
 }

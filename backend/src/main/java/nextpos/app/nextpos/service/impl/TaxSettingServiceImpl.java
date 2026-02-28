@@ -8,10 +8,13 @@ import nextpos.app.nextpos.model.dto.request.UpdateRequest.UpdateTaxSettingReque
 import nextpos.app.nextpos.model.dto.response.TaxSettingResponse;
 import nextpos.app.nextpos.model.entity.Company;
 import nextpos.app.nextpos.model.entity.TaxSetting;
+import nextpos.app.nextpos.model.entity.User;
 import nextpos.app.nextpos.model.entity.Warehouse;
 import nextpos.app.nextpos.repository.CompanyRepository;
 import nextpos.app.nextpos.repository.TaxSettingRepository;
+import nextpos.app.nextpos.repository.UserRepository;
 import nextpos.app.nextpos.repository.WarehouseRepository;
+import nextpos.app.nextpos.security.context.UserContext;
 import nextpos.app.nextpos.service.interf.TaxSettingService;
 
 import org.springframework.stereotype.Service;
@@ -29,9 +32,13 @@ public class TaxSettingServiceImpl implements TaxSettingService {
     private final TaxSettingRepository taxSettingRepository;
     private final CompanyRepository companyRepository;
     private final WarehouseRepository warehouseRepository;
+    private final UserRepository userRepository;
 
     @Override
-    public TaxSettingResponse createTaxSetting(CreateTaxSettingRequest request, Long companyId) {
+    public TaxSettingResponse createTaxSetting(CreateTaxSettingRequest request) {
+        User user = UserContext.getAuthenticatedUser(userRepository);
+        Long companyId = user.getCompanyId();
+
         log.info("Creating TaxSetting for companyId={}", companyId);
 
         Company company = companyRepository.findById(companyId)
@@ -62,7 +69,10 @@ public class TaxSettingServiceImpl implements TaxSettingService {
 
     @Override
     @Transactional(readOnly = true)
-    public TaxSettingResponse getTaxSetting(Long id, Long companyId) {
+    public TaxSettingResponse getTaxSetting(Long id) {
+        User user = UserContext.getAuthenticatedUser(userRepository);
+        Long companyId = user.getCompanyId();
+
         TaxSetting taxSetting = taxSettingRepository.findByIdAndCompanyId(id, companyId)
                 .orElseThrow(() -> new EntityNotFoundException(
                         "TaxSetting not found for id=" + id + " companyId=" + companyId));
@@ -72,7 +82,10 @@ public class TaxSettingServiceImpl implements TaxSettingService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<TaxSettingResponse> listTaxSettings(Long companyId) {
+    public List<TaxSettingResponse> listTaxSettings() {
+        User user = UserContext.getAuthenticatedUser(userRepository);
+        Long companyId = user.getCompanyId();
+
         return taxSettingRepository.findAllByCompanyId(companyId)
                 .stream()
                 .map(this::mapToResponse)
@@ -80,7 +93,10 @@ public class TaxSettingServiceImpl implements TaxSettingService {
     }
 
     @Override
-    public TaxSettingResponse updateTaxSetting(Long id, Long companyId, UpdateTaxSettingRequest request) {
+    public TaxSettingResponse updateTaxSetting(Long id, UpdateTaxSettingRequest request) {
+        User user = UserContext.getAuthenticatedUser(userRepository);
+        Long companyId = user.getCompanyId();
+
         TaxSetting taxSetting = taxSettingRepository.findByIdAndCompanyId(id, companyId)
                 .orElseThrow(() -> new EntityNotFoundException(
                         "TaxSetting not found for id=" + id + " companyId=" + companyId));
@@ -113,7 +129,10 @@ public class TaxSettingServiceImpl implements TaxSettingService {
     }
 
     @Override
-    public void deleteTaxSetting(Long id, Long companyId) {
+    public void deleteTaxSetting(Long id) {
+        User user = UserContext.getAuthenticatedUser(userRepository);
+        Long companyId = user.getCompanyId();
+
         log.info("Deleting TaxSetting id={} for companyId={}", id, companyId);
         if (!taxSettingRepository.findByIdAndCompanyId(id, companyId).isPresent()) {
             throw new EntityNotFoundException("TaxSetting not found for id=" + id + " companyId=" + companyId);

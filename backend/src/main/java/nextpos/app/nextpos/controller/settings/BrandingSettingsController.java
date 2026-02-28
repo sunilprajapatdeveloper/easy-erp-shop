@@ -24,90 +24,62 @@ public class BrandingSettingsController {
 
     /**
      * Create branding settings for a company.
-     *
-     * Headers required:
-     * X-Company-Id : tenant company id (Long)
-     * X-User-Id : authenticated user id (Long) - used as createdBy
      */
     @PostMapping
     public ResponseEntity<BrandingSettingsResponse> createBrandingSettings(
-            @RequestHeader("X-Company-Id") Long companyId,
-            @RequestHeader("X-User-Id") Long createdBy,
             @Valid @RequestBody CreateBrandingSettingsRequest request) {
 
-        log.info("CreateBrandingSettings request for companyId={} by userId={}", companyId, createdBy);
+        log.info("CreateBrandingSettings request");
 
-        BrandingSettingsResponse response = brandingSettingsService.createBrandingSettings(request, companyId,
-                createdBy);
+        BrandingSettingsResponse response = brandingSettingsService.createBrandingSettings(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     /**
      * Get branding settings by id and company.
-     *
-     * Header required:
-     * X-Company-Id : tenant company id (Long)
      */
     @GetMapping("/{id}")
     public ResponseEntity<BrandingSettingsResponse> getBrandingSettings(
-            @PathVariable("id") Long id,
-            @RequestHeader("X-Company-Id") Long companyId) {
+            @PathVariable("id") Long id) {
 
-        log.info("GetBrandingSettings id={} for companyId={}", id, companyId);
-        BrandingSettingsResponse response = brandingSettingsService.getBrandingSettings(id, companyId);
+        log.info("GetBrandingSettings id={}", id);
+        BrandingSettingsResponse response = brandingSettingsService.getBrandingSettings(id);
         return ResponseEntity.ok(response);
     }
 
     /**
      * Update branding settings.
-     *
-     * Headers required:
-     * X-Company-Id : tenant company id (Long)
-     * X-User-Id : authenticated user id (Long) - used as updatedBy
      */
     @PutMapping("/{id}")
     public ResponseEntity<BrandingSettingsResponse> updateBrandingSettings(
             @PathVariable("id") Long id,
-            @RequestHeader("X-Company-Id") Long companyId,
-            @RequestHeader("X-User-Id") Long updatedBy,
             @Valid @RequestBody UpdateBrandingSettingsRequest request) {
 
-        log.info("UpdateBrandingSettings id={} for companyId={} by userId={}", id, companyId, updatedBy);
-        BrandingSettingsResponse response = brandingSettingsService.updateBrandingSettings(id, companyId, request,
-                updatedBy);
+        log.info("UpdateBrandingSettings id={}", id);
+        BrandingSettingsResponse response = brandingSettingsService.updateBrandingSettings(id, request);
         return ResponseEntity.ok(response);
     }
 
     /**
      * Delete branding settings (scoped by id + company).
-     *
-     * Headers required:
-     * X-Company-Id : tenant company id (Long)
-     * X-User-Id : authenticated user id (Long) - for audit if needed by service
      */
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteBrandingSettings(
-            @PathVariable("id") Long id,
-            @RequestHeader("X-Company-Id") Long companyId,
-            @RequestHeader(value = "X-User-Id", required = false) Long deletedBy) {
+            @PathVariable("id") Long id) {
 
-        log.info("DeleteBrandingSettings id={} for companyId={} by userId={}", id, companyId, deletedBy);
-        brandingSettingsService.deleteBrandingSettings(id, companyId);
+        log.info("DeleteBrandingSettings id={}", id);
+        brandingSettingsService.deleteBrandingSettings(id);
         return ResponseEntity.noContent().build();
     }
 
     /**
      * List all branding settings for a company
-     *
-     * Header required:
-     * X-Company-Id : tenant company id (Long)
      */
     @GetMapping
-    public ResponseEntity<List<BrandingSettingsResponse>> listBrandingSettings(
-            @RequestHeader("X-Company-Id") Long companyId) {
+    public ResponseEntity<List<BrandingSettingsResponse>> listBrandingSettings() {
 
-        log.info("ListBrandingSettings for companyId={}", companyId);
-        List<BrandingSettingsResponse> list = brandingSettingsService.listBrandingSettings(companyId);
+        log.info("ListBrandingSettings");
+        List<BrandingSettingsResponse> list = brandingSettingsService.listBrandingSettings();
         return ResponseEntity.ok(list);
     }
 }

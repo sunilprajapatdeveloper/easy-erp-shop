@@ -13,6 +13,7 @@ import nextpos.app.nextpos.repository.ProductRepository;
 import nextpos.app.nextpos.repository.ProductStockRepository;
 import nextpos.app.nextpos.repository.UserRepository;
 import nextpos.app.nextpos.repository.WarehouseRepository;
+import nextpos.app.nextpos.security.context.UserContext;
 import nextpos.app.nextpos.service.interf.ProductStockService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,17 +36,21 @@ public class ProductStockServiceImpl implements ProductStockService {
      */
     @Override
     @Transactional
-    public ProductStockResponse createProductStock(Long companyId, Long userId, CreateProductStockRequest request) {
-        validateUserCompany(userId, companyId);
+    public ProductStockResponse createProductStock(CreateProductStockRequest request) {
+        User user = UserContext.getAuthenticatedUser(userRepository);
+        Long companyId = user.getCompanyId();
+        Long currentUserId = user.getId();
 
         Product product = productRepository.findByIdAndCompanyIdAndIsDeletedFalse(request.getProductId(), companyId)
                 .orElseThrow(() -> new EntityNotFoundException("Product not found with id: " + request.getProductId()));
 
         Warehouse warehouse = warehouseRepository
                 .findByIdAndCompanyIdAndIsDeletedFalse(request.getWarehouseId(), companyId)
-                .orElseThrow(() -> new EntityNotFoundException("Warehouse not found with id: " + request.getWarehouseId()));
+                .orElseThrow(
+                        () -> new EntityNotFoundException("Warehouse not found with id: " + request.getWarehouseId()));
 
-        if (productStockRepository.existsByProductIdAndWarehouseIdAndCompanyId(product.getId(), warehouse.getId(), companyId)) {
+        if (productStockRepository.existsByProductIdAndWarehouseIdAndCompanyId(product.getId(), warehouse.getId(),
+                companyId)) {
             throw new IllegalArgumentException("ProductStock already exists for productId=" + product.getId()
                     + " and warehouseId=" + warehouse.getId());
         }
@@ -65,7 +70,7 @@ public class ProductStockServiceImpl implements ProductStockService {
                 .lastCountDate(request.getLastCountDate())
                 .nextCountDate(request.getNextCountDate())
                 .companyId(companyId)
-                .createdBy(userId)
+                .createdBy(currentUserId)
                 .createdAt(LocalDateTime.now())
                 .build();
 
@@ -78,8 +83,10 @@ public class ProductStockServiceImpl implements ProductStockService {
      */
     @Override
     @Transactional
-    public ProductStockResponse updateProductStock(Long companyId, Long userId, UpdateProductStockRequest request) {
-        validateUserCompany(userId, companyId);
+    public ProductStockResponse updateProductStock(UpdateProductStockRequest request) {
+        User user = UserContext.getAuthenticatedUser(userRepository);
+        Long companyId = user.getCompanyId();
+        Long currentUserId = user.getId();
 
         ProductStock stock = productStockRepository.findByIdAndCompanyId(request.getId(), companyId)
                 .orElseThrow(() -> new EntityNotFoundException("ProductStock not found with id: " + request.getId()));
@@ -87,7 +94,8 @@ public class ProductStockServiceImpl implements ProductStockService {
         // Update product if changed
         if (request.getProductId() != null && !request.getProductId().equals(stock.getProduct().getId())) {
             Product product = productRepository.findByIdAndCompanyIdAndIsDeletedFalse(request.getProductId(), companyId)
-                    .orElseThrow(() -> new EntityNotFoundException("Product not found with id: " + request.getProductId()));
+                    .orElseThrow(
+                            () -> new EntityNotFoundException("Product not found with id: " + request.getProductId()));
             stock.setProduct(product);
         }
 
@@ -95,42 +103,54 @@ public class ProductStockServiceImpl implements ProductStockService {
         if (request.getWarehouseId() != null && !request.getWarehouseId().equals(stock.getWarehouse().getId())) {
             Warehouse warehouse = warehouseRepository
                     .findByIdAndCompanyIdAndIsDeletedFalse(request.getWarehouseId(), companyId)
-                    .orElseThrow(() -> new EntityNotFoundException("Warehouse not found with id: " + request.getWarehouseId()));
+                    .orElseThrow(() -> new EntityNotFoundException(
+                            "Warehouse not found with id: " + request.getWarehouseId()));
             if (productStockRepository.existsByProductIdAndWarehouseIdAndCompanyId(stock.getProduct().getId(),
                     warehouse.getId(), companyId)) {
-                throw new IllegalArgumentException("ProductStock already exists for productId=" + stock.getProduct().getId()
-                        + " and warehouseId=" + warehouse.getId());
+                throw new IllegalArgumentException(
+                        "ProductStock already exists for productId=" + stock.getProduct().getId()
+                                + " and warehouseId=" + warehouse.getId());
             }
             stock.setWarehouse(warehouse);
         }
 
         // Quantities
         if (request.getQuantity() != null) {
-            if (request.getQuantity() < 0) throw new IllegalArgumentException("Quantity cannot be negative");
+            if (request.getQuantity() < 0)
+                throw new IllegalArgumentException("Quantity cannot be negative");
             stock.setQuantity(request.getQuantity());
         }
         if (request.getReservedQuantity() != null) {
-            if (request.getReservedQuantity() < 0) throw new IllegalArgumentException("Reserved quantity cannot be negative");
+            if (request.getReservedQuantity() < 0)
+                throw new IllegalArgumentException("Reserved quantity cannot be negative");
             stock.setReservedQuantity(request.getReservedQuantity());
         }
         if (request.getInTransitQuantity() != null) {
-            if (request.getInTransitQuantity() < 0) throw new IllegalArgumentException("In-transit quantity cannot be negative");
+            if (request.getInTransitQuantity() < 0)
+                throw new IllegalArgumentException("In-transit quantity cannot be negative");
             stock.setInTransitQuantity(request.getInTransitQuantity());
         }
         if (request.getCommittedQuantity() != null) {
-            if (request.getCommittedQuantity() < 0) throw new IllegalArgumentException("Committed quantity cannot be negative");
+            if (request.getCommittedQuantity() < 0)
+                throw new IllegalArgumentException("Committed quantity cannot be negative");
             stock.setCommittedQuantity(request.getCommittedQuantity());
         }
 
         // Levels and costs
-        if (request.getMinStockLevel() != null) stock.setMinStockLevel(request.getMinStockLevel());
-        if (request.getMaxStockLevel() != null) stock.setMaxStockLevel(request.getMaxStockLevel());
-        if (request.getReorderLevel() != null) stock.setReorderLevel(request.getReorderLevel());
-        if (request.getAverageCost() != null) stock.setAverageCost(request.getAverageCost());
-        if (request.getLastCountDate() != null) stock.setLastCountDate(request.getLastCountDate());
-        if (request.getNextCountDate() != null) stock.setNextCountDate(request.getNextCountDate());
+        if (request.getMinStockLevel() != null)
+            stock.setMinStockLevel(request.getMinStockLevel());
+        if (request.getMaxStockLevel() != null)
+            stock.setMaxStockLevel(request.getMaxStockLevel());
+        if (request.getReorderLevel() != null)
+            stock.setReorderLevel(request.getReorderLevel());
+        if (request.getAverageCost() != null)
+            stock.setAverageCost(request.getAverageCost());
+        if (request.getLastCountDate() != null)
+            stock.setLastCountDate(request.getLastCountDate());
+        if (request.getNextCountDate() != null)
+            stock.setNextCountDate(request.getNextCountDate());
 
-        stock.setUpdatedBy(userId);
+        stock.setUpdatedBy(currentUserId);
         stock.setUpdatedAt(LocalDateTime.now());
 
         ProductStock saved = productStockRepository.save(stock);
@@ -139,7 +159,10 @@ public class ProductStockServiceImpl implements ProductStockService {
 
     @Override
     @Transactional(readOnly = true)
-    public ProductStockResponse getProductStockById(Long companyId, Long id) {
+    public ProductStockResponse getProductStockById(Long id) {
+        User user = UserContext.getAuthenticatedUser(userRepository);
+        Long companyId = user.getCompanyId();
+
         ProductStock stock = productStockRepository.findByIdAndCompanyId(id, companyId)
                 .orElseThrow(() -> new EntityNotFoundException("ProductStock not found with id: " + id));
         return ProductStockResponse.fromEntity(stock);
@@ -147,7 +170,10 @@ public class ProductStockServiceImpl implements ProductStockService {
 
     @Override
     @Transactional(readOnly = true)
-    public ProductStockResponse getByProductAndWarehouse(Long companyId, Long productId, Long warehouseId) {
+    public ProductStockResponse getByProductAndWarehouse(Long productId, Long warehouseId) {
+        User user = UserContext.getAuthenticatedUser(userRepository);
+        Long companyId = user.getCompanyId();
+
         ProductStock stock = productStockRepository
                 .findByProductIdAndWarehouseIdAndCompanyId(productId, warehouseId, companyId)
                 .orElseThrow(() -> new EntityNotFoundException(
@@ -157,7 +183,10 @@ public class ProductStockServiceImpl implements ProductStockService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<ProductStockResponse> listStocksByCompany(Long companyId) {
+    public List<ProductStockResponse> listStocksByCompany() {
+        User user = UserContext.getAuthenticatedUser(userRepository);
+        Long companyId = user.getCompanyId();
+
         return productStockRepository.findAllByCompanyId(companyId)
                 .stream()
                 .map(ProductStockResponse::fromEntity)
@@ -166,8 +195,10 @@ public class ProductStockServiceImpl implements ProductStockService {
 
     @Override
     @Transactional
-    public ProductStockResponse adjustStock(Long companyId, Long userId, Long productId, Long warehouseId, int delta) {
-        validateUserCompany(userId, companyId);
+    public ProductStockResponse adjustStock(Long productId, Long warehouseId, int delta) {
+        User user = UserContext.getAuthenticatedUser(userRepository);
+        Long companyId = user.getCompanyId();
+        Long currentUserId = user.getId();
 
         ProductStock stock = productStockRepository
                 .findByProductIdAndWarehouseIdAndCompanyId(productId, warehouseId, companyId)
@@ -175,10 +206,11 @@ public class ProductStockServiceImpl implements ProductStockService {
                         "ProductStock not found for productId=" + productId + " and warehouseId=" + warehouseId));
 
         int newQty = (stock.getQuantity() != null ? stock.getQuantity() : 0) + delta;
-        if (newQty < 0) throw new IllegalArgumentException("Stock adjustment would make quantity negative");
+        if (newQty < 0)
+            throw new IllegalArgumentException("Stock adjustment would make quantity negative");
 
         stock.setQuantity(newQty);
-        stock.setUpdatedBy(userId);
+        stock.setUpdatedBy(currentUserId);
         stock.setUpdatedAt(LocalDateTime.now());
 
         ProductStock saved = productStockRepository.save(stock);
@@ -187,8 +219,9 @@ public class ProductStockServiceImpl implements ProductStockService {
 
     @Override
     @Transactional
-    public void deleteProductStock(Long companyId, Long userId, Long id) {
-        validateUserCompany(userId, companyId);
+    public void deleteProductStock(Long id) {
+        User user = UserContext.getAuthenticatedUser(userRepository);
+        Long companyId = user.getCompanyId();
 
         ProductStock stock = productStockRepository.findByIdAndCompanyId(id, companyId)
                 .orElseThrow(() -> new EntityNotFoundException("ProductStock not found with id: " + id));
@@ -198,22 +231,14 @@ public class ProductStockServiceImpl implements ProductStockService {
 
     @Override
     @Transactional(readOnly = true)
-    public int getStock(Long companyId, Long productId, Long warehouseId) {
+    public int getStock(Long productId, Long warehouseId) {
+        User user = UserContext.getAuthenticatedUser(userRepository);
+        Long companyId = user.getCompanyId();
+
         ProductStock stock = productStockRepository
                 .findByProductIdAndWarehouseIdAndCompanyId(productId, warehouseId, companyId)
                 .orElseThrow(() -> new EntityNotFoundException(
                         "ProductStock not found for productId=" + productId + " and warehouseId=" + warehouseId));
         return stock.getQuantity() != null ? stock.getQuantity() : 0;
-    }
-
-    /**
-     * Utility: ensure user belongs to the same company.
-     */
-    private void validateUserCompany(Long userId, Long companyId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new EntityNotFoundException("User not found with id: " + userId));
-        if (!companyId.equals(user.getCompanyId())) {
-            throw new SecurityException("User does not belong to the specified company");
-        }
     }
 }

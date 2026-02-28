@@ -16,5 +16,5 @@ public interface PurchaseReturnService {
 
     void deletePurchaseReturn(Long id);
 
-    List<PurchaseReturnResponse> getAllPurchaseReturns(Long companyId, Long supplierId, Long warehouseId);
+    List<PurchaseReturnResponse> getAllPurchaseReturns(Long supplierId, Long warehouseId);
 }

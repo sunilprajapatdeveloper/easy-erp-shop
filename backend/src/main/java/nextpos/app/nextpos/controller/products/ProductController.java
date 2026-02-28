@@ -8,6 +8,9 @@ import nextpos.app.nextpos.model.dto.request.UpdateRequest.UpdateProductRequest;
 import nextpos.app.nextpos.model.dto.response.MediaResponse;
 import nextpos.app.nextpos.model.dto.response.ProductResponse;
 import nextpos.app.nextpos.model.enums.MediaType;
+import nextpos.app.nextpos.model.entity.User;
+import nextpos.app.nextpos.repository.UserRepository;
+import nextpos.app.nextpos.security.context.UserContext;
 import nextpos.app.nextpos.service.interf.MediaService;
 import nextpos.app.nextpos.service.interf.ProductService;
 import org.springframework.http.HttpStatus;
@@ -26,17 +29,16 @@ public class ProductController {
 
     private final ProductService productService;
     private final MediaService mediaService;
+    private final UserRepository userRepository;
 
     /**
      * Create new product for a company
      */
     @PostMapping
     public ResponseEntity<ProductResponse> createProduct(
-            @RequestHeader("X-Company-Id") Long companyId,
-            @RequestHeader("X-User-Id") Long createdBy,
             @Valid @RequestBody CreateProductRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(productService.createProduct(companyId, createdBy, request));
+                .body(productService.createProduct(request));
     }
 
     /**
@@ -44,9 +46,8 @@ public class ProductController {
      */
     @GetMapping("/{id}")
     public ResponseEntity<ProductResponse> getProductById(
-            @RequestHeader("X-Company-Id") Long companyId,
             @PathVariable Long id) {
-        return ResponseEntity.ok(productService.getProductById(companyId, id));
+        return ResponseEntity.ok(productService.getProductById(id));
     }
 
     /**
@@ -54,9 +55,8 @@ public class ProductController {
      */
     @GetMapping("/code/{code}")
     public ResponseEntity<ProductResponse> getProductByCode(
-            @RequestHeader("X-Company-Id") Long companyId,
             @PathVariable String code) {
-        return ResponseEntity.ok(productService.getProductByCode(companyId, code));
+        return ResponseEntity.ok(productService.getProductByCode(code));
     }
 
     /**
@@ -64,9 +64,8 @@ public class ProductController {
      */
     @GetMapping("/barcode/{barcode}")
     public ResponseEntity<ProductResponse> getProductByBarcode(
-            @RequestHeader("X-Company-Id") Long companyId,
             @PathVariable String barcode) {
-        return ResponseEntity.ok(productService.getProductByBarcode(companyId, barcode));
+        return ResponseEntity.ok(productService.getProductByBarcode(barcode));
     }
 
     /**
@@ -74,11 +73,9 @@ public class ProductController {
      */
     @PutMapping("/{id}")
     public ResponseEntity<ProductResponse> updateProduct(
-            @RequestHeader("X-Company-Id") Long companyId,
-            @RequestHeader("X-User-Id") Long updatedBy,
             @PathVariable Long id,
             @Valid @RequestBody UpdateProductRequest request) {
-        return ResponseEntity.ok(productService.updateProduct(companyId, updatedBy, id, request));
+        return ResponseEntity.ok(productService.updateProduct(id, request));
     }
 
     /**
@@ -86,31 +83,29 @@ public class ProductController {
      */
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteProduct(
-            @RequestHeader("X-Company-Id") Long companyId,
-            @RequestHeader("X-User-Id") Long deletedBy,
             @PathVariable Long id) {
-        productService.deleteProduct(companyId, deletedBy, id);
+        productService.deleteProduct(id);
         return ResponseEntity.noContent().build();
     }
 
     @GetMapping
     public ResponseEntity<List<ProductResponse>> searchProducts(
-            @RequestHeader("X-Company-Id") Long companyId,
             @RequestParam(value = "warehouseId", required = false) Long warehouseId,
             @RequestParam(value = "userId", required = false) Long userId,
             @RequestParam(value = "includePrice", defaultValue = "false") boolean includePrice,
             @RequestParam(value = "includeStock", defaultValue = "false") boolean includeStock,
             @RequestParam(value = "includeTax", defaultValue = "false") boolean includeTax) {
         return ResponseEntity.ok(
-                productService.getProducts(companyId, warehouseId, userId, includePrice, includeStock, includeTax));
+                productService.getProducts(warehouseId, userId, includePrice, includeStock, includeTax));
     }
 
     @PostMapping("/{productId}/upload-images")
     public ResponseEntity<List<MediaResponse>> uploadProductImages(
             @PathVariable Long productId,
-            @RequestParam("files") List<MultipartFile> files,
-            @RequestHeader("X-User-Id") Long userId,
-            @RequestHeader("X-Company-Id") Long companyId) throws IOException {
+            @RequestParam("files") List<MultipartFile> files) throws IOException {
+
+        User user = UserContext.getAuthenticatedUser(userRepository);
+        Long companyId = user.getCompanyId();
 
         MediaUploadRequest request = MediaUploadRequest.builder()
                 .companyId(companyId)
@@ -121,17 +116,13 @@ public class ProductController {
                 .generateThumbnail(true)
                 .build();
 
-        List<MediaResponse> responses = mediaService.uploadFiles(files, request, userId);
+        List<MediaResponse> responses = mediaService.uploadFiles(files, request);
         return ResponseEntity.ok(responses);
     }
 
     @GetMapping("/{productId}/images")
-    public ResponseEntity<List<MediaResponse>> getProductImages(
-            @PathVariable Long productId,
-            @RequestHeader("X-Company-Id") Long companyId) {
-
-        List<MediaResponse> responses = mediaService.getMediaByEntity(
-                companyId, "PRODUCT", productId);
+    public ResponseEntity<List<MediaResponse>> getProductImages(@PathVariable Long productId) {
+        List<MediaResponse> responses = mediaService.getMediaByEntity("PRODUCT", productId);
         return ResponseEntity.ok(responses);
     }
 }

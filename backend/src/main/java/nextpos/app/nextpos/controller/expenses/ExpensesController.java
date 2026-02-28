@@ -35,9 +35,8 @@ public class ExpensesController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteExpenses(@PathVariable Long id,
-            @RequestParam("deletedBy") Long deletedByUserId) {
-        expensesService.deleteExpenses(id, deletedByUserId);
+    public ResponseEntity<Void> deleteExpenses(@PathVariable Long id) {
+        expensesService.deleteExpenses(id);
         return ResponseEntity.noContent().build();
     }
 }

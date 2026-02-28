@@ -13,41 +13,35 @@ import java.util.Map;
 
 public interface MediaService {
 
-        MediaResponse uploadFile(MultipartFile file, MediaUploadRequest request, Long userId) throws IOException;
+        MediaResponse uploadFile(MultipartFile file, MediaUploadRequest request) throws IOException;
 
-        List<MediaResponse> uploadFiles(List<MultipartFile> files, MediaUploadRequest request, Long userId)
-                        throws IOException;
+        List<MediaResponse> uploadFiles(List<MultipartFile> files, MediaUploadRequest request) throws IOException;
 
-        MediaResponse getMedia(String mediaId, Long companyId);
+        MediaResponse getMedia(String mediaId);
 
-        List<MediaResponse> getMediaByEntity(Long companyId, String entityType, Long entityId);
+        List<MediaResponse> getMediaByEntity(String entityType, Long entityId);
 
-        Page<MediaResponse> getCompanyMedia(Long companyId, Pageable pageable);
+        Page<MediaResponse> getCompanyMedia(Pageable pageable);
 
-        String getPublicUrl(String mediaId, Long companyId);
+        String getPublicUrl(String mediaId);
 
-        String getSignedUrl(String mediaId, Long companyId, long expiryMinutes);
+        String getSignedUrl(String mediaId, long expiryMinutes);
 
-        void deleteMedia(String mediaId, Long companyId, Long userId) throws IOException;
+        void deleteMedia(String mediaId) throws IOException;
 
-        void deleteMediaByEntity(Long companyId, String entityType, Long entityId, Long userId) throws IOException;
+        void deleteMediaByEntity(String entityType, Long entityId) throws IOException;
 
-        MediaResponse moveMedia(String mediaId, String newEntityType, Long newEntityId, Long companyId, Long userId);
+        MediaResponse moveMedia(String mediaId, String newEntityType, Long newEntityId);
 
-        List<MediaResponse> copyMedia(List<String> mediaIds, String newEntityType, Long newEntityId,
-                        Long companyId, Long userId) throws IOException;
+        List<MediaResponse> copyMedia(List<String> mediaIds, String newEntityType, Long newEntityId) throws IOException;
 
-        Map<String, Object> getStorageUsage(Long companyId);
+        Map<String, Object> getStorageUsage();
 
-        // void cleanupTempFiles();
+        MediaResponse updateMediaMetadata(String mediaId, Map<String, Object> metadata);
 
-        MediaResponse updateMediaMetadata(String mediaId, Map<String, Object> metadata,
-                        Long companyId, Long userId);
+        Map<Long, List<MediaResponse>> getMediaForEntities(String entityType, List<Long> entityIds);
 
-        Map<Long, List<MediaResponse>> getMediaForEntities(Long companyId, String entityType, List<Long> entityIds);
-
-        // In MediaService interface
         Resource loadMediaResource(String filename, Long companyId, boolean thumbnail) throws IOException;
 
-        Resource loadMediaResourceById(String mediaId, Long companyId, boolean thumbnail) throws IOException;
+        Resource loadMediaResourceById(String mediaId, boolean thumbnail) throws IOException;
 }

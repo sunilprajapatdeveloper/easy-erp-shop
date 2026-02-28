@@ -73,12 +73,9 @@ public class UserController {
     }
 
     @GetMapping("/{userId}/profile-image")
-    public ResponseEntity<MediaResponse> getProfileImage(
-            @PathVariable Long userId,
-            @RequestHeader("X-Company-Id") Long companyId) {
+    public ResponseEntity<MediaResponse> getProfileImage(@PathVariable Long userId) {
 
-        List<MediaResponse> mediaList = mediaService.getMediaByEntity(
-                companyId, "USER", userId);
+        List<MediaResponse> mediaList = mediaService.getMediaByEntity("USER", userId);
 
         if (mediaList.isEmpty()) {
             return ResponseEntity.notFound().build();

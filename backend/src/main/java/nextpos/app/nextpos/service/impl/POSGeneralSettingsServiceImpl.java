@@ -13,13 +13,16 @@ import nextpos.app.nextpos.model.dto.response.POSGeneralSettingsResponse;
 import nextpos.app.nextpos.model.entity.Company;
 import nextpos.app.nextpos.model.entity.Customer;
 import nextpos.app.nextpos.model.entity.POSGeneralSettings;
+import nextpos.app.nextpos.model.entity.User;
 import nextpos.app.nextpos.model.entity.Warehouse;
 import nextpos.app.nextpos.model.entity.WarehouseCurrency;
 import nextpos.app.nextpos.repository.CompanyRepository;
 import nextpos.app.nextpos.repository.CustomerRepository;
 import nextpos.app.nextpos.repository.POSGeneralSettingsRepository;
+import nextpos.app.nextpos.repository.UserRepository;
 import nextpos.app.nextpos.repository.WarehouseCurrencyRepository;
 import nextpos.app.nextpos.repository.WarehouseRepository;
+import nextpos.app.nextpos.security.context.UserContext;
 import nextpos.app.nextpos.service.interf.POSGeneralSettingsService;
 
 @Service
@@ -31,11 +34,13 @@ public class POSGeneralSettingsServiceImpl implements POSGeneralSettingsService 
     private final CompanyRepository companyRepo;
     private final CustomerRepository customerRepo;
     private final WarehouseCurrencyRepository warehouseCurrencyRepo;
+    private final UserRepository userRepository;
 
     @Override
     @Transactional
-    public POSGeneralSettingsResponse createPOSSettings(Long companyId, Long warehouseId, Long createdBy,
-            CreatePOSGeneralSettingsRequest request) {
+    public POSGeneralSettingsResponse createPOSSettings(Long warehouseId, CreatePOSGeneralSettingsRequest request) {
+        User user = UserContext.getAuthenticatedUser(userRepository);
+        Long companyId = user.getCompanyId();
 
         // Validate company
         Company company = companyRepo.findById(companyId)
@@ -73,7 +78,7 @@ public class POSGeneralSettingsServiceImpl implements POSGeneralSettingsService 
         settings.setDefaultCurrency(currency);
         settings.setDefaultPaymentMethod(request.getDefaultPaymentMethod());
         settings.setDefaultTaxInclusive(request.isDefaultTaxInclusive());
-        settings.setCreatedBy(createdBy);
+        settings.setCreatedBy(user.getId());
 
         POSGeneralSettings saved = posRepo.save(settings);
         return mapToResponse(saved);
@@ -81,7 +86,10 @@ public class POSGeneralSettingsServiceImpl implements POSGeneralSettingsService 
 
     @Override
     @Transactional
-    public POSGeneralSettingsResponse getByWarehouse(Long companyId, Long warehouseId) {
+    public POSGeneralSettingsResponse getByWarehouse(Long warehouseId) {
+        User user = UserContext.getAuthenticatedUser(userRepository);
+        Long companyId = user.getCompanyId();
+
         Warehouse warehouse = warehouseRepo.findById(warehouseId)
                 .orElseThrow(() -> new NoSuchElementException("Warehouse not found: " + warehouseId));
 
@@ -98,8 +106,10 @@ public class POSGeneralSettingsServiceImpl implements POSGeneralSettingsService 
 
     @Override
     @Transactional
-    public POSGeneralSettingsResponse updatePOSSettings(Long companyId, Long warehouseId, Long updatedBy,
-            Long id, UpdatePOSGeneralSettingsRequest request) {
+    public POSGeneralSettingsResponse updatePOSSettings(Long warehouseId, Long id,
+            UpdatePOSGeneralSettingsRequest request) {
+        User user = UserContext.getAuthenticatedUser(userRepository);
+        Long companyId = user.getCompanyId();
 
         // Find setting by id and ensure scope matches
         POSGeneralSettings settings = posRepo.findById(id)
@@ -137,7 +147,7 @@ public class POSGeneralSettingsServiceImpl implements POSGeneralSettingsService 
             settings.setDefaultTaxInclusive(request.getDefaultTaxInclusive());
         }
 
-        settings.setUpdatedBy(updatedBy);
+        settings.setUpdatedBy(user.getId());
 
         POSGeneralSettings saved = posRepo.save(settings);
         return mapToResponse(saved);
@@ -145,7 +155,10 @@ public class POSGeneralSettingsServiceImpl implements POSGeneralSettingsService 
 
     @Override
     @Transactional
-    public void deletePOSSettings(Long companyId, Long warehouseId, Long deletedBy, Long id) {
+    public void deletePOSSettings(Long warehouseId, Long id) {
+        User user = UserContext.getAuthenticatedUser(userRepository);
+        Long companyId = user.getCompanyId();
+
         POSGeneralSettings settings = posRepo.findById(id)
                 .orElseThrow(() -> new NoSuchElementException("POS settings not found: " + id));
 

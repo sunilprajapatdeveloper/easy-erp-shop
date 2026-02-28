@@ -8,8 +8,11 @@ import nextpos.app.nextpos.model.dto.request.UpdateRequest.UpdateSMTPSettingsReq
 import nextpos.app.nextpos.model.dto.response.SMTPSettingsResponse;
 import nextpos.app.nextpos.model.entity.Company;
 import nextpos.app.nextpos.model.entity.SMTPSettings;
+import nextpos.app.nextpos.model.entity.User;
 import nextpos.app.nextpos.repository.CompanyRepository;
 import nextpos.app.nextpos.repository.SMTPSettingsRepository;
+import nextpos.app.nextpos.repository.UserRepository;
+import nextpos.app.nextpos.security.context.UserContext;
 import nextpos.app.nextpos.service.email.MailService;
 import nextpos.app.nextpos.service.interf.SMTPSettingsService;
 import org.springframework.stereotype.Service;
@@ -25,14 +28,17 @@ public class SMTPSettingsServiceImpl implements SMTPSettingsService {
     private final SMTPSettingsRepository smtpSettingsRepository;
     private final CompanyRepository companyRepository;
     private final MailService mailService;
+    private final UserRepository userRepository; // for UserContext
 
     @Override
     public SMTPSettingsResponse createOrUpdateSMTPSettings(CreateSMTPSettingsRequest request) {
-        Company company = companyRepository.findById(request.getCompanyId())
-                .orElseThrow(
-                        () -> new ResourceNotFoundException("Company not found with id: " + request.getCompanyId()));
+        User user = UserContext.getAuthenticatedUser(userRepository);
+        Long companyId = user.getCompanyId();
 
-        SMTPSettings settings = smtpSettingsRepository.findByCompanyId(request.getCompanyId())
+        Company company = companyRepository.findById(companyId)
+                .orElseThrow(() -> new ResourceNotFoundException("Company not found with id: " + companyId));
+
+        SMTPSettings settings = smtpSettingsRepository.findByCompanyId(companyId)
                 .orElse(SMTPSettings.builder().company(company).build());
 
         settings.setProvider(request.getProvider());
@@ -50,14 +56,17 @@ public class SMTPSettingsServiceImpl implements SMTPSettingsService {
         settings.setActive(true);
 
         SMTPSettings saved = smtpSettingsRepository.save(settings);
-        mailService.refreshCompanySMTP(company.getId());
+        mailService.refreshCompanySMTP(companyId);
 
-        log.info("SMTP settings {} for company {}", saved.getId() == null ? "created" : "updated", company.getId());
+        log.info("SMTP settings {} for company {}", saved.getId() == null ? "created" : "updated", companyId);
         return mapToResponse(saved);
     }
 
     @Override
-    public SMTPSettingsResponse updateSMTPSettings(Long companyId, UpdateSMTPSettingsRequest request) {
+    public SMTPSettingsResponse updateSMTPSettings(UpdateSMTPSettingsRequest request) {
+        User user = UserContext.getAuthenticatedUser(userRepository);
+        Long companyId = user.getCompanyId();
+
         SMTPSettings settings = smtpSettingsRepository.findByCompanyId(companyId)
                 .orElseThrow(() -> new ResourceNotFoundException("SMTP settings not found for company: " + companyId));
 
@@ -96,7 +105,10 @@ public class SMTPSettingsServiceImpl implements SMTPSettingsService {
     }
 
     @Override
-    public SMTPSettingsResponse getSMTPSettingsByCompanyId(Long companyId) {
+    public SMTPSettingsResponse getSMTPSettings() {
+        User user = UserContext.getAuthenticatedUser(userRepository);
+        Long companyId = user.getCompanyId();
+
         SMTPSettings settings = smtpSettingsRepository.findByCompanyIdAndIsActiveTrue(companyId)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Active SMTP settings not found for company: " + companyId));
@@ -104,7 +116,10 @@ public class SMTPSettingsServiceImpl implements SMTPSettingsService {
     }
 
     @Override
-    public void deleteSMTPSettings(Long companyId) {
+    public void deleteSMTPSettings() {
+        User user = UserContext.getAuthenticatedUser(userRepository);
+        Long companyId = user.getCompanyId();
+
         SMTPSettings settings = smtpSettingsRepository.findByCompanyId(companyId)
                 .orElseThrow(() -> new ResourceNotFoundException("SMTP settings not found for company: " + companyId));
         settings.setActive(false);
@@ -114,12 +129,16 @@ public class SMTPSettingsServiceImpl implements SMTPSettingsService {
     }
 
     @Override
-    public boolean testConnection(Long companyId) {
+    public boolean testConnection() {
+        User user = UserContext.getAuthenticatedUser(userRepository);
+        Long companyId = user.getCompanyId();
         return mailService.testSMTPConnection(companyId);
     }
 
     @Override
-    public void refreshCache(Long companyId) {
+    public void refreshCache() {
+        User user = UserContext.getAuthenticatedUser(userRepository);
+        Long companyId = user.getCompanyId();
         mailService.refreshCompanySMTP(companyId);
         log.info("SMTP cache refreshed for company {}", companyId);
     }

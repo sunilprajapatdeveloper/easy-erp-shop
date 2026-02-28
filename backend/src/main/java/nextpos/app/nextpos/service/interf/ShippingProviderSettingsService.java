@@ -8,15 +8,14 @@ import java.util.List;
 
 public interface ShippingProviderSettingsService {
 
-    ShippingProviderSettingsResponse createShippingProviderSettings(CreateShippingProviderSettingsRequest request,
-            Long createdBy);
+    ShippingProviderSettingsResponse createShippingProviderSettings(CreateShippingProviderSettingsRequest request);
 
-    ShippingProviderSettingsResponse updateShippingProviderSettings(Long id, Long companyId, Long warehouseId,
-            UpdateShippingProviderSettingsRequest request, Long updatedBy);
+    ShippingProviderSettingsResponse updateShippingProviderSettings(Long id, Long warehouseId,
+            UpdateShippingProviderSettingsRequest request);
 
-    ShippingProviderSettingsResponse getShippingProviderSettings(Long id, Long companyId, Long warehouseId);
+    ShippingProviderSettingsResponse getShippingProviderSettings(Long id, Long warehouseId);
 
-    List<ShippingProviderSettingsResponse> listShippingProviderSettingsByCompany(Long companyId);
+    List<ShippingProviderSettingsResponse> listShippingProviderSettingsByCompany();
 
-    List<ShippingProviderSettingsResponse> listShippingProviderSettingsByWarehouse(Long companyId, Long warehouseId);
+    List<ShippingProviderSettingsResponse> listShippingProviderSettingsByWarehouse(Long warehouseId);
 }

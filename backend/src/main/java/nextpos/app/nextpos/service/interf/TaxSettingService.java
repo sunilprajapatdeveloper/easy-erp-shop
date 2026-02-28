@@ -8,13 +8,13 @@ import java.util.List;
 
 public interface TaxSettingService {
 
-    TaxSettingResponse createTaxSetting(CreateTaxSettingRequest request, Long companyId);
+    TaxSettingResponse createTaxSetting(CreateTaxSettingRequest request);
 
-    TaxSettingResponse getTaxSetting(Long id, Long companyId);
+    TaxSettingResponse getTaxSetting(Long id);
 
-    List<TaxSettingResponse> listTaxSettings(Long companyId);
+    List<TaxSettingResponse> listTaxSettings();
 
-    TaxSettingResponse updateTaxSetting(Long id, Long companyId, UpdateTaxSettingRequest request);
+    TaxSettingResponse updateTaxSetting(Long id, UpdateTaxSettingRequest request);
 
-    void deleteTaxSetting(Long id, Long companyId);
+    void deleteTaxSetting(Long id);
 }

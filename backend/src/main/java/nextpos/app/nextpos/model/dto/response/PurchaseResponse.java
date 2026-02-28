@@ -117,7 +117,6 @@ public class PurchaseResponse {
 
             // Fetch current stock from ProductStockService
             this.productStock = productStockService.getStock(
-                    purchaseProduct.getCompanyId(),
                     purchaseProduct.getProduct().getId(),
                     purchaseProduct.getPurchase().getWarehouse().getId());
 

@@ -125,8 +125,6 @@ public class PurchaseReturnServiceImpl implements PurchaseReturnService {
 
                         // DECREASE stock atomically using ProductStockService
                         productStockService.adjustStock(
-                                        user.getCompanyId(),
-                                        user.getId(),
                                         product.getId(),
                                         warehouse.getId(),
                                         -requestedReturnQty);
@@ -233,8 +231,6 @@ public class PurchaseReturnServiceImpl implements PurchaseReturnService {
                         for (PurchaseReturnProduct oldPr : existing.getProducts()) {
                                 if (oldPr.getProduct() != null) {
                                         productStockService.adjustStock(
-                                                        user.getCompanyId(),
-                                                        user.getId(),
                                                         oldPr.getProduct().getId(),
                                                         existing.getWarehouse().getId(),
                                                         oldPr.getReturnQty() // add back previously returned qty
@@ -284,8 +280,6 @@ public class PurchaseReturnServiceImpl implements PurchaseReturnService {
 
                                 // DECREASE stock using productStockService
                                 productStockService.adjustStock(
-                                                user.getCompanyId(),
-                                                user.getId(),
                                                 product.getId(),
                                                 existing.getWarehouse().getId(),
                                                 -requestedReturnQty);
@@ -411,9 +405,10 @@ public class PurchaseReturnServiceImpl implements PurchaseReturnService {
         }
 
         @Override
-        public List<PurchaseReturnResponse> getAllPurchaseReturns(Long companyId, Long supplierId, Long warehouseId) {
+        public List<PurchaseReturnResponse> getAllPurchaseReturns(Long supplierId, Long warehouseId) {
+                User user = UserContext.getAuthenticatedUser(userRepository);
                 return purchaseReturnRepository.findAll().stream()
-                                .filter(pr -> pr.getCompanyId().equals(companyId))
+                                .filter(pr -> pr.getCompanyId().equals(user.getId()))
                                 .filter(pr -> supplierId == null || pr.getSupplier().getId().equals(supplierId))
                                 .filter(pr -> warehouseId == null || pr.getWarehouse().getId().equals(warehouseId))
                                 .map(PurchaseReturnResponse::new)
@@ -446,8 +441,6 @@ public class PurchaseReturnServiceImpl implements PurchaseReturnService {
                                 if (warehouse != null) {
                                         // Add back the returned quantity
                                         productStockService.adjustStock(
-                                                        user.getCompanyId(),
-                                                        user.getId(),
                                                         product.getId(),
                                                         warehouse.getId(),
                                                         prp.getReturnQty() // restore stock

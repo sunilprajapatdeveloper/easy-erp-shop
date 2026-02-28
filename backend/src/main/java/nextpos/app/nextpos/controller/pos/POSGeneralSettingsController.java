@@ -12,7 +12,6 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1/pos/settings")
-// @CrossOrigin(origins = "*")
 @RequiredArgsConstructor
 public class POSGeneralSettingsController {
 
@@ -23,13 +22,10 @@ public class POSGeneralSettingsController {
      */
     @PostMapping
     public ResponseEntity<POSGeneralSettingsResponse> createPOSSettings(
-            @RequestHeader("X-Company-Id") Long companyId,
             @RequestHeader("X-Warehouse-Id") Long warehouseId,
-            @RequestHeader("X-User-Id") Long createdBy,
             @Valid @RequestBody CreatePOSGeneralSettingsRequest request) {
-
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(posGeneralSettingsService.createPOSSettings(companyId, warehouseId, createdBy, request));
+                .body(posGeneralSettingsService.createPOSSettings(warehouseId, request));
     }
 
     /**
@@ -37,10 +33,8 @@ public class POSGeneralSettingsController {
      */
     @GetMapping
     public ResponseEntity<POSGeneralSettingsResponse> getPOSSettingsByWarehouse(
-            @RequestHeader("X-Company-Id") Long companyId,
             @RequestHeader("X-Warehouse-Id") Long warehouseId) {
-
-        return ResponseEntity.ok(posGeneralSettingsService.getByWarehouse(companyId, warehouseId));
+        return ResponseEntity.ok(posGeneralSettingsService.getByWarehouse(warehouseId));
     }
 
     /**
@@ -48,27 +42,19 @@ public class POSGeneralSettingsController {
      */
     @PutMapping("/{id}")
     public ResponseEntity<POSGeneralSettingsResponse> updatePOSSettings(
-            @RequestHeader("X-Company-Id") Long companyId,
-            @RequestHeader("X-Warehouse-Id") Long warehouseId,
-            @RequestHeader("X-User-Id") Long updatedBy,
-            @PathVariable Long id,
+            @RequestHeader("X-Warehouse-Id") Long warehouseId, @PathVariable Long id,
             @Valid @RequestBody UpdatePOSGeneralSettingsRequest request) {
-
         return ResponseEntity
-                .ok(posGeneralSettingsService.updatePOSSettings(companyId, warehouseId, updatedBy, id, request));
+                .ok(posGeneralSettingsService.updatePOSSettings(warehouseId, id, request));
     }
 
     /**
      * Delete POS settings (soft delete if needed)
      */
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deletePOSSettings(
-            @RequestHeader("X-Company-Id") Long companyId,
-            @RequestHeader("X-Warehouse-Id") Long warehouseId,
-            @RequestHeader("X-User-Id") Long deletedBy,
+    public ResponseEntity<Void> deletePOSSettings(@RequestHeader("X-Warehouse-Id") Long warehouseId,
             @PathVariable Long id) {
-
-        posGeneralSettingsService.deletePOSSettings(companyId, warehouseId, deletedBy, id);
+        posGeneralSettingsService.deletePOSSettings(warehouseId, id);
         return ResponseEntity.noContent().build();
     }
 }

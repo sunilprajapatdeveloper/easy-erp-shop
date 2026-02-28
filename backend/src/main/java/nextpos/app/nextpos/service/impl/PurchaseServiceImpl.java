@@ -63,8 +63,9 @@ public class PurchaseServiceImpl implements PurchaseService {
                                 .orElseThrow(() -> new RuntimeException("Warehouse not found"));
 
                 // // company default currency
-                // Currency currency = currencyRepository.findDefaultCurrency(user.getCompanyId())
-                //                 .orElseThrow(() -> new RuntimeException("Company currency not configured"));
+                // Currency currency =
+                // currencyRepository.findDefaultCurrency(user.getCompanyId())
+                // .orElseThrow(() -> new RuntimeException("Company currency not configured"));
 
                 Purchase purchase = Purchase.builder()
                                 .referenceNumber(ReferenceNumberGenerator.generateReferenceNumber("PURCHASE"))
@@ -116,12 +117,7 @@ public class PurchaseServiceImpl implements PurchaseService {
                         BigDecimal prodTax = Optional.ofNullable(p.getProductTax()).orElse(BigDecimal.ZERO);
 
                         // Increase stock
-                        productStockService.adjustStock(
-                                        user.getCompanyId(),
-                                        user.getId(),
-                                        product.getId(),
-                                        warehouse.getId(),
-                                        qty);
+                        productStockService.adjustStock(product.getId(), warehouse.getId(), qty);
 
                         // Optionally: update productPrice cost if you want to persist latest purchase
                         // cost
@@ -257,8 +253,6 @@ public class PurchaseServiceImpl implements PurchaseService {
                 if (purchase.getProducts() != null && !purchase.getProducts().isEmpty()) {
                         for (PurchaseProduct old : purchase.getProducts()) {
                                 productStockService.adjustStock(
-                                                user.getCompanyId(),
-                                                user.getId(),
                                                 old.getProduct().getId(),
                                                 purchase.getWarehouse().getId(),
                                                 -old.getPurchaseQty() // remove previous quantity
@@ -299,8 +293,6 @@ public class PurchaseServiceImpl implements PurchaseService {
 
                                 // Re-apply stock
                                 productStockService.adjustStock(
-                                                user.getCompanyId(),
-                                                user.getId(),
                                                 product.getId(),
                                                 warehouse.getId(),
                                                 qty);
@@ -431,8 +423,6 @@ public class PurchaseServiceImpl implements PurchaseService {
                 if (purchase.getProducts() != null && !purchase.getProducts().isEmpty()) {
                         for (PurchaseProduct pp : purchase.getProducts()) {
                                 productStockService.adjustStock(
-                                                user.getCompanyId(),
-                                                user.getId(),
                                                 pp.getProduct().getId(),
                                                 warehouse.getId(),
                                                 -pp.getPurchaseQty() // decrease stock

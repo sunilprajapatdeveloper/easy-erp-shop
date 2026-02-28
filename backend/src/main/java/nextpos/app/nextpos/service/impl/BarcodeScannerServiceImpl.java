@@ -9,6 +9,7 @@ import nextpos.app.nextpos.model.dto.request.BarcodeScanRequest;
 import nextpos.app.nextpos.model.dto.response.BarcodeScanResponse;
 import nextpos.app.nextpos.model.dto.response.ScannerRegistrationResponse;
 import nextpos.app.nextpos.repository.*;
+import nextpos.app.nextpos.security.context.UserContext;
 import nextpos.app.nextpos.service.interf.BarcodeScannerService;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -44,9 +45,12 @@ public class BarcodeScannerServiceImpl implements BarcodeScannerService {
     @Override
     @Transactional
     public ScannerRegistrationResponse registerScanner(ScannerRegistrationRequest request) {
+        User user = UserContext.getAuthenticatedUser(userRepository);
+        Long companyId = user.getCompanyId();
+
         // Validate warehouse belongs to company
         Warehouse warehouse = warehouseRepository.findByIdAndCompanyIdAndIsDeletedFalse(
-                request.getWarehouseId(), request.getCompanyId())
+                request.getWarehouseId(), companyId)
                 .orElseThrow(() -> new RuntimeException("Warehouse not found or unauthorized"));
 
         // Validate user exists (remove company check for user since it might not have
@@ -54,7 +58,7 @@ public class BarcodeScannerServiceImpl implements BarcodeScannerService {
         User assignedUser = userRepository.findById(request.getAssignedUserId())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        String scannerId = generateScannerId(request.getCompanyId());
+        String scannerId = generateScannerId(companyId);
 
         BarcodeScanner scanner = BarcodeScanner.builder()
                 .scannerId(scannerId)
@@ -63,7 +67,7 @@ public class BarcodeScannerServiceImpl implements BarcodeScannerService {
                 .status(ScannerStatus.ACTIVE)
                 .warehouse(warehouse)
                 .assignedUser(assignedUser)
-                .companyId(request.getCompanyId())
+                .companyId(companyId)
                 .createdAt(LocalDateTime.now())
                 .lastConnectedAt(LocalDateTime.now())
                 .ipAddress(request.getIpAddress())
@@ -74,7 +78,7 @@ public class BarcodeScannerServiceImpl implements BarcodeScannerService {
         cacheScannerInfo(scanner);
 
         log.info("Scanner registered: {} for company: {}, warehouse: {}, user: {}",
-                scannerId, request.getCompanyId(), warehouse.getId(), assignedUser.getId());
+                scannerId, companyId, warehouse.getId(), assignedUser.getId());
 
         return ScannerRegistrationResponse.builder()
                 .scannerId(scannerId)
@@ -86,10 +90,13 @@ public class BarcodeScannerServiceImpl implements BarcodeScannerService {
     @Override
     @Transactional
     public BarcodeScanResponse processBarcodeScan(BarcodeScanRequest request) {
-        BarcodeScanner scanner = validateScanner(request.getScannerId(), request.getCompanyId());
+        User user = UserContext.getAuthenticatedUser(userRepository);
+        Long companyId = user.getCompanyId();
+
+        BarcodeScanner scanner = validateScanner(request.getScannerId(), companyId);
         Long warehouseId = scanner.getWarehouse().getId();
 
-        String cacheKey = SCAN_CACHE_PREFIX + request.getBarcode() + ":" + request.getCompanyId();
+        String cacheKey = SCAN_CACHE_PREFIX + request.getBarcode() + ":" + companyId;
         BarcodeScanResponse cachedResponse = (BarcodeScanResponse) redisTemplate.opsForValue().get(cacheKey);
 
         if (cachedResponse != null) {
@@ -99,14 +106,14 @@ public class BarcodeScannerServiceImpl implements BarcodeScannerService {
 
         // Find product by barcode
         Product product = productRepository.findByBarcodeAndCompanyIdAndIsDeletedFalse(
-                request.getBarcode(), request.getCompanyId())
+                request.getBarcode(), companyId)
                 .orElseThrow(() -> new RuntimeException("Product not found for barcode: " + request.getBarcode()));
 
         // Get product price for the warehouse
-        BigDecimal price = getProductPrice(product.getId(), warehouseId, request.getCompanyId());
+        BigDecimal price = getProductPrice(product.getId(), warehouseId, companyId);
 
         // Get product stock for the warehouse
-        Integer stockQuantity = getProductStockQuantity(product.getId(), warehouseId, request.getCompanyId());
+        Integer stockQuantity = getProductStockQuantity(product.getId(), warehouseId, companyId);
 
         BarcodeScanResponse response = BarcodeScanResponse.builder()
                 .scannerId(request.getScannerId())
@@ -158,8 +165,11 @@ public class BarcodeScannerServiceImpl implements BarcodeScannerService {
     @Override
     @Async("scannerTaskExecutor")
     @Transactional
-    public BarcodeScanResponse validateAndProcessScan(String scannerId, String barcode, Long companyId) {
+    public BarcodeScanResponse validateAndProcessScan(String scannerId, String barcode) {
         try {
+            User user = UserContext.getAuthenticatedUser(userRepository);
+            Long companyId = user.getCompanyId();
+
             String scannerCacheKey = SCANNER_CACHE_PREFIX + scannerId + ":" + companyId;
             Boolean scannerActive = (Boolean) redisTemplate.opsForValue().get(scannerCacheKey);
 
@@ -171,7 +181,6 @@ public class BarcodeScannerServiceImpl implements BarcodeScannerService {
             BarcodeScanRequest scanRequest = BarcodeScanRequest.builder()
                     .scannerId(scannerId)
                     .barcode(barcode)
-                    .companyId(companyId)
                     .build();
 
             return processBarcodeScan(scanRequest);
@@ -210,7 +219,10 @@ public class BarcodeScannerServiceImpl implements BarcodeScannerService {
     }
 
     @Override
-    public void updateScannerStatus(String scannerId, Long companyId, String status) {
+    public void updateScannerStatus(String scannerId, String status) {
+        User user = UserContext.getAuthenticatedUser(userRepository);
+        Long companyId = user.getCompanyId();
+
         scannerRepository.findByScannerIdAndCompanyId(scannerId, companyId)
                 .ifPresent(scanner -> {
                     scanner.setStatus(ScannerStatus.valueOf(status.toUpperCase()));
@@ -221,13 +233,19 @@ public class BarcodeScannerServiceImpl implements BarcodeScannerService {
     }
 
     @Override
-    public List<BarcodeScanner> getScannersByWarehouse(Long warehouseId, Long companyId) {
+    public List<BarcodeScanner> getScannersByWarehouse(Long warehouseId) {
+        User user = UserContext.getAuthenticatedUser(userRepository);
+        Long companyId = user.getCompanyId();
+
         return scannerRepository.findByWarehouseIdAndCompanyId(warehouseId, companyId);
     }
 
     @Override
-    public void disconnectScanner(String scannerId, Long companyId) {
-        updateScannerStatus(scannerId, companyId, "INACTIVE");
+    public void disconnectScanner(String scannerId) {
+        updateScannerStatus(scannerId, "INACTIVE");
+        User user = UserContext.getAuthenticatedUser(userRepository);
+        Long companyId = user.getCompanyId();
+
         String cacheKey = SCANNER_CACHE_PREFIX + scannerId + ":" + companyId;
         redisTemplate.delete(cacheKey);
     }

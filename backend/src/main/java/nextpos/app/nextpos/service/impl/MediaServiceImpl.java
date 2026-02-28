@@ -6,7 +6,10 @@ import lombok.extern.slf4j.Slf4j;
 import nextpos.app.nextpos.model.dto.request.MediaUploadRequest;
 import nextpos.app.nextpos.model.dto.response.MediaResponse;
 import nextpos.app.nextpos.model.entity.Media;
+import nextpos.app.nextpos.model.entity.User;
 import nextpos.app.nextpos.repository.MediaRepository;
+import nextpos.app.nextpos.repository.UserRepository;
+import nextpos.app.nextpos.security.context.UserContext;
 import nextpos.app.nextpos.service.interf.MediaService;
 import nextpos.app.nextpos.service.storage.StorageContext;
 import nextpos.app.nextpos.service.storage.StorageService;
@@ -16,8 +19,6 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-// import org.springframework.scheduling.annotation.Async;
-// import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -40,14 +41,19 @@ public class MediaServiceImpl implements MediaService {
     private final MediaRepository mediaRepository;
     private final StorageServiceFactory storageServiceFactory;
     private final ObjectMapper objectMapper;
+    private final UserRepository userRepository; // for UserContext
 
     @Override
     @Transactional
-    public MediaResponse uploadFile(MultipartFile file, MediaUploadRequest request, Long userId) throws IOException {
-        validateUploadRequest(request, userId);
+    public MediaResponse uploadFile(MultipartFile file, MediaUploadRequest request) throws IOException {
+        User user = UserContext.getAuthenticatedUser(userRepository);
+        Long companyId = user.getCompanyId();
+        Long userId = user.getId();
+
+        validateUploadRequest(request, companyId, userId);
 
         StorageContext context = StorageContext.builder()
-                .companyId(request.getCompanyId())
+                .companyId(companyId)
                 .warehouseId(request.getWarehouseId())
                 .userId(userId)
                 .mediaType(request.getMediaType())
@@ -64,22 +70,25 @@ public class MediaServiceImpl implements MediaService {
         // Save to database
         media = mediaRepository.save(media);
 
-        log.info("Media uploaded: {} for company {}", media.getId(), request.getCompanyId());
+        log.info("Media uploaded: {} for company {}", media.getId(), companyId);
         return convertToResponse(media);
     }
 
     @Override
     @Transactional
-    public List<MediaResponse> uploadFiles(List<MultipartFile> files, MediaUploadRequest request, Long userId)
-            throws IOException {
-        validateUploadRequest(request, userId);
+    public List<MediaResponse> uploadFiles(List<MultipartFile> files, MediaUploadRequest request) throws IOException {
+        User user = UserContext.getAuthenticatedUser(userRepository);
+        Long companyId = user.getCompanyId();
+        Long userId = user.getId();
+
+        validateUploadRequest(request, companyId, userId);
 
         List<CompletableFuture<Media>> uploadFutures = new ArrayList<>();
         StorageService storageService = storageServiceFactory.getStorageService();
 
         for (MultipartFile file : files) {
             StorageContext context = StorageContext.builder()
-                    .companyId(request.getCompanyId())
+                    .companyId(companyId)
                     .warehouseId(request.getWarehouseId())
                     .userId(userId)
                     .mediaType(request.getMediaType())
@@ -114,15 +123,18 @@ public class MediaServiceImpl implements MediaService {
 
         mediaList = mediaRepository.saveAll(mediaList);
 
-        log.info("{} files uploaded for company {}", mediaList.size(), request.getCompanyId());
+        log.info("{} files uploaded for company {}", mediaList.size(), companyId);
         return mediaList.stream()
                 .map(this::convertToResponse)
                 .collect(Collectors.toList());
     }
 
     @Override
-    @Cacheable(value = "media", key = "#mediaId + '_' + #companyId")
-    public MediaResponse getMedia(String mediaId, Long companyId) {
+    @Cacheable(value = "media", key = "#mediaId")
+    public MediaResponse getMedia(String mediaId) {
+        User user = UserContext.getAuthenticatedUser(userRepository);
+        Long companyId = user.getCompanyId();
+
         Media media = mediaRepository.findById(mediaId)
                 .orElseThrow(() -> new RuntimeException("Media not found: " + mediaId));
 
@@ -136,8 +148,11 @@ public class MediaServiceImpl implements MediaService {
     }
 
     @Override
-    @Cacheable(value = "entity-media", key = "#companyId + '_' + #entityType + '_' + #entityId")
-    public List<MediaResponse> getMediaByEntity(Long companyId, String entityType, Long entityId) {
+    @Cacheable(value = "entity-media", key = "#entityType + '_' + #entityId")
+    public List<MediaResponse> getMediaByEntity(String entityType, Long entityId) {
+        User user = UserContext.getAuthenticatedUser(userRepository);
+        Long companyId = user.getCompanyId();
+
         List<Media> mediaList = mediaRepository.findByCompanyIdAndEntityTypeAndEntityId(
                 companyId, entityType, entityId);
 
@@ -147,14 +162,20 @@ public class MediaServiceImpl implements MediaService {
     }
 
     @Override
-    public Page<MediaResponse> getCompanyMedia(Long companyId, Pageable pageable) {
+    public Page<MediaResponse> getCompanyMedia(Pageable pageable) {
+        User user = UserContext.getAuthenticatedUser(userRepository);
+        Long companyId = user.getCompanyId();
+
         return mediaRepository.findByCompanyId(companyId, pageable)
                 .map(this::convertToResponse);
     }
 
     @Override
-    @Cacheable(value = "media-url", key = "#mediaId + '_' + #companyId + '_public'")
-    public String getPublicUrl(String mediaId, Long companyId) {
+    @Cacheable(value = "media-url", key = "#mediaId + '_public'")
+    public String getPublicUrl(String mediaId) {
+        User user = UserContext.getAuthenticatedUser(userRepository);
+        Long companyId = user.getCompanyId();
+
         Media media = mediaRepository.findById(mediaId)
                 .orElseThrow(() -> new RuntimeException("Media not found: " + mediaId));
 
@@ -165,8 +186,11 @@ public class MediaServiceImpl implements MediaService {
     }
 
     @Override
-    @Cacheable(value = "media-url", key = "#mediaId + '_' + #companyId + '_signed_' + #expiryMinutes")
-    public String getSignedUrl(String mediaId, Long companyId, long expiryMinutes) {
+    @Cacheable(value = "media-url", key = "#mediaId + '_signed_' + #expiryMinutes")
+    public String getSignedUrl(String mediaId, long expiryMinutes) {
+        User user = UserContext.getAuthenticatedUser(userRepository);
+        Long companyId = user.getCompanyId();
+
         Media media = mediaRepository.findById(mediaId)
                 .orElseThrow(() -> new RuntimeException("Media not found: " + mediaId));
 
@@ -179,7 +203,11 @@ public class MediaServiceImpl implements MediaService {
     @Override
     @Transactional
     @CacheEvict(value = { "media", "entity-media", "media-url" }, allEntries = true)
-    public void deleteMedia(String mediaId, Long companyId, Long userId) throws IOException {
+    public void deleteMedia(String mediaId) throws IOException {
+        User user = UserContext.getAuthenticatedUser(userRepository);
+        Long companyId = user.getCompanyId();
+        Long userId = user.getId();
+
         Media media = mediaRepository.findById(mediaId)
                 .orElseThrow(() -> new RuntimeException("Media not found: " + mediaId));
 
@@ -200,7 +228,11 @@ public class MediaServiceImpl implements MediaService {
     @Override
     @Transactional
     @CacheEvict(value = { "entity-media", "media-url" }, allEntries = true)
-    public void deleteMediaByEntity(Long companyId, String entityType, Long entityId, Long userId) throws IOException {
+    public void deleteMediaByEntity(String entityType, Long entityId) throws IOException {
+        User user = UserContext.getAuthenticatedUser(userRepository);
+        Long companyId = user.getCompanyId();
+        Long userId = user.getId();
+
         List<Media> mediaList = mediaRepository.findByCompanyIdAndEntityTypeAndEntityId(
                 companyId, entityType, entityId);
 
@@ -219,8 +251,11 @@ public class MediaServiceImpl implements MediaService {
     @Override
     @Transactional
     @CacheEvict(value = { "media", "entity-media" }, allEntries = true)
-    public MediaResponse moveMedia(String mediaId, String newEntityType, Long newEntityId,
-            Long companyId, Long userId) {
+    public MediaResponse moveMedia(String mediaId, String newEntityType, Long newEntityId) {
+        User user = UserContext.getAuthenticatedUser(userRepository);
+        Long companyId = user.getCompanyId();
+        Long userId = user.getId();
+
         Media media = mediaRepository.findById(mediaId)
                 .orElseThrow(() -> new RuntimeException("Media not found: " + mediaId));
 
@@ -237,7 +272,10 @@ public class MediaServiceImpl implements MediaService {
 
     @Override
     @Transactional
-    public Map<String, Object> getStorageUsage(Long companyId) {
+    public Map<String, Object> getStorageUsage() {
+        User user = UserContext.getAuthenticatedUser(userRepository);
+        Long companyId = user.getCompanyId();
+
         Long totalSize = mediaRepository.getTotalStorageUsedByCompany(companyId);
         totalSize = totalSize != null ? totalSize : 0L;
 
@@ -256,33 +294,13 @@ public class MediaServiceImpl implements MediaService {
         return usage;
     }
 
-    // @Override
-    // @Async
-    // @Scheduled(cron = "0 0 2 * * ?") // Run daily at 2 AM
-    // public void cleanupTempFiles() {
-    // LocalDateTime expiryTime = LocalDateTime.now().minusDays(1);
-
-    // // Get all companies with temp files
-    // List<Media> tempFiles = mediaRepository.findTempFilesExpired(expiryTime);
-
-    // for (Media media : tempFiles) {
-    // try {
-    // StorageService storageService =
-    // storageServiceFactory.getStorageService(media.getStorageProvider());
-    // storageService.delete(media);
-    // mediaRepository.delete(media);
-    // log.debug("Cleaned up temp file: {}", media.getId());
-    // } catch (Exception e) {
-    // log.error("Failed to cleanup temp file: {}", media.getId(), e);
-    // }
-    // }
-
-    // log.info("Cleaned up {} temporary files", tempFiles.size());
-    // }
-
     @Override
-    public List<MediaResponse> copyMedia(List<String> mediaIds, String newEntityType, Long newEntityId,
-            Long companyId, Long userId) throws IOException {
+    public List<MediaResponse> copyMedia(List<String> mediaIds, String newEntityType, Long newEntityId)
+            throws IOException {
+        User user = UserContext.getAuthenticatedUser(userRepository);
+        Long companyId = user.getCompanyId();
+        Long userId = user.getId();
+
         List<MediaResponse> copiedMedia = new ArrayList<>();
         for (String mediaId : mediaIds) {
             Media media = mediaRepository.findById(mediaId)
@@ -319,8 +337,11 @@ public class MediaServiceImpl implements MediaService {
     }
 
     @Override
-    public MediaResponse updateMediaMetadata(String mediaId, Map<String, Object> metadata,
-            Long companyId, Long userId) {
+    public MediaResponse updateMediaMetadata(String mediaId, Map<String, Object> metadata) {
+        User user = UserContext.getAuthenticatedUser(userRepository);
+        Long companyId = user.getCompanyId();
+        Long userId = user.getId();
+
         Media media = mediaRepository.findById(mediaId)
                 .orElseThrow(() -> new RuntimeException("Media not found: " + mediaId));
 
@@ -337,16 +358,13 @@ public class MediaServiceImpl implements MediaService {
         }
     }
 
-    private void validateUploadRequest(MediaUploadRequest request, Long userId) {
-        if (request.getCompanyId() == null) {
-            throw new RuntimeException("Company ID is required");
+    private void validateUploadRequest(MediaUploadRequest request, Long companyId, Long userId) {
+        if (request.getCompanyId() != null && !request.getCompanyId().equals(companyId)) {
+            throw new RuntimeException("Company ID in request does not match authenticated user");
         }
-
         if (request.getEntityType() == null || request.getEntityId() == null) {
             throw new RuntimeException("Entity type and ID are required");
         }
-
-        // Additional validations based on your business rules
     }
 
     private void validateCompanyAccess(Media media, Long companyId) {
@@ -395,10 +413,13 @@ public class MediaServiceImpl implements MediaService {
     }
 
     @Override
-    public Map<Long, List<MediaResponse>> getMediaForEntities(Long companyId, String entityType, List<Long> entityIds) {
+    public Map<Long, List<MediaResponse>> getMediaForEntities(String entityType, List<Long> entityIds) {
         if (entityIds == null || entityIds.isEmpty()) {
             return new HashMap<>();
         }
+
+        User user = UserContext.getAuthenticatedUser(userRepository);
+        Long companyId = user.getCompanyId();
 
         try {
             // Get media for all entities in one query
@@ -430,7 +451,10 @@ public class MediaServiceImpl implements MediaService {
     }
 
     @Override
-    public Resource loadMediaResourceById(String mediaId, Long companyId, boolean thumbnail) throws IOException {
+    public Resource loadMediaResourceById(String mediaId, boolean thumbnail) throws IOException {
+        User user = UserContext.getAuthenticatedUser(userRepository);
+        Long companyId = user.getCompanyId();
+
         Media media = mediaRepository.findById(mediaId)
                 .orElseThrow(() -> new IOException("Media not found: " + mediaId));
 

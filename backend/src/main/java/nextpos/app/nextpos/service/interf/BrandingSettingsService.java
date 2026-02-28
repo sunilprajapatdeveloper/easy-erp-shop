@@ -8,15 +8,13 @@ import java.util.List;
 
 public interface BrandingSettingsService {
 
-    BrandingSettingsResponse createBrandingSettings(CreateBrandingSettingsRequest request, Long companyId,
-            Long createdBy);
+        BrandingSettingsResponse createBrandingSettings(CreateBrandingSettingsRequest request);
 
-    BrandingSettingsResponse updateBrandingSettings(Long id, Long companyId, UpdateBrandingSettingsRequest request,
-            Long updatedBy);
+        BrandingSettingsResponse updateBrandingSettings(Long id, UpdateBrandingSettingsRequest request);
 
-    BrandingSettingsResponse getBrandingSettings(Long id, Long companyId);
+        BrandingSettingsResponse getBrandingSettings(Long id);
 
-    List<BrandingSettingsResponse> listBrandingSettings(Long companyId);
+        List<BrandingSettingsResponse> listBrandingSettings();
 
-    void deleteBrandingSettings(Long id, Long companyId);
+        void deleteBrandingSettings(Long id);
 }

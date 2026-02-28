@@ -48,14 +48,22 @@ public class SupplierServiceImpl implements SupplierService {
 
         @Override
         public SupplierResponse getSupplierById(Long id) {
+                User user = UserContext.getAuthenticatedUser(userRepository);
+                Long companyId = user.getCompanyId();
+
                 Supplier supplier = supplierRepository.findById(id)
                                 .orElseThrow(() -> new RuntimeException("Supplier not found with id: " + id));
+
+                // Ensure supplier belongs to the user's company
+                if (!supplier.getCompanyId().equals(companyId)) {
+                        throw new RuntimeException("Access denied to supplier with id: " + id);
+                }
 
                 return new SupplierResponse(supplier);
         }
 
         @Override
-        @Transactional
+        @Transactional(readOnly = true)
         public List<SupplierResponse> getMySuppliers() {
                 User user = UserContext.getAuthenticatedUser(userRepository);
 
@@ -67,7 +75,7 @@ public class SupplierServiceImpl implements SupplierService {
         }
 
         @Override
-        @Transactional
+        @Transactional(readOnly = true)
         public List<SupplierResponse> getAllSuppliers() {
                 User user = UserContext.getAuthenticatedUser(userRepository);
 
@@ -82,9 +90,15 @@ public class SupplierServiceImpl implements SupplierService {
         @Transactional
         public SupplierResponse updateSupplier(Long id, UpdateSupplierRequest request) {
                 User user = UserContext.getAuthenticatedUser(userRepository);
+                Long companyId = user.getCompanyId();
 
                 Supplier supplier = supplierRepository.findById(id)
                                 .orElseThrow(() -> new RuntimeException("Supplier not found with id: " + id));
+
+                // Ensure supplier belongs to the user's company
+                if (!supplier.getCompanyId().equals(companyId)) {
+                        throw new RuntimeException("Access denied to supplier with id: " + id);
+                }
 
                 // Update only provided fields
                 if (request.getName() != null)
@@ -104,7 +118,7 @@ public class SupplierServiceImpl implements SupplierService {
 
                 supplier.setUpdatedBy(user.getId());
                 supplier.setUpdatedAt(LocalDateTime.now());
-                supplier.setCompanyId(user.getCompanyId());
+                supplier.setCompanyId(companyId);
 
                 Supplier updated = supplierRepository.save(supplier);
                 return new SupplierResponse(updated);
@@ -112,9 +126,17 @@ public class SupplierServiceImpl implements SupplierService {
 
         @Override
         @Transactional
-        public void deleteSupplier(Long id, Long deletedByUserId) {
+        public void deleteSupplier(Long id) {
+                User user = UserContext.getAuthenticatedUser(userRepository);
+                Long companyId = user.getCompanyId();
+
                 Supplier supplier = supplierRepository.findById(id)
                                 .orElseThrow(() -> new RuntimeException("Supplier not found with id: " + id));
+
+                // Ensure supplier belongs to the user's company
+                if (!supplier.getCompanyId().equals(companyId)) {
+                        throw new RuntimeException("Access denied to supplier with id: " + id);
+                }
 
                 supplierRepository.delete(supplier);
         }

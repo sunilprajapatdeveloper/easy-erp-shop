@@ -8,12 +8,11 @@ import java.util.List;
 
 public interface LoyaltySettingsService {
 
-    LoyaltySettingsResponse createLoyaltySettings(CreateLoyaltySettingsRequest request, Long companyId, Long createdBy);
+    LoyaltySettingsResponse createLoyaltySettings(CreateLoyaltySettingsRequest request);
 
-    LoyaltySettingsResponse updateLoyaltySettings(Long id, Long companyId, UpdateLoyaltySettingsRequest request,
-            Long updatedBy);
+    LoyaltySettingsResponse updateLoyaltySettings(Long id, UpdateLoyaltySettingsRequest request);
 
-    LoyaltySettingsResponse getLoyaltySettings(Long id, Long companyId);
+    LoyaltySettingsResponse getLoyaltySettings(Long id);
 
-    List<LoyaltySettingsResponse> listLoyaltySettings(Long companyId);
+    List<LoyaltySettingsResponse> listLoyaltySettings();
 }

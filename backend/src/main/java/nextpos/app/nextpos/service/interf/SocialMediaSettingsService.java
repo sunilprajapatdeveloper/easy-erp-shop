@@ -8,12 +8,11 @@ import java.util.List;
 
 public interface SocialMediaSettingsService {
 
-    SocialMediaSettingsResponse createSocialMediaSettings(CreateSocialMediaSettingsRequest request, Long createdBy);
+    SocialMediaSettingsResponse createSocialMediaSettings(CreateSocialMediaSettingsRequest request);
 
-    SocialMediaSettingsResponse updateSocialMediaSettings(Long id, Long companyId,
-            UpdateSocialMediaSettingsRequest request, Long updatedBy);
+    SocialMediaSettingsResponse updateSocialMediaSettings(Long id, UpdateSocialMediaSettingsRequest request);
 
-    SocialMediaSettingsResponse getSocialMediaSettings(Long id, Long companyId);
+    SocialMediaSettingsResponse getSocialMediaSettings(Long id);
 
-    List<SocialMediaSettingsResponse> listSocialMediaSettings(Long companyId);
+    List<SocialMediaSettingsResponse> listSocialMediaSettings();
 }

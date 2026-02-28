@@ -31,9 +31,8 @@ public class TaxSettingController {
      */
     @PostMapping
     public ResponseEntity<TaxSettingResponse> createTaxSetting(
-            @RequestHeader("X-Company-Id") Long companyId,
             @Valid @RequestBody CreateTaxSettingRequest request) {
-        TaxSettingResponse response = taxSettingService.createTaxSetting(request, companyId);
+        TaxSettingResponse response = taxSettingService.createTaxSetting(request);
         return ResponseEntity.ok(response);
     }
 
@@ -42,9 +41,8 @@ public class TaxSettingController {
      */
     @GetMapping("/{id}")
     public ResponseEntity<TaxSettingResponse> getTaxSetting(
-            @PathVariable Long id,
-            @RequestHeader("X-Company-Id") Long companyId) {
-        TaxSettingResponse response = taxSettingService.getTaxSetting(id, companyId);
+            @PathVariable Long id) {
+        TaxSettingResponse response = taxSettingService.getTaxSetting(id);
         return ResponseEntity.ok(response);
     }
 
@@ -52,9 +50,8 @@ public class TaxSettingController {
      * List all tax settings for a company.
      */
     @GetMapping
-    public ResponseEntity<List<TaxSettingResponse>> listTaxSettings(
-            @RequestHeader("X-Company-Id") Long companyId) {
-        List<TaxSettingResponse> responses = taxSettingService.listTaxSettings(companyId);
+    public ResponseEntity<List<TaxSettingResponse>> listTaxSettings() {
+        List<TaxSettingResponse> responses = taxSettingService.listTaxSettings();
         return ResponseEntity.ok(responses);
     }
 
@@ -64,9 +61,8 @@ public class TaxSettingController {
     @PutMapping("/{id}")
     public ResponseEntity<TaxSettingResponse> updateTaxSetting(
             @PathVariable Long id,
-            @RequestHeader("X-Company-Id") Long companyId,
             @Valid @RequestBody UpdateTaxSettingRequest request) {
-        TaxSettingResponse response = taxSettingService.updateTaxSetting(id, companyId, request);
+        TaxSettingResponse response = taxSettingService.updateTaxSetting(id, request);
         return ResponseEntity.ok(response);
     }
 
@@ -75,9 +71,8 @@ public class TaxSettingController {
      */
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteTaxSetting(
-            @PathVariable Long id,
-            @RequestHeader("X-Company-Id") Long companyId) {
-        taxSettingService.deleteTaxSetting(id, companyId);
+            @PathVariable Long id) {
+        taxSettingService.deleteTaxSetting(id);
         return ResponseEntity.noContent().build();
     }
 }

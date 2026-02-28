@@ -8,13 +8,13 @@ public interface SMTPSettingsService {
 
     SMTPSettingsResponse createOrUpdateSMTPSettings(CreateSMTPSettingsRequest request);
 
-    SMTPSettingsResponse updateSMTPSettings(Long companyId, UpdateSMTPSettingsRequest request);
+    SMTPSettingsResponse updateSMTPSettings(UpdateSMTPSettingsRequest request);
 
-    SMTPSettingsResponse getSMTPSettingsByCompanyId(Long companyId);
+    SMTPSettingsResponse getSMTPSettings();
 
-    void deleteSMTPSettings(Long companyId);
+    void deleteSMTPSettings();
 
-    boolean testConnection(Long companyId);
+    boolean testConnection();
 
-    void refreshCache(Long companyId);
+    void refreshCache();
 }

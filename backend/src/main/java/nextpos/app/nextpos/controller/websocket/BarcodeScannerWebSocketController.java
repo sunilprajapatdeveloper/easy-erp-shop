@@ -12,7 +12,6 @@ import nextpos.app.nextpos.model.dto.response.ScannerRegistrationResponse;
 import nextpos.app.nextpos.model.dto.response.ScannerStatusResponse;
 import nextpos.app.nextpos.service.interf.BarcodeScannerService;
 import org.springframework.messaging.handler.annotation.MessageMapping;
-import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.simp.annotation.SendToUser;
 import org.springframework.stereotype.Controller;
@@ -27,14 +26,11 @@ public class BarcodeScannerWebSocketController {
         @MessageMapping("/scanner/register")
         @SendToUser("/queue/scanner/registration")
         public ScannerRegistrationResponse registerScanner(
-                        @Payload ScannerRegistrationRequest request,
-                        @Header("companyId") Long companyId) {
+                        @Payload ScannerRegistrationRequest request) {
 
                 try {
-                        log.debug("Registering scanner via WebSocket: {} for company: {}",
-                                        request.getScannerName(), companyId);
+                        log.debug("Registering scanner via WebSocket: {}", request.getScannerName());
 
-                        request.setCompanyId(companyId);
                         ScannerRegistrationResponse response = scannerService.registerScanner(request);
 
                         log.info("Scanner registered successfully via WebSocket: {}", response.getScannerId());
@@ -53,17 +49,14 @@ public class BarcodeScannerWebSocketController {
         @MessageMapping("/scanner/scan")
         @SendToUser("/queue/scanner/response")
         public BarcodeScanResponse processBarcodeScan(
-                        @Payload BarcodeScanRequest request,
-                        @Header("companyId") Long companyId) {
+                        @Payload BarcodeScanRequest request) {
 
                 try {
-                        log.debug("Processing barcode scan from scanner: {} for company: {}",
-                                        request.getScannerId(), companyId);
+                        log.debug("Processing barcode scan from scanner: {}", request.getScannerId());
 
                         BarcodeScanResponse response = scannerService.validateAndProcessScan(
                                         request.getScannerId(),
-                                        request.getBarcode(),
-                                        companyId);
+                                        request.getBarcode());
 
                         log.info("Barcode processed successfully: {} -> {}", request.getBarcode(),
                                         response.getProductName());
@@ -84,14 +77,13 @@ public class BarcodeScannerWebSocketController {
         @MessageMapping("/scanner/status")
         @SendToUser("/queue/scanner/status")
         public ScannerStatusResponse updateScannerStatus(
-                        @Payload ScannerStatusUpdateRequest request,
-                        @Header("companyId") Long companyId) {
+                        @Payload ScannerStatusUpdateRequest request) {
 
                 try {
-                        log.debug("Updating scanner status: {} for scanner: {}, company: {}",
-                                        request.getStatus(), request.getScannerId(), companyId);
+                        log.debug("Updating scanner status: {} for scanner: {}",
+                                        request.getStatus(), request.getScannerId());
 
-                        scannerService.updateScannerStatus(request.getScannerId(), companyId, request.getStatus());
+                        scannerService.updateScannerStatus(request.getScannerId(), request.getStatus());
 
                         return ScannerStatusResponse.builder()
                                         .scannerId(request.getScannerId())
@@ -112,14 +104,12 @@ public class BarcodeScannerWebSocketController {
         @MessageMapping("/scanner/disconnect")
         @SendToUser("/queue/scanner/disconnect")
         public ScannerDisconnectResponse disconnectScanner(
-                        @Payload ScannerDisconnectRequest request,
-                        @Header("companyId") Long companyId) {
+                        @Payload ScannerDisconnectRequest request) {
 
                 try {
-                        log.info("Disconnecting scanner: {} for company: {}",
-                                        request.getScannerId(), companyId);
+                        log.info("Disconnecting scanner: {}", request.getScannerId());
 
-                        scannerService.disconnectScanner(request.getScannerId(), companyId);
+                        scannerService.disconnectScanner(request.getScannerId());
 
                         return ScannerDisconnectResponse.builder()
                                         .scannerId(request.getScannerId())

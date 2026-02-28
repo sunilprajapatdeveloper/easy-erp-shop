@@ -55,7 +55,7 @@ public class AdjustmentServiceImpl implements AdjustmentService {
                                                                         "Product not found with ID: "
                                                                                         + p.getProductId()));
 
-                                        int currentQty = productStockService.getStock(user.getCompanyId(),
+                                        int currentQty = productStockService.getStock(
                                                         product.getId(),
                                                         warehouse.getId());
                                         int adjustedQty = p.getAdjustedQty();
@@ -68,7 +68,7 @@ public class AdjustmentServiceImpl implements AdjustmentService {
                                                                 + p.getProductId());
                                         }
 
-                                        productStockService.adjustStock(user.getCompanyId(), user.getId(),
+                                        productStockService.adjustStock(
                                                         product.getId(),
                                                         warehouse.getId(), delta);
 
@@ -135,7 +135,7 @@ public class AdjustmentServiceImpl implements AdjustmentService {
                                                 ? -oldProduct.getAdjustedQty()
                                                 : oldProduct.getAdjustedQty();
 
-                                productStockService.adjustStock(user.getCompanyId(), user.getId(),
+                                productStockService.adjustStock(
                                                 oldProduct.getProductId(),
                                                 adjustment.getWarehouse().getId(), revertDelta);
                         }
@@ -152,7 +152,7 @@ public class AdjustmentServiceImpl implements AdjustmentService {
                                                                         "Product not found with ID: "
                                                                                         + p.getProductId()));
 
-                                        int currentQty = productStockService.getStock(user.getCompanyId(),
+                                        int currentQty = productStockService.getStock(
                                                         product.getId(),
                                                         adjustment.getWarehouse().getId());
                                         int adjustedQty = p.getAdjustedQty();
@@ -165,7 +165,7 @@ public class AdjustmentServiceImpl implements AdjustmentService {
                                                                 + p.getProductId());
                                         }
 
-                                        productStockService.adjustStock(user.getCompanyId(), user.getId(),
+                                        productStockService.adjustStock(
                                                         product.getId(),
                                                         adjustment.getWarehouse().getId(), delta);
 
@@ -208,7 +208,7 @@ public class AdjustmentServiceImpl implements AdjustmentService {
                         for (AdjustmentProduct tp : adjustment.getProducts()) {
                                 int revertDelta = tp.getStockEffect() == StockEffect.ADD ? -tp.getAdjustedQty()
                                                 : tp.getAdjustedQty();
-                                productStockService.adjustStock(adjustment.getCompanyId(), tp.getCreatedBy(),
+                                productStockService.adjustStock(
                                                 tp.getProductId(),
                                                 adjustment.getWarehouse().getId(), revertDelta);
                         }

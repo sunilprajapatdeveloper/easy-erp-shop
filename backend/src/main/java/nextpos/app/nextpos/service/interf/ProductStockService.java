@@ -11,40 +11,40 @@ public interface ProductStockService {
     /**
      * Create a new product stock entry for a company.
      */
-    ProductStockResponse createProductStock(Long companyId, Long userId, CreateProductStockRequest request);
+    ProductStockResponse createProductStock(CreateProductStockRequest request);
 
     /**
      * Update an existing product stock entry.
      */
-    ProductStockResponse updateProductStock(Long companyId, Long userId, UpdateProductStockRequest request);
+    ProductStockResponse updateProductStock(UpdateProductStockRequest request);
 
     /**
      * Get a product stock entry by ID.
      */
-    ProductStockResponse getProductStockById(Long companyId, Long id);
+    ProductStockResponse getProductStockById(Long id);
 
     /**
      * Get a product stock entry by product and warehouse.
      */
-    ProductStockResponse getByProductAndWarehouse(Long companyId, Long productId, Long warehouseId);
+    ProductStockResponse getByProductAndWarehouse(Long productId, Long warehouseId);
 
     /**
      * List all product stock entries for a company.
      */
-    List<ProductStockResponse> listStocksByCompany(Long companyId);
+    List<ProductStockResponse> listStocksByCompany();
 
     /**
      * Adjust stock quantity atomically.
      */
-    ProductStockResponse adjustStock(Long companyId, Long userId, Long productId, Long warehouseId, int delta);
+    ProductStockResponse adjustStock(Long productId, Long warehouseId, int delta);
 
     /**
      * Delete a product stock entry.
      */
-    void deleteProductStock(Long companyId, Long userId, Long id);
+    void deleteProductStock(Long id);
 
     /**
      * Get current stock quantity for a product in a warehouse.
      */
-    int getStock(Long companyId, Long productId, Long warehouseId);
+    int getStock(Long productId, Long warehouseId);
 }

@@ -7,10 +7,13 @@ import nextpos.app.nextpos.model.dto.request.UpdateRequest.UpdateProductTaxReque
 import nextpos.app.nextpos.model.dto.response.ProductTaxResponse;
 import nextpos.app.nextpos.model.entity.Product;
 import nextpos.app.nextpos.model.entity.ProductTax;
+import nextpos.app.nextpos.model.entity.User;
 import nextpos.app.nextpos.model.entity.Warehouse;
-import nextpos.app.nextpos.repository.ProductTaxRepository;
 import nextpos.app.nextpos.repository.ProductRepository;
+import nextpos.app.nextpos.repository.ProductTaxRepository;
+import nextpos.app.nextpos.repository.UserRepository;
 import nextpos.app.nextpos.repository.WarehouseRepository;
+import nextpos.app.nextpos.security.context.UserContext;
 import nextpos.app.nextpos.service.interf.ProductTaxService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,9 +31,13 @@ public class ProductTaxServiceImpl implements ProductTaxService {
     private final ProductTaxRepository productTaxRepository;
     private final ProductRepository productRepository;
     private final WarehouseRepository warehouseRepository;
+    private final UserRepository userRepository;
 
     @Override
-    public ProductTaxResponse createProductTax(Long companyId, Long createdBy, CreateProductTaxRequest request) {
+    public ProductTaxResponse createProductTax(CreateProductTaxRequest request) {
+        User user = UserContext.getAuthenticatedUser(userRepository);
+        Long companyId = user.getCompanyId();
+        Long currentUserId = user.getId();
 
         Product product = productRepository.findById(request.getProductId())
                 .filter(p -> companyId.equals(p.getCompanyId()) && !Boolean.TRUE.equals(p.getIsDeleted()))
@@ -67,7 +74,7 @@ public class ProductTaxServiceImpl implements ProductTaxService {
                 .isCompound(request.getIsCompound())
                 .isActive(request.getIsActive())
                 .companyId(companyId)
-                .createdBy(createdBy)
+                .createdBy(currentUserId)
                 .createdAt(LocalDateTime.now())
                 .build();
 
@@ -76,8 +83,11 @@ public class ProductTaxServiceImpl implements ProductTaxService {
     }
 
     @Override
-    public ProductTaxResponse updateProductTax(Long companyId, Long updatedBy, Long taxId,
-            UpdateProductTaxRequest request) {
+    public ProductTaxResponse updateProductTax(Long taxId, UpdateProductTaxRequest request) {
+        User user = UserContext.getAuthenticatedUser(userRepository);
+        Long companyId = user.getCompanyId();
+        Long currentUserId = user.getId();
+
         ProductTax existing = productTaxRepository.findByIdAndCompanyId(taxId, companyId)
                 .orElseThrow(() -> new EntityNotFoundException("ProductTax not found with id: " + taxId));
 
@@ -116,7 +126,7 @@ public class ProductTaxServiceImpl implements ProductTaxService {
         if (request.getIsActive() != null)
             existing.setIsActive(request.getIsActive());
 
-        existing.setUpdatedBy(updatedBy);
+        existing.setUpdatedBy(currentUserId);
         existing.setUpdatedAt(LocalDateTime.now());
 
         ProductTax saved = productTaxRepository.save(existing);
@@ -125,7 +135,10 @@ public class ProductTaxServiceImpl implements ProductTaxService {
 
     @Override
     @Transactional(readOnly = true)
-    public ProductTaxResponse getProductTaxById(Long companyId, Long taxId) {
+    public ProductTaxResponse getProductTaxById(Long taxId) {
+        User user = UserContext.getAuthenticatedUser(userRepository);
+        Long companyId = user.getCompanyId();
+
         ProductTax entity = productTaxRepository.findByIdAndCompanyId(taxId, companyId)
                 .orElseThrow(() -> new EntityNotFoundException("ProductTax not found with id: " + taxId));
         return ProductTaxResponse.fromEntity(entity);
@@ -133,27 +146,39 @@ public class ProductTaxServiceImpl implements ProductTaxService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<ProductTaxResponse> listTaxesByProduct(Long companyId, Long productId) {
+    public List<ProductTaxResponse> listTaxesByProduct(Long productId) {
+        User user = UserContext.getAuthenticatedUser(userRepository);
+        Long companyId = user.getCompanyId();
+
         return productTaxRepository.findAllByProductIdAndCompanyId(productId, companyId)
                 .stream().map(ProductTaxResponse::fromEntity).collect(Collectors.toList());
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<ProductTaxResponse> listTaxesByWarehouse(Long companyId, Long warehouseId) {
+    public List<ProductTaxResponse> listTaxesByWarehouse(Long warehouseId) {
+        User user = UserContext.getAuthenticatedUser(userRepository);
+        Long companyId = user.getCompanyId();
+
         return productTaxRepository.findAllByWarehouseIdAndCompanyId(warehouseId, companyId)
                 .stream().map(ProductTaxResponse::fromEntity).collect(Collectors.toList());
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<ProductTaxResponse> listAllTaxes(Long companyId) {
+    public List<ProductTaxResponse> listAllTaxes() {
+        User user = UserContext.getAuthenticatedUser(userRepository);
+        Long companyId = user.getCompanyId();
+
         return productTaxRepository.findAllByCompanyId(companyId)
                 .stream().map(ProductTaxResponse::fromEntity).collect(Collectors.toList());
     }
 
     @Override
-    public void deleteProductTax(Long companyId, Long deletedBy, Long taxId) {
+    public void deleteProductTax(Long taxId) {
+        User user = UserContext.getAuthenticatedUser(userRepository);
+        Long companyId = user.getCompanyId();
+
         ProductTax existing = productTaxRepository.findByIdAndCompanyId(taxId, companyId)
                 .orElseThrow(() -> new EntityNotFoundException("ProductTax not found with id: " + taxId));
         productTaxRepository.delete(existing);
@@ -161,8 +186,10 @@ public class ProductTaxServiceImpl implements ProductTaxService {
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<ProductTaxResponse> findEffectiveTax(Long companyId, Long productId, Long warehouseId,
-            String taxCode) {
+    public Optional<ProductTaxResponse> findEffectiveTax(Long productId, Long warehouseId, String taxCode) {
+        User user = UserContext.getAuthenticatedUser(userRepository);
+        Long companyId = user.getCompanyId();
+
         Optional<ProductTax> exact = Optional.empty();
         if (warehouseId != null) {
             exact = productTaxRepository.findAllByProductIdAndCompanyId(productId, companyId)

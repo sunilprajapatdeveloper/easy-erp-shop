@@ -8,7 +8,7 @@ import java.util.List;
 public interface CategoryService {
     CategoryResponse createCategory(CreateCategoryRequest request);
     CategoryResponse getCategoryById(Long id);
-    List<CategoryResponse> findAllByCreatedBy(Long id);
+    List<CategoryResponse> findAllByCreatedBy();
     List<CategoryResponse> getAllCategories();
     CategoryResponse updateCategory(Long id, CreateCategoryRequest request);
     void deleteCategory(Long id);

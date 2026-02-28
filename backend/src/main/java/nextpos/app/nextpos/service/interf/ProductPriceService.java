@@ -9,22 +9,21 @@ import java.util.Optional;
 
 public interface ProductPriceService {
 
-    ProductPriceResponse createProductPrice(Long companyId, Long createdBy, CreateProductPriceRequest request);
+    ProductPriceResponse createProductPrice(CreateProductPriceRequest request);
 
-    ProductPriceResponse updateProductPrice(Long companyId, Long updatedBy, Long priceId,
-            UpdateProductPriceRequest request);
+    ProductPriceResponse updateProductPrice(Long priceId, UpdateProductPriceRequest request);
 
-    ProductPriceResponse getProductPriceById(Long companyId, Long priceId);
+    ProductPriceResponse getProductPriceById(Long priceId);
 
-    ProductPriceResponse getByProductAndWarehouse(Long companyId, Long productId, Long warehouseId);
+    ProductPriceResponse getByProductAndWarehouse(Long productId, Long warehouseId);
 
-    Optional<ProductPriceResponse> findEffectivePrice(Long companyId, Long productId, Long warehouseId, String channel);
+    Optional<ProductPriceResponse> findEffectivePrice(Long productId, Long warehouseId, String channel);
 
-    List<ProductPriceResponse> listPricesByProduct(Long companyId, Long productId);
+    List<ProductPriceResponse> listPricesByProduct(Long productId);
 
-    List<ProductPriceResponse> listPricesByWarehouse(Long companyId, Long warehouseId);
+    List<ProductPriceResponse> listPricesByWarehouse(Long warehouseId);
 
-    List<ProductPriceResponse> listAllPrices(Long companyId);
+    List<ProductPriceResponse> listAllPrices();
 
-    void deleteProductPrice(Long companyId, Long deletedBy, Long priceId);
+    void deleteProductPrice(Long priceId);
 }

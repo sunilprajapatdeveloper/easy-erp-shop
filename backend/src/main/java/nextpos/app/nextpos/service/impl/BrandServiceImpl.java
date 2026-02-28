@@ -46,8 +46,9 @@ public class BrandServiceImpl implements BrandService {
     }
 
     @Override
-    public List<BrandResponse> findAllByCreatedBy(Long userId) {
-        return brandRepository.findAllByCreatedBy(userId).stream()
+    public List<BrandResponse> findAllByCreatedBy() {
+        User user = UserContext.getAuthenticatedUser(userRepository);
+        return brandRepository.findAllByCreatedBy(user.getId()).stream()
                 .map(BrandResponse::new)
                 .collect(Collectors.toList());
     }

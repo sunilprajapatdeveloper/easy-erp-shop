@@ -10,11 +10,14 @@ import nextpos.app.nextpos.model.dto.response.SubscriptionPlanResponse;
 import nextpos.app.nextpos.model.entity.Company;
 import nextpos.app.nextpos.model.entity.CompanySubscription;
 import nextpos.app.nextpos.model.entity.SubscriptionPlan;
+import nextpos.app.nextpos.model.entity.User;
 import nextpos.app.nextpos.model.enums.BillingCycle;
 import nextpos.app.nextpos.model.enums.SubscriptionStatus;
 import nextpos.app.nextpos.repository.CompanyRepository;
 import nextpos.app.nextpos.repository.CompanySubscriptionRepository;
 import nextpos.app.nextpos.repository.SubscriptionPlanRepository;
+import nextpos.app.nextpos.repository.UserRepository;
+import nextpos.app.nextpos.security.context.UserContext;
 import nextpos.app.nextpos.service.interf.CompanySubscriptionService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -39,10 +42,18 @@ public class CompanySubscriptionServiceImpl implements CompanySubscriptionServic
     private final CompanySubscriptionRepository companySubscriptionRepository;
     private final CompanyRepository companyRepository;
     private final SubscriptionPlanRepository subscriptionPlanRepository;
+    private final UserRepository userRepository;
 
     @Override
-    public CompanySubscriptionResponse createCompanySubscription(CreateCompanySubscriptionRequest request,
-            Long createdBy) {
+    public CompanySubscriptionResponse createCompanySubscription(CreateCompanySubscriptionRequest request) {
+        User user = UserContext.getAuthenticatedUser(userRepository);
+        Long currentUserId = user.getId();
+
+        // Validate that the user belongs to the same company as the subscription
+        // request
+        if (!user.getCompanyId().equals(request.getCompanyId())) {
+            throw new SecurityException("You can only create subscriptions for your own company");
+        }
 
         // Validate company
         Company company = companyRepository.findById(request.getCompanyId())
@@ -130,8 +141,8 @@ public class CompanySubscriptionServiceImpl implements CompanySubscriptionServic
                 .trialEndDate(trialEndDate)
                 .status(SubscriptionStatus.ACTIVE) // new subscriptions are ACTIVE by default (business rule)
                 .billingReference(request.getBillingReference())
-                .createdBy(createdBy)
-                .updatedBy(createdBy)
+                .createdBy(currentUserId)
+                .updatedBy(currentUserId)
                 .build();
 
         CompanySubscription saved = companySubscriptionRepository.save(subscription);
@@ -143,13 +154,19 @@ public class CompanySubscriptionServiceImpl implements CompanySubscriptionServic
 
     @Override
     public CompanySubscriptionResponse updateCompanySubscription(Long subscriptionId,
-            UpdateCompanySubscriptionRequest request,
-            Long updatedBy) {
+            UpdateCompanySubscriptionRequest request) {
+        User user = UserContext.getAuthenticatedUser(userRepository);
+        Long currentUserId = user.getId();
 
         CompanySubscription subscription = companySubscriptionRepository.findById(subscriptionId)
                 .filter(sub -> !sub.isDeleted())
                 .orElseThrow(
                         () -> new EntityNotFoundException("CompanySubscription not found with id: " + subscriptionId));
+
+        // Ensure the subscription belongs to the user's company
+        if (!user.getCompanyId().equals(subscription.getCompany().getId())) {
+            throw new SecurityException("You can only update subscriptions for your own company");
+        }
 
         // If plan updated, validate plan
         if (request.getSubscriptionPlanId() != null) {
@@ -221,7 +238,7 @@ public class CompanySubscriptionServiceImpl implements CompanySubscriptionServic
             subscription.setStatus(request.getStatus());
         }
 
-        subscription.setUpdatedBy(updatedBy);
+        subscription.setUpdatedBy(currentUserId);
         subscription.setUpdatedAt(LocalDateTime.now());
 
         CompanySubscription updated = companySubscriptionRepository.save(subscription);
@@ -233,14 +250,22 @@ public class CompanySubscriptionServiceImpl implements CompanySubscriptionServic
     }
 
     @Override
-    public void deleteCompanySubscription(Long subscriptionId, Long deletedBy) {
+    public void deleteCompanySubscription(Long subscriptionId) {
+        User user = UserContext.getAuthenticatedUser(userRepository);
+        Long currentUserId = user.getId();
+
         CompanySubscription subscription = companySubscriptionRepository.findById(subscriptionId)
                 .filter(sub -> !sub.isDeleted())
                 .orElseThrow(
                         () -> new EntityNotFoundException("CompanySubscription not found with id: " + subscriptionId));
 
+        // Ensure the subscription belongs to the user's company
+        if (!user.getCompanyId().equals(subscription.getCompany().getId())) {
+            throw new SecurityException("You can only delete subscriptions for your own company");
+        }
+
         subscription.setDeleted(true);
-        subscription.setUpdatedBy(deletedBy);
+        subscription.setUpdatedBy(currentUserId);
         subscription.setUpdatedAt(LocalDateTime.now());
 
         companySubscriptionRepository.save(subscription);
@@ -252,6 +277,8 @@ public class CompanySubscriptionServiceImpl implements CompanySubscriptionServic
     @Override
     @Transactional(readOnly = true)
     public Optional<CompanySubscription> getActiveSubscription(Long companyId) {
+        // No need to validate company access here because it's a read operation;
+        // we assume the caller (controller) will handle security if needed.
         return companySubscriptionRepository.findActiveSubscriptionByCompanyId(companyId);
     }
 

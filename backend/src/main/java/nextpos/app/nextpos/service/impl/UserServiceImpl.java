@@ -188,7 +188,7 @@ public class UserServiceImpl implements UserService {
         // Get profile image from media service
         MediaResponse mediaResponse = null;
         try {
-            mediaResponse = getProfileImageFromMedia(savedUser.getId(), savedUser.getCompanyId());
+            mediaResponse = getProfileImageFromMedia(savedUser.getId());
         } catch (Exception e) {
             log.warn("Could not retrieve profile image for new user: {}", e.getMessage());
         }
@@ -262,7 +262,7 @@ public class UserServiceImpl implements UserService {
         // Get profile image (if any)
         MediaResponse mediaResponse = null;
         try {
-            mediaResponse = getProfileImageFromMedia(savedUser.getId(), savedUser.getCompanyId());
+            mediaResponse = getProfileImageFromMedia(savedUser.getId());
         } catch (Exception e) {
             log.warn("Could not retrieve profile image for new user: {}", e.getMessage());
         }
@@ -281,7 +281,7 @@ public class UserServiceImpl implements UserService {
         }
         MediaResponse mediaResponse = null;
         try {
-            mediaResponse = getProfileImageFromMedia(userId, user.getCompanyId());
+            mediaResponse = getProfileImageFromMedia(userId);
         } catch (Exception e) {
             log.warn("Could not retrieve profile image: {}", e.getMessage());
         }
@@ -310,7 +310,7 @@ public class UserServiceImpl implements UserService {
         Long companyId = currentUser.getCompanyId();
 
         // Get profile images for all users in batch
-        Map<Long, List<MediaResponse>> mediaMap = mediaService.getMediaForEntities(companyId, "USER", userIds);
+        Map<Long, List<MediaResponse>> mediaMap = mediaService.getMediaForEntities("USER", userIds);
         if (mediaMap == null) {
             mediaMap = Collections.emptyMap();
         }
@@ -474,7 +474,7 @@ public class UserServiceImpl implements UserService {
         // Get full media response
         MediaResponse mediaResponse = null;
         try {
-            mediaResponse = getProfileImageFromMedia(savedUser.getId(), savedUser.getCompanyId());
+            mediaResponse = getProfileImageFromMedia(savedUser.getId());
         } catch (Exception e) {
             log.warn("Could not retrieve profile image: {}", e.getMessage());
         }
@@ -514,7 +514,7 @@ public class UserServiceImpl implements UserService {
 
         // Delete user's media
         try {
-            mediaService.deleteMediaByEntity(companyId, "USER", userId, userId);
+            mediaService.deleteMediaByEntity("USER", userId);
         } catch (Exception e) {
             log.error("Failed to delete media for user {}: {}", userId, e.getMessage());
         }
@@ -552,7 +552,7 @@ public class UserServiceImpl implements UserService {
         // Get full media response
         MediaResponse mediaResponse = null;
         try {
-            mediaResponse = getProfileImageFromMedia(user.getId(), user.getCompanyId());
+            mediaResponse = getProfileImageFromMedia(user.getId());
         } catch (Exception e) {
             log.warn("Could not retrieve profile image: {}", e.getMessage());
         }
@@ -593,10 +593,9 @@ public class UserServiceImpl implements UserService {
         return s == null ? "" : s;
     }
 
-    private MediaResponse getProfileImageFromMedia(Long userId, Long companyId) {
+    private MediaResponse getProfileImageFromMedia(Long userId) {
         // Get the map from the service
         Map<Long, List<MediaResponse>> mediaMap = mediaService.getMediaForEntities(
-                companyId,
                 "USER",
                 Collections.singletonList(userId));
 

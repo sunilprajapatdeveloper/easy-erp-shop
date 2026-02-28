@@ -8,11 +8,14 @@ import nextpos.app.nextpos.model.dto.response.ProductPriceResponse;
 import nextpos.app.nextpos.model.entity.Currency;
 import nextpos.app.nextpos.model.entity.Product;
 import nextpos.app.nextpos.model.entity.ProductPrice;
+import nextpos.app.nextpos.model.entity.User;
 import nextpos.app.nextpos.model.entity.Warehouse;
 import nextpos.app.nextpos.repository.CurrencyRepository;
 import nextpos.app.nextpos.repository.ProductPriceRepository;
 import nextpos.app.nextpos.repository.ProductRepository;
+import nextpos.app.nextpos.repository.UserRepository;
 import nextpos.app.nextpos.repository.WarehouseRepository;
+import nextpos.app.nextpos.security.context.UserContext;
 import nextpos.app.nextpos.service.interf.ProductPriceService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,9 +34,14 @@ public class ProductPriceServiceImpl implements ProductPriceService {
     private final ProductRepository productRepository;
     private final WarehouseRepository warehouseRepository;
     private final CurrencyRepository currencyRepository;
+    private final UserRepository userRepository; // used by UserContext
 
     @Override
-    public ProductPriceResponse createProductPrice(Long companyId, Long createdBy, CreateProductPriceRequest request) {
+    public ProductPriceResponse createProductPrice(CreateProductPriceRequest request) {
+        User user = UserContext.getAuthenticatedUser(userRepository);
+        Long companyId = user.getCompanyId();
+        Long currentUserId = user.getId();
+
         // validate product
         Product product = productRepository.findById(request.getProductId())
                 .filter(p -> companyId.equals(p.getCompanyId()) && !Boolean.TRUE.equals(p.getIsDeleted()))
@@ -84,7 +92,7 @@ public class ProductPriceServiceImpl implements ProductPriceService {
                 .minQuantity(request.getMinQuantity() != null ? request.getMinQuantity() : 1)
                 .maxQuantity(request.getMaxQuantity())
                 .companyId(companyId)
-                .createdBy(createdBy)
+                .createdBy(currentUserId)
                 .createdAt(LocalDateTime.now())
                 .build();
 
@@ -93,8 +101,11 @@ public class ProductPriceServiceImpl implements ProductPriceService {
     }
 
     @Override
-    public ProductPriceResponse updateProductPrice(Long companyId, Long updatedBy, Long priceId,
-            UpdateProductPriceRequest request) {
+    public ProductPriceResponse updateProductPrice(Long priceId, UpdateProductPriceRequest request) {
+        User user = UserContext.getAuthenticatedUser(userRepository);
+        Long companyId = user.getCompanyId();
+        Long currentUserId = user.getId();
+
         ProductPrice existing = productPriceRepository.findByIdAndCompanyId(priceId, companyId)
                 .orElseThrow(() -> new EntityNotFoundException("ProductPrice not found with id: " + priceId));
 
@@ -165,7 +176,7 @@ public class ProductPriceServiceImpl implements ProductPriceService {
             existing.setMaxQuantity(request.getMaxQuantity());
         }
 
-        existing.setUpdatedBy(updatedBy);
+        existing.setUpdatedBy(currentUserId);
         existing.setUpdatedAt(LocalDateTime.now());
 
         ProductPrice saved = productPriceRepository.save(existing);
@@ -174,7 +185,10 @@ public class ProductPriceServiceImpl implements ProductPriceService {
 
     @Override
     @Transactional(readOnly = true)
-    public ProductPriceResponse getProductPriceById(Long companyId, Long priceId) {
+    public ProductPriceResponse getProductPriceById(Long priceId) {
+        User user = UserContext.getAuthenticatedUser(userRepository);
+        Long companyId = user.getCompanyId();
+
         ProductPrice entity = productPriceRepository.findByIdAndCompanyId(priceId, companyId)
                 .orElseThrow(() -> new EntityNotFoundException("ProductPrice not found with id: " + priceId));
         return ProductPriceResponse.fromEntity(entity);
@@ -182,8 +196,10 @@ public class ProductPriceServiceImpl implements ProductPriceService {
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<ProductPriceResponse> findEffectivePrice(Long companyId, Long productId, Long warehouseId,
-            String channel) {
+    public Optional<ProductPriceResponse> findEffectivePrice(Long productId, Long warehouseId, String channel) {
+        User user = UserContext.getAuthenticatedUser(userRepository);
+        Long companyId = user.getCompanyId();
+
         String ch = channel != null ? channel.trim() : null;
 
         if (warehouseId != null) {
@@ -201,7 +217,10 @@ public class ProductPriceServiceImpl implements ProductPriceService {
 
     @Override
     @Transactional(readOnly = true)
-    public ProductPriceResponse getByProductAndWarehouse(Long companyId, Long productId, Long warehouseId) {
+    public ProductPriceResponse getByProductAndWarehouse(Long productId, Long warehouseId) {
+        User user = UserContext.getAuthenticatedUser(userRepository);
+        Long companyId = user.getCompanyId();
+
         ProductPrice price = productPriceRepository
                 .findByProductIdAndWarehouseIdAndCompanyId(productId, warehouseId, companyId)
                 .orElseThrow(() -> new EntityNotFoundException(
@@ -211,7 +230,10 @@ public class ProductPriceServiceImpl implements ProductPriceService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<ProductPriceResponse> listPricesByProduct(Long companyId, Long productId) {
+    public List<ProductPriceResponse> listPricesByProduct(Long productId) {
+        User user = UserContext.getAuthenticatedUser(userRepository);
+        Long companyId = user.getCompanyId();
+
         return productPriceRepository.findAllByProductIdAndCompanyId(productId, companyId)
                 .stream()
                 .map(ProductPriceResponse::fromEntity)
@@ -220,7 +242,10 @@ public class ProductPriceServiceImpl implements ProductPriceService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<ProductPriceResponse> listPricesByWarehouse(Long companyId, Long warehouseId) {
+    public List<ProductPriceResponse> listPricesByWarehouse(Long warehouseId) {
+        User user = UserContext.getAuthenticatedUser(userRepository);
+        Long companyId = user.getCompanyId();
+
         return productPriceRepository.findAllByWarehouseIdAndCompanyId(warehouseId, companyId)
                 .stream()
                 .map(ProductPriceResponse::fromEntity)
@@ -229,7 +254,10 @@ public class ProductPriceServiceImpl implements ProductPriceService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<ProductPriceResponse> listAllPrices(Long companyId) {
+    public List<ProductPriceResponse> listAllPrices() {
+        User user = UserContext.getAuthenticatedUser(userRepository);
+        Long companyId = user.getCompanyId();
+
         return productPriceRepository.findAllByCompanyId(companyId)
                 .stream()
                 .map(ProductPriceResponse::fromEntity)
@@ -237,7 +265,11 @@ public class ProductPriceServiceImpl implements ProductPriceService {
     }
 
     @Override
-    public void deleteProductPrice(Long companyId, Long deletedBy, Long priceId) {
+    public void deleteProductPrice(Long priceId) {
+        User user = UserContext.getAuthenticatedUser(userRepository);
+        Long companyId = user.getCompanyId();
+        Long currentUserId = user.getId(); // if needed for auditing
+
         ProductPrice existing = productPriceRepository.findByIdAndCompanyId(priceId, companyId)
                 .orElseThrow(() -> new EntityNotFoundException("ProductPrice not found with id: " + priceId));
         productPriceRepository.delete(existing);

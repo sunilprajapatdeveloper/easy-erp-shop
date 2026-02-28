@@ -140,8 +140,6 @@ public class SaleReturnServiceImpl implements SaleReturnService {
 
                         // Adjust stock
                         productStockService.adjustStock(
-                                        user.getCompanyId(),
-                                        user.getId(),
                                         product.getId(),
                                         warehouse.getId(),
                                         requestedReturnQty // increase stock for return
@@ -258,8 +256,6 @@ public class SaleReturnServiceImpl implements SaleReturnService {
                 // Rollback previously applied stock increases using ProductStockService
                 for (SaleReturnProduct srp : saleReturn.getProducts()) {
                         productStockService.adjustStock(
-                                        user.getCompanyId(),
-                                        user.getId(),
                                         srp.getProduct().getId(),
                                         saleReturn.getWarehouse().getId(),
                                         -srp.getReturnQty() // rollback
@@ -297,8 +293,6 @@ public class SaleReturnServiceImpl implements SaleReturnService {
 
                         // Re-apply stock
                         productStockService.adjustStock(
-                                        user.getCompanyId(),
-                                        user.getId(),
                                         product.getId(),
                                         saleReturn.getWarehouse().getId(),
                                         requestedReturnQty);
@@ -490,9 +484,6 @@ public class SaleReturnServiceImpl implements SaleReturnService {
                         if (product != null) {
                                 // Use ProductStockService to adjust stock safely
                                 productStockService.adjustStock(
-                                                product.getCompanyId(),
-                                                oldProduct.getUpdatedBy() != null ? oldProduct.getUpdatedBy()
-                                                                : oldProduct.getCreatedBy(),
                                                 product.getId(),
                                                 oldProduct.getSaleReturn().getWarehouse().getId(),
                                                 -oldProduct.getReturnQty() // rollback

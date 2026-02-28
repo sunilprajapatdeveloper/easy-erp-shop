@@ -7,8 +7,11 @@ import nextpos.app.nextpos.model.dto.request.UpdateRequest.UpdateBrandingSetting
 import nextpos.app.nextpos.model.dto.response.BrandingSettingsResponse;
 import nextpos.app.nextpos.model.entity.BrandingSettings;
 import nextpos.app.nextpos.model.entity.Company;
+import nextpos.app.nextpos.model.entity.User;
 import nextpos.app.nextpos.repository.BrandingSettingsRepository;
 import nextpos.app.nextpos.repository.CompanyRepository;
+import nextpos.app.nextpos.repository.UserRepository;
+import nextpos.app.nextpos.security.context.UserContext;
 import nextpos.app.nextpos.service.interf.BrandingSettingsService;
 
 import org.apache.kafka.common.errors.ResourceNotFoundException;
@@ -26,10 +29,14 @@ public class BrandingSettingsServiceImpl implements BrandingSettingsService {
 
     private final BrandingSettingsRepository brandingSettingsRepository;
     private final CompanyRepository companyRepository;
+    private final UserRepository userRepository; // added for UserContext
 
     @Override
-    public BrandingSettingsResponse createBrandingSettings(CreateBrandingSettingsRequest request, Long companyId,
-            Long createdBy) {
+    public BrandingSettingsResponse createBrandingSettings(CreateBrandingSettingsRequest request) {
+        User user = UserContext.getAuthenticatedUser(userRepository);
+        Long companyId = user.getCompanyId();
+        Long currentUserId = user.getId();
+
         log.info("Creating BrandingSettings for companyId={}", companyId);
 
         Company company = companyRepository.findById(companyId)
@@ -49,7 +56,7 @@ public class BrandingSettingsServiceImpl implements BrandingSettingsService {
                 .fontSize(request.getFontSize())
                 .customTheme(request.getCustomTheme())
                 .isActive(request.getIsActive())
-                .createdBy(createdBy)
+                .createdBy(currentUserId)
                 .build();
 
         BrandingSettings saved = brandingSettingsRepository.save(brandingSettings);
@@ -57,8 +64,11 @@ public class BrandingSettingsServiceImpl implements BrandingSettingsService {
     }
 
     @Override
-    public BrandingSettingsResponse updateBrandingSettings(Long id, Long companyId,
-            UpdateBrandingSettingsRequest request, Long updatedBy) {
+    public BrandingSettingsResponse updateBrandingSettings(Long id, UpdateBrandingSettingsRequest request) {
+        User user = UserContext.getAuthenticatedUser(userRepository);
+        Long companyId = user.getCompanyId();
+        Long currentUserId = user.getId();
+
         log.info("Updating BrandingSettings id={} for companyId={}", id, companyId);
 
         BrandingSettings brandingSettings = brandingSettingsRepository.findByIdAndCompanyId(id, companyId)
@@ -92,7 +102,7 @@ public class BrandingSettingsServiceImpl implements BrandingSettingsService {
         if (request.getIsActive() != null)
             brandingSettings.setIsActive(request.getIsActive());
 
-        brandingSettings.setUpdatedBy(updatedBy);
+        brandingSettings.setUpdatedBy(currentUserId);
 
         BrandingSettings updated = brandingSettingsRepository.save(brandingSettings);
         return mapToResponse(updated);
@@ -100,7 +110,10 @@ public class BrandingSettingsServiceImpl implements BrandingSettingsService {
 
     @Override
     @Transactional(readOnly = true)
-    public BrandingSettingsResponse getBrandingSettings(Long id, Long companyId) {
+    public BrandingSettingsResponse getBrandingSettings(Long id) {
+        User user = UserContext.getAuthenticatedUser(userRepository);
+        Long companyId = user.getCompanyId();
+
         log.info("Fetching BrandingSettings id={} for companyId={}", id, companyId);
 
         BrandingSettings brandingSettings = brandingSettingsRepository.findByIdAndCompanyId(id, companyId)
@@ -111,7 +124,10 @@ public class BrandingSettingsServiceImpl implements BrandingSettingsService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<BrandingSettingsResponse> listBrandingSettings(Long companyId) {
+    public List<BrandingSettingsResponse> listBrandingSettings() {
+        User user = UserContext.getAuthenticatedUser(userRepository);
+        Long companyId = user.getCompanyId();
+
         log.info("Listing BrandingSettings for companyId={}", companyId);
 
         return brandingSettingsRepository.findAllByCompanyId(companyId).stream()
@@ -120,7 +136,10 @@ public class BrandingSettingsServiceImpl implements BrandingSettingsService {
     }
 
     @Override
-    public void deleteBrandingSettings(Long id, Long companyId) {
+    public void deleteBrandingSettings(Long id) {
+        User user = UserContext.getAuthenticatedUser(userRepository);
+        Long companyId = user.getCompanyId();
+
         log.info("Deleting BrandingSettings id={} for companyId={}", id, companyId);
 
         BrandingSettings brandingSettings = brandingSettingsRepository.findByIdAndCompanyId(id, companyId)

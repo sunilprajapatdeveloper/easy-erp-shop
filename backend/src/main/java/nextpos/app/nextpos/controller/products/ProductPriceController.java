@@ -23,11 +23,9 @@ public class ProductPriceController {
      */
     @PostMapping
     public ResponseEntity<ProductPriceResponse> createProductPrice(
-            @RequestHeader("X-Company-Id") Long companyId,
-            @RequestHeader("X-User-Id") Long createdBy,
             @Valid @RequestBody CreateProductPriceRequest request) {
 
-        return ResponseEntity.ok(productPriceService.createProductPrice(companyId, createdBy, request));
+        return ResponseEntity.ok(productPriceService.createProductPrice(request));
     }
 
     /**
@@ -35,12 +33,10 @@ public class ProductPriceController {
      */
     @PutMapping("/{priceId}")
     public ResponseEntity<ProductPriceResponse> updateProductPrice(
-            @RequestHeader("X-Company-Id") Long companyId,
-            @RequestHeader("X-User-Id") Long updatedBy,
             @PathVariable Long priceId,
             @Valid @RequestBody UpdateProductPriceRequest request) {
 
-        return ResponseEntity.ok(productPriceService.updateProductPrice(companyId, updatedBy, priceId, request));
+        return ResponseEntity.ok(productPriceService.updateProductPrice(priceId, request));
     }
 
     /**
@@ -48,10 +44,9 @@ public class ProductPriceController {
      */
     @GetMapping("/{priceId}")
     public ResponseEntity<ProductPriceResponse> getProductPriceById(
-            @RequestHeader("X-Company-Id") Long companyId,
             @PathVariable Long priceId) {
 
-        ProductPriceResponse response = productPriceService.getProductPriceById(companyId, priceId);
+        ProductPriceResponse response = productPriceService.getProductPriceById(priceId);
         return ResponseEntity.ok(response);
     }
 
@@ -60,10 +55,9 @@ public class ProductPriceController {
      */
     @GetMapping("/product/{productId}")
     public ResponseEntity<List<ProductPriceResponse>> getPricesByProduct(
-            @RequestHeader("X-Company-Id") Long companyId,
             @PathVariable Long productId) {
 
-        List<ProductPriceResponse> responses = productPriceService.listPricesByProduct(companyId, productId);
+        List<ProductPriceResponse> responses = productPriceService.listPricesByProduct(productId);
         return ResponseEntity.ok(responses);
     }
 
@@ -72,10 +66,9 @@ public class ProductPriceController {
      */
     @GetMapping("/warehouse/{warehouseId}")
     public ResponseEntity<List<ProductPriceResponse>> getPricesByWarehouse(
-            @RequestHeader("X-Company-Id") Long companyId,
             @PathVariable Long warehouseId) {
 
-        List<ProductPriceResponse> responses = productPriceService.listPricesByWarehouse(companyId, warehouseId);
+        List<ProductPriceResponse> responses = productPriceService.listPricesByWarehouse(warehouseId);
         return ResponseEntity.ok(responses);
     }
 
@@ -84,11 +77,10 @@ public class ProductPriceController {
      */
     @GetMapping("/by-product-warehouse")
     public ResponseEntity<ProductPriceResponse> getByProductAndWarehouse(
-            @RequestHeader("X-Company-Id") Long companyId,
             @RequestParam Long productId,
             @RequestParam Long warehouseId) {
 
-        ProductPriceResponse response = productPriceService.getByProductAndWarehouse(companyId, productId, warehouseId);
+        ProductPriceResponse response = productPriceService.getByProductAndWarehouse(productId, warehouseId);
         return ResponseEntity.ok(response);
     }
 
@@ -97,11 +89,9 @@ public class ProductPriceController {
      */
     @DeleteMapping("/{priceId}")
     public ResponseEntity<Void> deleteProductPrice(
-            @RequestHeader("X-Company-Id") Long companyId,
-            @RequestHeader("X-User-Id") Long deletedBy,
             @PathVariable Long priceId) {
 
-        productPriceService.deleteProductPrice(companyId, deletedBy, priceId);
+        productPriceService.deleteProductPrice(priceId);
         return ResponseEntity.noContent().build();
     }
 }

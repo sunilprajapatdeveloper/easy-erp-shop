@@ -31,9 +31,9 @@ public class BrandController {
         return ResponseEntity.ok(brandService.getBrandById(id));
     }
 
-    @GetMapping("/user/{userId}")
-    public ResponseEntity<List<BrandResponse>> getBrandsByUserId(@PathVariable Long userId) {
-        return ResponseEntity.ok(brandService.findAllByCreatedBy(userId));
+    @GetMapping("/user")
+    public ResponseEntity<List<BrandResponse>> getBrandsByUser() {
+        return ResponseEntity.ok(brandService.findAllByCreatedBy());
     }
 
     @GetMapping

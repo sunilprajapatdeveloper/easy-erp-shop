@@ -24,10 +24,8 @@ public class LoyaltySettingsController {
      */
     @PostMapping
     public ResponseEntity<LoyaltySettingsResponse> createLoyaltySettings(
-            @RequestBody @Valid CreateLoyaltySettingsRequest request,
-            @RequestHeader("X-Company-Id") Long companyId,
-            @RequestHeader("X-User-Id") Long createdBy) {
-        LoyaltySettingsResponse response = loyaltySettingsService.createLoyaltySettings(request, companyId, createdBy);
+            @RequestBody @Valid CreateLoyaltySettingsRequest request) {
+        LoyaltySettingsResponse response = loyaltySettingsService.createLoyaltySettings(request);
         return ResponseEntity.ok(response);
     }
 
@@ -37,11 +35,8 @@ public class LoyaltySettingsController {
     @PutMapping("/{id}")
     public ResponseEntity<LoyaltySettingsResponse> updateLoyaltySettings(
             @PathVariable Long id,
-            @RequestBody @Valid UpdateLoyaltySettingsRequest request,
-            @RequestHeader("X-Company-Id") Long companyId,
-            @RequestHeader("X-User-Id") Long updatedBy) {
-        LoyaltySettingsResponse response = loyaltySettingsService.updateLoyaltySettings(id, companyId, request,
-                updatedBy);
+            @RequestBody @Valid UpdateLoyaltySettingsRequest request) {
+        LoyaltySettingsResponse response = loyaltySettingsService.updateLoyaltySettings(id, request);
         return ResponseEntity.ok(response);
     }
 
@@ -50,9 +45,8 @@ public class LoyaltySettingsController {
      */
     @GetMapping("/{id}")
     public ResponseEntity<LoyaltySettingsResponse> getLoyaltySettings(
-            @PathVariable Long id,
-            @RequestHeader("X-Company-Id") Long companyId) {
-        LoyaltySettingsResponse response = loyaltySettingsService.getLoyaltySettings(id, companyId);
+            @PathVariable Long id) {
+        LoyaltySettingsResponse response = loyaltySettingsService.getLoyaltySettings(id);
         return ResponseEntity.ok(response);
     }
 
@@ -60,9 +54,8 @@ public class LoyaltySettingsController {
      * List all LoyaltySettings for a company
      */
     @GetMapping
-    public ResponseEntity<List<LoyaltySettingsResponse>> listLoyaltySettings(
-            @RequestHeader("X-Company-Id") Long companyId) {
-        List<LoyaltySettingsResponse> responseList = loyaltySettingsService.listLoyaltySettings(companyId);
+    public ResponseEntity<List<LoyaltySettingsResponse>> listLoyaltySettings() {
+        List<LoyaltySettingsResponse> responseList = loyaltySettingsService.listLoyaltySettings();
         return ResponseEntity.ok(responseList);
     }
 }

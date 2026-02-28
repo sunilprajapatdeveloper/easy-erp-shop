@@ -109,7 +109,6 @@ public class SaleServiceImpl implements SaleService {
 
                         // Stock validation
                         ProductStockResponse stock = productStockService.getByProductAndWarehouse(
-                                        user.getCompanyId(),
                                         product.getId(),
                                         warehouse.getId());
 
@@ -118,7 +117,7 @@ public class SaleServiceImpl implements SaleService {
                         }
 
                         // Deduct stock atomically
-                        productStockService.adjustStock(user.getCompanyId(), user.getId(), product.getId(),
+                        productStockService.adjustStock(product.getId(),
                                         warehouse.getId(), -qty);
 
                         BigDecimal unitPrice = Optional.ofNullable(p.getProductUnitPrice()).orElse(BigDecimal.ZERO);
@@ -257,8 +256,6 @@ public class SaleServiceImpl implements SaleService {
                 // Rollback old stock using ProductStockService
                 sale.getProducts().forEach(sp -> {
                         productStockService.adjustStock(
-                                        user.getCompanyId(),
-                                        user.getId(),
                                         sp.getProduct().getId(),
                                         warehouseToUse.getId(),
                                         sp.getSaleQty() // rollback
@@ -282,7 +279,6 @@ public class SaleServiceImpl implements SaleService {
 
                         // Validate and adjust stock
                         ProductStockResponse stock = productStockService.getByProductAndWarehouse(
-                                        user.getCompanyId(),
                                         product.getId(),
                                         warehouseToUse.getId());
 
@@ -291,8 +287,6 @@ public class SaleServiceImpl implements SaleService {
                         }
 
                         productStockService.adjustStock(
-                                        user.getCompanyId(),
-                                        user.getId(),
                                         product.getId(),
                                         warehouseToUse.getId(),
                                         -qty // reduce stock
@@ -437,8 +431,6 @@ public class SaleServiceImpl implements SaleService {
                 // Rollback stock for all sale products
                 sale.getProducts().forEach(sp -> {
                         productStockService.adjustStock(
-                                        sale.getCompanyId(),
-                                        user.getId(),
                                         sp.getProduct().getId(),
                                         warehouse.getId(),
                                         sp.getSaleQty() // add back sold quantity

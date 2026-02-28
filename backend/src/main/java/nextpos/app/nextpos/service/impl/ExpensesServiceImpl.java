@@ -101,9 +101,16 @@ public class ExpensesServiceImpl implements ExpensesService {
 
         @Override
         @Transactional
-        public void deleteExpenses(Long id, Long deletedByUserId) {
+        public void deleteExpenses(Long id) {
+                User user = UserContext.getAuthenticatedUser(userRepository);
+
                 Expenses expenses = expensesRepository.findById(id)
                                 .orElseThrow(() -> new RuntimeException("Expenses not found with ID: " + id));
+
+                // Ensure the expense belongs to the user's company
+                if (!expenses.getCompanyId().equals(user.getCompanyId())) {
+                        throw new SecurityException("You cannot delete expenses from another company");
+                }
 
                 expensesRepository.delete(expenses);
         }

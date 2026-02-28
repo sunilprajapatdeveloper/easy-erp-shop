@@ -9,22 +9,15 @@ import nextpos.app.nextpos.model.dto.response.CompanySubscriptionResponse;
 import nextpos.app.nextpos.service.interf.CompanySubscriptionService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 /**
  * REST controller for CompanySubscription operations.
  *
  * Endpoints:
- * - POST /api/v1/company-subscriptions (create) header: X-User-Id
- * - PUT /api/v1/company-subscriptions/{id} (update) header: X-User-Id
- * - DELETE /api/v1/company-subscriptions/{id} (soft delete) header: X-User-Id
+ * - POST /api/v1/company-subscriptions (create)
+ * - PUT /api/v1/company-subscriptions/{id} (update)
+ * - DELETE /api/v1/company-subscriptions/{id} (soft delete)
  * - GET /api/v1/company-subscriptions/company/{companyId} (list all for
  * company)
  * - GET /api/v1/company-subscriptions/company/{companyId}/active (get active
@@ -40,33 +33,29 @@ public class CompanySubscriptionController {
 
     @PostMapping
     public ResponseEntity<CompanySubscriptionResponse> createCompanySubscription(
-            @RequestHeader("X-User-Id") Long userId,
             @Valid @RequestBody CreateCompanySubscriptionRequest request) {
 
-        log.info("CreateCompanySubscription request for companyId={} by userId={}", request.getCompanyId(), userId);
-        CompanySubscriptionResponse response = companySubscriptionService.createCompanySubscription(request, userId);
+        log.info("CreateCompanySubscription request for companyId={}", request.getCompanyId());
+        CompanySubscriptionResponse response = companySubscriptionService.createCompanySubscription(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<CompanySubscriptionResponse> updateCompanySubscription(
             @PathVariable("id") Long id,
-            @RequestHeader("X-User-Id") Long userId,
             @Valid @RequestBody UpdateCompanySubscriptionRequest request) {
 
-        log.info("UpdateCompanySubscription id={} by userId={}", id, userId);
-        CompanySubscriptionResponse response = companySubscriptionService.updateCompanySubscription(id, request,
-                userId);
+        log.info("UpdateCompanySubscription id={}", id);
+        CompanySubscriptionResponse response = companySubscriptionService.updateCompanySubscription(id, request);
         return ResponseEntity.ok(response);
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteCompanySubscription(
-            @PathVariable("id") Long id,
-            @RequestHeader("X-User-Id") Long userId) {
+            @PathVariable("id") Long id) {
 
-        log.info("Delete (soft) CompanySubscription id={} by userId={}", id, userId);
-        companySubscriptionService.deleteCompanySubscription(id, userId);
+        log.info("Delete (soft) CompanySubscription id={}", id);
+        companySubscriptionService.deleteCompanySubscription(id);
         return ResponseEntity.noContent().build();
     }
 
@@ -74,7 +63,6 @@ public class CompanySubscriptionController {
     // public ResponseEntity<List<CompanySubscriptionResponse>>
     // listSubscriptionsByCompany(
     // @PathVariable("companyId") Long companyId) {
-
     // log.info("List subscriptions for companyId={}", companyId);
     // List<CompanySubscriptionResponse> subscriptions = companySubscriptionService
     // .listSubscriptionsByCompanyResponse(companyId);
@@ -84,7 +72,6 @@ public class CompanySubscriptionController {
     // @GetMapping("/company/{companyId}/active")
     // public ResponseEntity<CompanySubscriptionResponse> getActiveSubscription(
     // @PathVariable("companyId") Long companyId) {
-
     // log.info("Get active subscription for companyId={}", companyId);
     // return companySubscriptionService.getActiveSubscriptionResponse(companyId)
     // .map(ResponseEntity::ok)

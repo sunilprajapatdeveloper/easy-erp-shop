@@ -29,9 +29,9 @@ public class CategoryController {
         return ResponseEntity.ok(categoryService.getCategoryById(id));
     }
 
-    @GetMapping("/user/{userId}")
-    public ResponseEntity<List<CategoryResponse>> getCategoriesByUserId(@PathVariable Long userId) {
-        return ResponseEntity.ok(categoryService.findAllByCreatedBy(userId));
+    @GetMapping("/user")
+    public ResponseEntity<List<CategoryResponse>> getCategoriesByUser() {
+        return ResponseEntity.ok(categoryService.findAllByCreatedBy());
     }
 
     @GetMapping

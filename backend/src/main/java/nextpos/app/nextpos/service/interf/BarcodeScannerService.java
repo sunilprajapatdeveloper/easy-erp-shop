@@ -14,11 +14,11 @@ public interface BarcodeScannerService {
 
     BarcodeScanResponse processBarcodeScan(BarcodeScanRequest request);
 
-    void updateScannerStatus(String scannerId, Long companyId, String status);
+    void updateScannerStatus(String scannerId, String status);
 
-    List<BarcodeScanner> getScannersByWarehouse(Long warehouseId, Long companyId);
+    List<BarcodeScanner> getScannersByWarehouse(Long warehouseId);
 
-    void disconnectScanner(String scannerId, Long companyId);
+    void disconnectScanner(String scannerId);
 
-    BarcodeScanResponse validateAndProcessScan(String scannerId, String barcode, Long companyId);
+    BarcodeScanResponse validateAndProcessScan(String scannerId, String barcode);
 }
