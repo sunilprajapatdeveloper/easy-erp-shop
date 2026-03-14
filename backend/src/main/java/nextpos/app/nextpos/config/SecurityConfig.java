@@ -47,6 +47,18 @@ public class SecurityConfig {
                         // Specific Public GET request for Subscription Plans
                         .requestMatchers(HttpMethod.GET, "/api/v1/subscription-plans/**").permitAll()
 
+                        // Allow public access to fetch currencies
+                        .requestMatchers(HttpMethod.GET, "/api/v1/currencies/**").permitAll()
+
+                        // Allow public creation of company currencies during onboarding
+                        .requestMatchers(HttpMethod.POST, "/api/v1/company-currencies/**").permitAll()
+
+                        // Allow listing company currencies during onboarding
+                        .requestMatchers(HttpMethod.GET, "/api/v1/company-currencies").permitAll()
+
+                        // Allow warehouse currency creation during onboarding
+                        .requestMatchers(HttpMethod.POST, "/api/v1/warehouse-currencies/**").permitAll()
+
                         // Public endpoints
                         .requestMatchers(
                                 "/api/v1/users/login",

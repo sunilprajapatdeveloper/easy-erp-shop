@@ -13,7 +13,7 @@ import java.util.List;
 public interface UserService {
     UserResponse createUser(CreateUserRequest request);
 
-    UserResponse signup(UserRegisterRequest request, Long companyId);
+    JwtResponse signup(UserRegisterRequest request, Long companyId);
 
     UserResponse getUserById(Long id);
 

@@ -198,17 +198,18 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public UserResponse signup(final UserRegisterRequest request, final Long companyId) {
+    public JwtResponse signup(final UserRegisterRequest request, final Long companyId) {
         // Validate required fields
         if (isBlank(request.getEmail()) || isBlank(request.getPhone())) {
             throw new RuntimeException("Email and phone are required.");
         }
 
-        // Check uniqueness for user
+        // Check if email already used
         if (userRepository.findByEmail(request.getEmail()).isPresent()) {
             throw new RuntimeException("Email already in use");
         }
 
+        // Check if phone already used
         if (userRepository.findByPhone(request.getPhone()).isPresent()) {
             throw new RuntimeException("Phone number already in use");
         }
@@ -217,12 +218,19 @@ public class UserServiceImpl implements UserService {
         Company company = companyRepository.findById(companyId)
                 .orElseThrow(() -> new RuntimeException("Company not found with id: " + companyId));
 
+        // Prevent multiple signups for the same company
+        if (userRepository.existsByCompanyId(companyId)) {
+            throw new RuntimeException(
+                    "Company already has an account. Additional users must be created by an existing user.");
+        }
+
         // Assign default role: COMPANY_OWNER
         Role defaultRole = roleRepository.findByName(UserRole.COMPANY_OWNER.name())
                 .orElseThrow(() -> new RuntimeException("Default COMPANY_OWNER role not found"));
 
         // Generate random password
         String rawPassword = generateStrongPassword(12);
+        log.info("Generated password for user {} : {}", request.getEmail(), rawPassword);
         String encodedPassword = passwordEncoder.encode(rawPassword);
 
         // Create user
@@ -267,7 +275,12 @@ public class UserServiceImpl implements UserService {
             log.warn("Could not retrieve profile image for new user: {}", e.getMessage());
         }
 
-        return UserResponse.fromEntity(savedUser, mediaResponse);
+        // Generate JWT token for automatic login
+        String token = jwtUtils.generateToken(savedUser.getEmail());
+        long expiresIn = jwtUtils.getExpirationFromToken(token).getTime() / 1000;
+
+        UserResponse userResponse = UserResponse.fromEntity(savedUser, mediaResponse);
+        return new JwtResponse(token, expiresIn, userResponse);
     }
 
     @Override

@@ -8,15 +8,12 @@ import nextpos.app.nextpos.model.dto.request.UpdateRequest.UpdateWarehouseCurren
 import nextpos.app.nextpos.model.dto.response.WarehouseCurrencyResponse;
 import nextpos.app.nextpos.model.entity.Company;
 import nextpos.app.nextpos.model.entity.Currency;
-import nextpos.app.nextpos.model.entity.User;
 import nextpos.app.nextpos.model.entity.Warehouse;
 import nextpos.app.nextpos.model.entity.WarehouseCurrency;
 import nextpos.app.nextpos.repository.CompanyRepository;
 import nextpos.app.nextpos.repository.CurrencyRepository;
-import nextpos.app.nextpos.repository.UserRepository;
 import nextpos.app.nextpos.repository.WarehouseCurrencyRepository;
 import nextpos.app.nextpos.repository.WarehouseRepository;
-import nextpos.app.nextpos.security.context.UserContext;
 import nextpos.app.nextpos.service.interf.WarehouseCurrencyService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,13 +30,10 @@ public class WarehouseCurrencyServiceImpl implements WarehouseCurrencyService {
     private final CurrencyRepository currencyRepository;
     private final CompanyRepository companyRepository;
     private final WarehouseRepository warehouseRepository;
-    private final UserRepository userRepository;
 
     @Override
-    public WarehouseCurrencyResponse createWarehouseCurrency(Long warehouseId, CreateWarehouseCurrencyRequest request) {
-        User user = UserContext.getAuthenticatedUser(userRepository);
-        Long companyId = user.getCompanyId();
-
+    public WarehouseCurrencyResponse createWarehouseCurrency(Long companyId, Long warehouseId,
+            CreateWarehouseCurrencyRequest request) {
         log.info("Creating warehouse currency for companyId={} warehouseId={} currencyId={}",
                 companyId, warehouseId, request.getCurrencyId());
 
@@ -77,10 +71,7 @@ public class WarehouseCurrencyServiceImpl implements WarehouseCurrencyService {
 
     @Override
     @Transactional(readOnly = true)
-    public WarehouseCurrencyResponse getWarehouseCurrency(Long id, Long warehouseId) {
-        User user = UserContext.getAuthenticatedUser(userRepository);
-        Long companyId = user.getCompanyId();
-
+    public WarehouseCurrencyResponse getWarehouseCurrency(Long id, Long companyId, Long warehouseId) {
         WarehouseCurrency wc = warehouseCurrencyRepository
                 .findByIdAndCompanyIdAndWarehouseId(id, companyId, warehouseId)
                 .orElseThrow(() -> new EntityNotFoundException(
@@ -91,10 +82,7 @@ public class WarehouseCurrencyServiceImpl implements WarehouseCurrencyService {
 
     @Override
     @Transactional(readOnly = true)
-    public WarehouseCurrencyResponse getDefaultWarehouseCurrency(Long warehouseId) {
-        User user = UserContext.getAuthenticatedUser(userRepository);
-        Long companyId = user.getCompanyId();
-
+    public WarehouseCurrencyResponse getDefaultWarehouseCurrency(Long companyId, Long warehouseId) {
         WarehouseCurrency wc = warehouseCurrencyRepository
                 .findDefaultByCompanyIdAndWarehouseId(companyId, warehouseId)
                 .orElseThrow(() -> new EntityNotFoundException(
@@ -105,10 +93,7 @@ public class WarehouseCurrencyServiceImpl implements WarehouseCurrencyService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<WarehouseCurrencyResponse> listWarehouseCurrencies(Long warehouseId) {
-        User user = UserContext.getAuthenticatedUser(userRepository);
-        Long companyId = user.getCompanyId();
-
+    public List<WarehouseCurrencyResponse> listWarehouseCurrencies(Long companyId, Long warehouseId) {
         return warehouseCurrencyRepository.findByCompany_IdAndWarehouse_Id(companyId, warehouseId)
                 .stream()
                 .map(this::mapToResponse)
@@ -116,10 +101,8 @@ public class WarehouseCurrencyServiceImpl implements WarehouseCurrencyService {
     }
 
     @Override
-    public WarehouseCurrencyResponse updateWarehouseCurrency(Long id, Long warehouseId,
+    public WarehouseCurrencyResponse updateWarehouseCurrency(Long id, Long companyId, Long warehouseId,
             UpdateWarehouseCurrencyRequest request) {
-        User user = UserContext.getAuthenticatedUser(userRepository);
-        Long companyId = user.getCompanyId();
 
         WarehouseCurrency wc = warehouseCurrencyRepository
                 .findByIdAndCompanyIdAndWarehouseId(id, companyId, warehouseId)
@@ -158,10 +141,7 @@ public class WarehouseCurrencyServiceImpl implements WarehouseCurrencyService {
     }
 
     @Override
-    public void deleteWarehouseCurrency(Long id, Long warehouseId) {
-        User user = UserContext.getAuthenticatedUser(userRepository);
-        Long companyId = user.getCompanyId();
-
+    public void deleteWarehouseCurrency(Long id, Long companyId, Long warehouseId) {
         warehouseCurrencyRepository.deleteByIdAndCompanyIdAndWarehouseId(id, companyId, warehouseId);
         log.info("Deleted warehouse currency id={} for companyId={} warehouseId={}", id, companyId, warehouseId);
     }

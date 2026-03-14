@@ -67,6 +67,10 @@ public class EmailVerificationServiceImpl implements EmailVerificationService {
 
         // Generate secure token
         String rawToken = tokenGenerator.generateNumericOTP(6);
+
+        // Log OTP for testing
+        log.info("Generated verification OTP for email {} : {}", request.getEmail(), rawToken);
+
         String tokenHash = passwordEncoder.encode(rawToken);
 
         // Determine expiry duration

@@ -30,6 +30,7 @@ import {
   faPlus,
   faBoxOpen,
 } from "@fortawesome/free-solid-svg-icons";
+import 'remixicon/fonts/remixicon.css'
 
 // Add icons to library
 library.add(faTrash, faEdit, faEye, faPlus, faBoxOpen);

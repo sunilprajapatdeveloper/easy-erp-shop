@@ -1,9 +1,8 @@
-// src/services/api.ts
 import axios from "axios";
 import { getAuthToken } from "./authService";
 
 const api = axios.create({
-  baseURL: "http://139.59.28.233:9091/api/v1",
+  baseURL: "http://localhost:9091/api/v1",
   timeout: 30000, // Increased timeout for scanner operations
   headers: {
     "ngrok-skip-browser-warning": "true",
@@ -11,30 +10,47 @@ const api = axios.create({
   },
 });
 
+// Define public endpoints that should not receive authentication headers
+const publicPaths = [
+  "/verifications",
+  "/auth/login",
+  "/auth/register",
+  "/auth/forgot-password",
+  "/users/register",
+  "/subscription-plans"
+];
+
 // Request interceptor
 api.interceptors.request.use(
   (config) => {
-    const token = getAuthToken();
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+    const isPublic = publicPaths.some((path) => config.url?.startsWith(path));
+
+    // Only add auth token for non‑public requests
+    if (!isPublic) {
+      const token = getAuthToken();
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
     }
 
     // Add company ID from user store if available
-    const userData = localStorage.getItem("user");
-    if (userData) {
-      try {
-        const user = JSON.parse(userData);
-        if (user.companyId) {
-          config.headers["X-Company-Id"] = user.companyId;
+    if (!isPublic) {
+      const userData = localStorage.getItem("user");
+      if (userData) {
+        try {
+          const user = JSON.parse(userData);
+          if (user.companyId) {
+            config.headers["X-Company-Id"] = user.companyId;
+          }
+        } catch (e) {
+          console.warn("Failed to parse user data from localStorage");
         }
-      } catch (e) {
-        console.warn("Failed to parse user data from localStorage");
       }
     }
 
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => Promise.reject(error),
 );
 
 // Response interceptor

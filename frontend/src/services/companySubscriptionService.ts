@@ -8,19 +8,19 @@ import type {
 export const companySubscriptionService = {
   listByCompany(companyId: number) {
     return api.get<CompanySubscription[]>(
-      `/api/v1/company-subscriptions/company/${companyId}`
+      `/company-subscriptions/company/${companyId}`
     );
   },
 
   getActive(companyId: number) {
     return api.get<CompanySubscription>(
-      `/api/v1/company-subscriptions/company/${companyId}/active`
+      `/company-subscriptions/company/${companyId}/active`
     );
   },
 
   create(payload: CreateCompanySubscriptionRequest, userId: number) {
     return api.post<CompanySubscription>(
-      `/api/v1/company-subscriptions`,
+      `/company-subscriptions`,
       payload,
       {
         headers: { "X-User-Id": userId },
@@ -34,7 +34,7 @@ export const companySubscriptionService = {
     userId: number
   ) {
     return api.put<CompanySubscription>(
-      `/api/v1/company-subscriptions/${id}`,
+      `/company-subscriptions/${id}`,
       payload,
       {
         headers: { "X-User-Id": userId },
@@ -43,7 +43,7 @@ export const companySubscriptionService = {
   },
 
   delete(id: number, userId: number) {
-    return api.delete(`/api/v1/company-subscriptions/${id}`, {
+    return api.delete(`/company-subscriptions/${id}`, {
       headers: { "X-User-Id": userId },
     });
   },

@@ -117,9 +117,13 @@ export const useUserStore = defineStore("user", {
       this.loading = true;
       this.error = null;
       try {
-        const user = await userService.register(payload, companyId);
-        this.currentUser = user;
-        return user;
+        const jwt: JwtResponse = await userService.register(payload, companyId);
+        this.token = jwt.token;
+        this.currentUser = jwt.user;
+        const expiry = Date.now() + jwt.expiresIn * 1000;
+        localStorage.setItem("authToken", jwt.token);
+        localStorage.setItem("authTokenExpiry", expiry.toString());
+        return jwt.user;
       } catch (err: any) {
         this.error = err?.message || "Registration failed";
         throw err;

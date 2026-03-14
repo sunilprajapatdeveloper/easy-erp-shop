@@ -8,15 +8,17 @@ import java.util.List;
 
 public interface WarehouseCurrencyService {
 
-    WarehouseCurrencyResponse createWarehouseCurrency(Long warehouseId, CreateWarehouseCurrencyRequest request);
+    WarehouseCurrencyResponse createWarehouseCurrency(Long companyId, Long warehouseId,
+            CreateWarehouseCurrencyRequest request);
 
-    WarehouseCurrencyResponse getWarehouseCurrency(Long id, Long warehouseId);
+    WarehouseCurrencyResponse getWarehouseCurrency(Long id, Long companyId, Long warehouseId);
 
-    WarehouseCurrencyResponse getDefaultWarehouseCurrency(Long warehouseId);
+    WarehouseCurrencyResponse getDefaultWarehouseCurrency(Long companyId, Long warehouseId);
 
-    List<WarehouseCurrencyResponse> listWarehouseCurrencies(Long warehouseId);
+    List<WarehouseCurrencyResponse> listWarehouseCurrencies(Long companyId, Long warehouseId);
 
-    WarehouseCurrencyResponse updateWarehouseCurrency(Long id, Long warehouseId, UpdateWarehouseCurrencyRequest request);
+    WarehouseCurrencyResponse updateWarehouseCurrency(Long id, Long companyId, Long warehouseId,
+            UpdateWarehouseCurrencyRequest request);
 
-    void deleteWarehouseCurrency(Long id, Long warehouseId);
+    void deleteWarehouseCurrency(Long id, Long companyId, Long warehouseId);
 }

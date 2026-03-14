@@ -63,8 +63,8 @@ export const userService = {
   register: async (
     payload: UserRegisterRequest,
     companyId: number,
-  ): Promise<UserResponse> => {
-    const res = await api.post<UserResponse>(
+  ): Promise<JwtResponse> => {
+    const res = await api.post<JwtResponse>(
       "/users/register",
       payload,
       getCompanyHeaders(companyId),
@@ -78,7 +78,7 @@ export const userService = {
   },
 
   updatePassword: async (
-    payload: UpdatePasswordRequest & { userId?: number }
+    payload: UpdatePasswordRequest & { userId?: number },
   ): Promise<void> => {
     await api.post("/users/update-password", payload, getHeaders());
   },

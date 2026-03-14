@@ -56,7 +56,7 @@ public class UserController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<UserResponse> signup(@Valid @RequestBody UserRegisterRequest request,
+    public ResponseEntity<JwtResponse> signup(@Valid @RequestBody UserRegisterRequest request,
             @RequestHeader("X-Company-Id") Long companyId) {
         return ResponseEntity.status(HttpStatus.CREATED).body(userService.signup(request, companyId));
     }

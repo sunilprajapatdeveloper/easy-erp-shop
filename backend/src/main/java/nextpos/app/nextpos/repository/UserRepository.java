@@ -29,4 +29,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
     List<User> findAllAssociatedUsers(@Param("creatorId") Long creatorId);
 
     Optional<User> findByIdAndCompanyId(Long id, Long companyId);
+
+    boolean existsByCompanyId(Long companyId);
 }

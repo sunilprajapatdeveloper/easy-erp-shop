@@ -9,12 +9,9 @@ import nextpos.app.nextpos.model.dto.response.CompanyCurrencyResponse;
 import nextpos.app.nextpos.model.entity.Company;
 import nextpos.app.nextpos.model.entity.Currency;
 import nextpos.app.nextpos.model.entity.CompanyCurrency;
-import nextpos.app.nextpos.model.entity.User;
 import nextpos.app.nextpos.repository.CompanyRepository;
 import nextpos.app.nextpos.repository.CompanyCurrencyRepository;
 import nextpos.app.nextpos.repository.CurrencyRepository;
-import nextpos.app.nextpos.repository.UserRepository;
-import nextpos.app.nextpos.security.context.UserContext;
 import nextpos.app.nextpos.service.interf.CompanyCurrencyService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,13 +27,9 @@ public class CompanyCurrencyServiceImpl implements CompanyCurrencyService {
     private final CompanyCurrencyRepository companyCurrencyRepository;
     private final CurrencyRepository currencyRepository;
     private final CompanyRepository companyRepository;
-    private final UserRepository userRepository; // added for UserContext
 
     @Override
-    public CompanyCurrencyResponse createCompanyCurrency(CreateCompanyCurrencyRequest request) {
-        User user = UserContext.getAuthenticatedUser(userRepository);
-        Long companyId = user.getCompanyId();
-
+    public CompanyCurrencyResponse createCompanyCurrency(Long companyId, CreateCompanyCurrencyRequest request) {
         log.info("Creating company currency for companyId={} currencyId={}", companyId, request.getCurrencyId());
 
         Currency currency = currencyRepository.findById(request.getCurrencyId())
@@ -66,10 +59,7 @@ public class CompanyCurrencyServiceImpl implements CompanyCurrencyService {
 
     @Override
     @Transactional(readOnly = true)
-    public CompanyCurrencyResponse getCompanyCurrency(Long id) {
-        User user = UserContext.getAuthenticatedUser(userRepository);
-        Long companyId = user.getCompanyId();
-
+    public CompanyCurrencyResponse getCompanyCurrency(Long id, Long companyId) {
         CompanyCurrency currency = companyCurrencyRepository.findByIdAndCompanyId(id, companyId)
                 .orElseThrow(() -> new EntityNotFoundException(
                         "CompanyCurrency not found for id " + id + " and company " + companyId));
@@ -78,21 +68,16 @@ public class CompanyCurrencyServiceImpl implements CompanyCurrencyService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<CompanyCurrencyResponse> listCompanyCurrencies() {
-        User user = UserContext.getAuthenticatedUser(userRepository);
-        Long companyId = user.getCompanyId();
-
+    public List<CompanyCurrencyResponse> listCompanyCurrencies(Long companyId) {
         return companyCurrencyRepository.findByCompanyId(companyId)
                 .stream()
-                .map(entity -> this.mapToResponse(entity))
+                .map(this::mapToResponse)
                 .toList();
     }
 
     @Override
-    public CompanyCurrencyResponse updateCompanyCurrency(Long id, UpdateCompanyCurrencyRequest request) {
-        User user = UserContext.getAuthenticatedUser(userRepository);
-        Long companyId = user.getCompanyId();
-
+    public CompanyCurrencyResponse updateCompanyCurrency(Long id, Long companyId,
+            UpdateCompanyCurrencyRequest request) {
         CompanyCurrency currency = companyCurrencyRepository.findByIdAndCompanyId(id, companyId)
                 .orElseThrow(() -> new EntityNotFoundException(
                         "CompanyCurrency not found for id " + id + " and company " + companyId));
@@ -125,10 +110,7 @@ public class CompanyCurrencyServiceImpl implements CompanyCurrencyService {
     }
 
     @Override
-    public void deleteCompanyCurrency(Long id) {
-        User user = UserContext.getAuthenticatedUser(userRepository);
-        Long companyId = user.getCompanyId();
-
+    public void deleteCompanyCurrency(Long id, Long companyId) {
         int deleted = companyCurrencyRepository.deleteByIdAndCompanyId(id, companyId);
         if (deleted == 0) {
             throw new EntityNotFoundException("CompanyCurrency not found for id " + id + " and company " + companyId);

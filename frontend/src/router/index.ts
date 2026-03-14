@@ -95,6 +95,7 @@ import PosSettingsPage from "@/pages/Settings/PosSettingsPage.vue";
 import CreateUserPage from "@/pages/People/CreateUserPage.vue";
 import UpdateUserPage from "@/pages/People/UpdateUserPage.vue";
 import MobileScannerPage from "@/pages/MobileScannerPage.vue";
+import HomePage from "@/pages/Onboarding/HomePage.vue";
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -104,19 +105,19 @@ const routes: Array<RouteRecordRaw> = [
     meta: { requiresAuth: false },
   },
   {
-    path: "/",
+    path: "/dashboard",
     name: "DashboardPage",
     component: DashboardPage,
     meta: { requiresAuth: true },
   },
   {
-    path: '/mobile-scanner',
-    name: 'MobileScannerPage',
+    path: "/mobile-scanner",
+    name: "MobileScannerPage",
     component: MobileScannerPage,
     meta: {
       requiresAuth: false,
-      layout: 'empty'
-    }
+      layout: "empty",
+    },
   },
   {
     path: "/create-product",
@@ -539,6 +540,12 @@ const routes: Array<RouteRecordRaw> = [
     meta: { requiresAuth: true, permission: "" },
   },
   {
+    path: "/home-page",
+    name: "HomePage",
+    component: HomePage,
+    meta: { requiresAuth: false, permission: "" },
+  },
+  {
     path: "/landing-page",
     name: "LandingPage",
     component: LandingPage,
@@ -628,6 +635,103 @@ const routes: Array<RouteRecordRaw> = [
     component: ContactPage,
     meta: { requiresAuth: true, permission: "" },
   },
+  {
+    path: "/",
+    name: "HomePage",
+    component: () => import("@/pages/Onboarding/HomePage.vue"),
+    meta: {
+      layout: "PublicLayout",
+      requiresAuth: false,
+    },
+  },
+  // {
+  //   path: "/signup",
+  //   name: "Signup",
+  //   component: () => import("@/pages/Onboarding/SignupStep.vue"),
+  //   meta: {
+  //     layout: "PublicLayout",
+  //     requiresAuth: false,
+  //   },
+  // },
+  {
+    path: "/setup",
+    name: "SetupWizard",
+    component: () => import("@/pages/Onboarding/SetupWizard.vue"),
+    meta: {
+      layout: "OnboardingLayout",
+      requiresAuth: false,
+      requiresOnboarding: true,
+    },
+  },
+  // {
+  //   path: "/setup/company",
+  //   name: "CompanySetup",
+  //   component: () => import("@/pages/Onboarding/CompanySetup.vue"),
+  //   meta: {
+  //     layout: "OnboardingLayout",
+  //     requiresAuth: false,
+  //     requiresOnboarding: true,
+  //   },
+  // },
+  // {
+  //   path: "/setup/plans",
+  //   name: "PlansPage",
+  //   component: () => import("@/pages/Onboarding/PlansPage.vue"),
+  //   meta: {
+  //     layout: "OnboardingLayout",
+  //     requiresAuth: false,
+  //     requiresOnboarding: true,
+  //   },
+  // },
+  // {
+  //   path: "/setup/warehouse",
+  //   name: "WarehouseSetup",
+  //   component: () => import("@/pages/Onboarding/WarehouseSetup.vue"),
+  //   meta: {
+  //     layout: "OnboardingLayout",
+  //     requiresAuth: true,
+  //     requiresOnboarding: true,
+  //   },
+  // },
+  // {
+  //   path: "/setup/configuration",
+  //   name: "Configuration",
+  //   component: () => import("@/pages/Onboarding/Configuration.vue"),
+  //   meta: {
+  //     layout: "OnboardingLayout",
+  //     requiresAuth: true,
+  //     requiresOnboarding: true,
+  //   },
+  // },
+  // {
+  //   path: "/setup/complete",
+  //   name: "SetupComplete",
+  //   component: () => import("@/pages/Onboarding/SetupComplete.vue"),
+  //   meta: {
+  //     layout: "OnboardingLayout",
+  //     requiresAuth: true,
+  //     requiresOnboarding: true,
+  //   },
+  // },
+  // {
+  //   path: "/verify-email",
+  //   name: "EmailVerification",
+  //   component: () => import("@/pages/Onboarding/EmailVerification.vue"),
+  //   meta: {
+  //     layout: "PublicLayout",
+  //     requiresAuth: false,
+  //   },
+  // },
+  // {
+  //   path: "/payment",
+  //   name: "PaymentPage",
+  //   component: () => import("@/pages/Onboarding/PaymentPage.vue"),
+  //   meta: {
+  //     layout: "OnboardingLayout",
+  //     requiresAuth: true,
+  //     requiresOnboarding: true,
+  //   },
+  // },
 ];
 
 const router = createRouter({
