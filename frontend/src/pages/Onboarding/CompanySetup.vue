@@ -1,43 +1,41 @@
 <template>
     <div class="company-setup-step">
-        <div class="setup-section">
-            <h2>Tell us about your business</h2>
-            <p class="section-subtitle">This information will be used for invoices and communication.</p>
+        <div v-if="errors.general" class="error-message general-error">{{ errors.general }}</div>
 
-            <div v-if="errors.general" class="error-message general-error">{{ errors.general }}</div>
+        <div class="form-group">
+            <label for="companyName">Business Name *</label>
+            <input type="text" id="companyName" v-model="form.companyName" @input="validateForm"
+                :class="{ 'error-input': errors.companyName }" placeholder="e.g., Acme Inc." />
+            <div v-if="errors.companyName" class="error-message">{{ errors.companyName }}</div>
+        </div>
 
-            <div class="form-group">
-                <label for="companyName">Business Name *</label>
-                <input type="text" id="companyName" v-model="form.companyName" @input="validateForm" />
-                <div v-if="errors.companyName" class="error-message">{{ errors.companyName }}</div>
-            </div>
+        <div class="form-group">
+            <label for="companyEmail">Business Email *</label>
+            <input type="email" id="companyEmail" v-model="form.email" @input="validateForm"
+                :class="{ 'error-input': errors.email }" placeholder="contact@acme.com" />
+            <div v-if="errors.email" class="error-message">{{ errors.email }}</div>
+        </div>
 
-            <div class="form-group">
-                <label for="companyEmail">Business Email *</label>
-                <input type="email" id="companyEmail" v-model="form.email" @input="validateForm" />
-                <div v-if="errors.email" class="error-message">{{ errors.email }}</div>
-            </div>
+        <div class="form-group">
+            <label for="companyPhone">Business Phone *</label>
+            <input type="tel" id="companyPhone" v-model="form.phone" @input="validateForm"
+                :class="{ 'error-input': errors.phone }" placeholder="+1 (555) 123-4567" />
+            <div v-if="errors.phone" class="error-message">{{ errors.phone }}</div>
+        </div>
 
-            <div class="form-group">
-                <label for="companyPhone">Business Phone *</label>
-                <input type="tel" id="companyPhone" v-model="form.phone" @input="validateForm" />
-                <div v-if="errors.phone" class="error-message">{{ errors.phone }}</div>
-            </div>
+        <div class="form-group">
+            <label>Company Currency *</label>
+            <CurrencySelector v-model="primaryCurrencyCode" :currencies="currencyOptions" :single="true"
+                @change="validateForm" />
+            <p class="input-hint">This is your base currency for reporting</p>
+            <div v-if="errors.primaryCurrency" class="error-message">{{ errors.primaryCurrency }}</div>
+        </div>
 
-            <div class="form-group">
-                <label>Company Currency *</label>
-                <CurrencySelector v-model="primaryCurrencyCode" :currencies="currencyOptions" :single="true"
-                    @change="validateForm" />
-                <p class="field-hint">This is your base currency for reporting</p>
-                <div v-if="errors.primaryCurrency" class="error-message">{{ errors.primaryCurrency }}</div>
-            </div>
-
-            <div class="form-group">
-                <label>Additional Currencies (Optional)</label>
-                <CurrencySelector v-model="additionalCurrencyCodes" :currencies="currencyOptions" multiple
-                    @change="validateForm" />
-                <p class="field-hint">Add currencies you frequently transact in</p>
-            </div>
+        <div class="form-group">
+            <label>Additional Currencies (Optional)</label>
+            <CurrencySelector v-model="additionalCurrencyCodes" :currencies="currencyOptions" multiple
+                @change="validateForm" />
+            <p class="input-hint">Add currencies you frequently transact in</p>
         </div>
     </div>
 </template>
@@ -76,6 +74,22 @@ export default defineComponent({
         const errors = ref<Record<string, string>>({})
         const isSubmitting = ref(false)
 
+        // Helper to extract error message from API response
+        const getErrorMessage = (error: any): string => {
+            if (error.response?.data) {
+                const data = error.response.data
+                // Handle { status, error } format
+                if (typeof data === 'object') {
+                    if (data.error) return data.error
+                    if (data.message) return data.message
+                }
+                // If data is a string, use it
+                if (typeof data === 'string') return data
+            }
+            // Fallback to error.message or generic message
+            return error.message || 'An unexpected error occurred'
+        }
+
         const currencyOptions = computed<CurrencyOption[]>(() =>
             currencyStore.currencies.map(c => ({
                 id: c.id,
@@ -91,7 +105,12 @@ export default defineComponent({
 
         onMounted(async () => {
             if (currencyStore.currencies.length === 0) {
-                await currencyStore.fetchCurrencies()
+                try {
+                    await currencyStore.fetchCurrencies()
+                } catch (error: any) {
+                    // If currency fetch fails, show a general error
+                    errors.value.general = getErrorMessage(error)
+                }
             }
         })
 
@@ -106,6 +125,11 @@ export default defineComponent({
                 .map(code => getCurrencyByCode(code))
                 .filter(Boolean) as { id: number; code: string }[]
         })
+
+        const validatePhone = (phone: string): boolean => {
+            const cleaned = phone.replace(/[^\d+]/g, '');
+            return /^\+?\d{7,15}$/.test(cleaned);
+        };
 
         const validateForm = () => {
             const newErrors: Record<string, string> = {}
@@ -125,6 +149,8 @@ export default defineComponent({
 
             if (!form.value.phone.trim()) {
                 newErrors.phone = 'Business Phone is required'
+            } else if (!validatePhone(form.value.phone)) {
+                newErrors.phone = 'Please enter a valid phone number (e.g., +1234567890)'
             }
 
             if (!primaryCurrencyCode.value) {
@@ -141,7 +167,7 @@ export default defineComponent({
 
         const saveCompany = async (): Promise<void> => {
             if (!validateForm()) {
-                throw new Error('Form validation failed');
+                throw new Error('Form validation failed')
             }
 
             if (!primaryCurrencyObj.value) {
@@ -206,8 +232,8 @@ export default defineComponent({
                 emit('created', companyId)
             } catch (error: any) {
                 console.error('Company creation failed:', error)
-                errors.value.general = error.response?.data?.message || error.message || 'Failed to create company. Please try again.'
-                throw error;
+                errors.value.general = getErrorMessage(error)
+                throw error
             } finally {
                 isSubmitting.value = false
             }
@@ -215,11 +241,7 @@ export default defineComponent({
 
         // Validate when form fields change
         watch(form, validateForm, { deep: true })
-
-        // Add a watcher to ensure validation runs when primary currency changes
-        watch(primaryCurrencyCode, () => {
-            validateForm()
-        })
+        watch(primaryCurrencyCode, validateForm)
 
         return {
             form,
@@ -237,33 +259,16 @@ export default defineComponent({
 
 <style lang="scss" scoped>
 .company-setup-step {
-    max-width: 600px;
-    margin: 0 auto;
-
-    .setup-section {
-        background: white;
-        border-radius: 16px;
-        padding: 2rem;
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
-    }
-
-    h2 {
-        font-size: 1.75rem;
-        margin-bottom: 0.5rem;
-        color: var(--titleColor);
-    }
-
-    .section-subtitle {
-        color: var(--textColor);
-        margin-bottom: 2rem;
-        font-size: 1.1rem;
-    }
+    // No outer container – fills the form panel naturally
 
     .general-error {
-        background: rgba(255, 68, 68, 0.1);
-        padding: 1rem;
-        border-radius: 8px;
+        background: rgba(239, 68, 68, 0.1);
+        border: 1px solid var(--color-danger, #ef4444);
+        color: var(--color-danger, #ef4444);
+        padding: 0.75rem 1rem;
+        border-radius: var(--radius-md, 0.5rem);
         margin-bottom: 1.5rem;
+        font-size: 0.875rem;
         text-align: center;
     }
 
@@ -274,47 +279,52 @@ export default defineComponent({
             display: block;
             margin-bottom: 0.5rem;
             font-weight: 500;
-            color: var(--titleColor);
+            color: var(--color-text, #1e293b);
+            font-size: 0.9375rem;
         }
 
         input {
             width: 100%;
-            padding: 0.875rem 1rem;
-            border: 2px solid rgba(0, 0, 0, 0.1);
-            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            border: 1px solid var(--color-border, #e2e8f0);
+            border-radius: var(--radius-md, 0.5rem);
             font-size: 1rem;
-            transition: border-color 0.3s ease;
+            transition: var(--transition, all 0.2s ease);
+            background: var(--color-surface, #ffffff);
 
             &:focus {
                 outline: none;
-                border-color: var(--primaryColor);
-                box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+                border-color: var(--color-primary, #4f46e5);
+                box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+            }
+
+            &.error-input {
+                border-color: var(--color-danger, #ef4444);
+                background-color: rgba(239, 68, 68, 0.02);
+
+                &:focus {
+                    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+                }
             }
         }
 
-        .field-hint {
+        .input-hint {
             margin-top: 0.25rem;
             font-size: 0.875rem;
-            color: var(--textColor);
-            opacity: 0.7;
+            color: var(--color-text-muted, #64748b);
         }
     }
 
     .error-message {
-        color: #ff4444;
+        display: flex;
+        align-items: center;
+        gap: 0.375rem;
+        color: var(--color-danger, #ef4444);
         font-size: 0.875rem;
-        margin-top: 0.25rem;
-    }
-}
+        margin-top: 0.375rem;
 
-@media (max-width: 768px) {
-    .company-setup-step {
-        .setup-section {
-            padding: 1.5rem;
-        }
-
-        h2 {
-            font-size: 1.5rem;
+        i {
+            font-size: 0.875rem;
         }
     }
 }

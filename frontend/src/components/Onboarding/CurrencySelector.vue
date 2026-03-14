@@ -1,7 +1,12 @@
 <template>
     <div class="currency-selector">
+        <!-- Show error/empty state if no currencies -->
+        <div v-if="currencies.length === 0" class="empty-state">
+            <i class="ri-error-warning-line"></i> No currencies available
+        </div>
+
         <!-- Single Selection Mode -->
-        <div v-if="!multiple" class="single-selector">
+        <div v-else-if="!multiple" class="single-selector">
             <Multiselect v-model="internalValue" :options="formattedCurrencies" :multiple="false"
                 :searchable="enableSearch" :close-on-select="true" :show-labels="false" :placeholder="placeholder"
                 :custom-label="currencyLabel">
@@ -97,7 +102,6 @@ export default defineComponent({
     },
     emits: ['update:modelValue', 'change'],
     setup(props, { emit }) {
-        // Sort currencies: popular first, then alphabetically
         const formattedCurrencies = computed(() => {
             const popular = props.currencies.filter(c =>
                 props.popularCurrencies.includes(c.code)
@@ -108,11 +112,9 @@ export default defineComponent({
             return [...popular, ...others]
         })
 
-        // Internal values for Multiselect
         const internalValue = ref<CurrencyOption | null>(null)
         const internalMultipleValue = ref<CurrencyOption[]>([])
 
-        // Filter currencies to exclude already selected ones
         const filteredCurrencies = computed(() => {
             const selectedCodes = internalMultipleValue.value.map(c => c.code)
             return formattedCurrencies.value.filter(currency =>
@@ -120,7 +122,6 @@ export default defineComponent({
             )
         })
 
-        // Initialize values from modelValue
         const initializeValues = () => {
             if (!props.multiple && typeof props.modelValue === 'string') {
                 const currency = formattedCurrencies.value.find(c => c.code === props.modelValue)
@@ -145,14 +146,14 @@ export default defineComponent({
 
         const getFlagEmoji = (currencyCode: string): string => {
             const flagMap: Record<string, string> = {
-                'USD': '🇺🇸', 'EUR': '🇪🇺', 'GBP': '🇬🇧', 'JPY': '🇯🇵',
-                'AUD': '🇦🇺', 'CAD': '🇨🇦', 'CHF': '🇨🇭', 'CNY': '🇨🇳',
-                'INR': '🇮🇳', 'SGD': '🇸🇬', 'HKD': '🇭🇰', 'KRW': '🇰🇷',
-                'MXN': '🇲🇽', 'BRL': '🇧🇷', 'RUB': '🇷🇺', 'ZAR': '🇿🇦',
-                'AED': '🇦🇪', 'SAR': '🇸🇦', 'TRY': '🇹🇷', 'THB': '🇹🇭',
-                'MYR': '🇲🇾', 'IDR': '🇮🇩', 'PHP': '🇵🇭', 'VND': '🇻🇳',
-                'BDT': '🇧🇩', 'PKR': '🇵🇰', 'EGP': '🇪🇬', 'NGN': '🇳🇬',
-                'KES': '🇰🇪'
+                USD: '🇺🇸', EUR: '🇪🇺', GBP: '🇬🇧', JPY: '🇯🇵',
+                AUD: '🇦🇺', CAD: '🇨🇦', CHF: '🇨🇭', CNY: '🇨🇳',
+                INR: '🇮🇳', SGD: '🇸🇬', HKD: '🇭🇰', KRW: '🇰🇷',
+                MXN: '🇲🇽', BRL: '🇧🇷', RUB: '🇷🇺', ZAR: '🇿🇦',
+                AED: '🇦🇪', SAR: '🇸🇦', TRY: '🇹🇷', THB: '🇹🇭',
+                MYR: '🇲🇾', IDR: '🇮🇩', PHP: '🇵🇭', VND: '🇻🇳',
+                BDT: '🇧🇩', PKR: '🇵🇰', EGP: '🇪🇬', NGN: '🇳🇬',
+                KES: '🇰🇪'
             }
             return flagMap[currencyCode] || '🏳️'
         }
@@ -185,17 +186,14 @@ export default defineComponent({
             emit('change', uniqueCodes)
         }
 
-        // Watch for external modelValue changes
         watch(() => props.modelValue, () => {
             const currentCodes = internalMultipleValue.value.map(c => c.code)
             const newCodes = Array.isArray(props.modelValue) ? props.modelValue : []
-
             if (JSON.stringify([...currentCodes].sort()) !== JSON.stringify([...newCodes].sort())) {
                 initializeValues()
             }
         }, { deep: true })
 
-        // Watch for currencies changes to re-initialize when options become available
         watch(() => props.currencies, () => {
             initializeValues()
         }, { deep: true })
@@ -219,19 +217,26 @@ export default defineComponent({
 @import "vue-multiselect/dist/vue-multiselect.css";
 
 .currency-selector {
+    // Design variables (inherit from global)
+    --input-height: 48px;
+    --tag-bg: rgba(79, 70, 229, 0.1);
+    --tag-color: var(--color-primary, #4f46e5);
+    --option-hover-bg: var(--color-background, #f8fafc);
+
     .multiselect {
-        min-height: 46px;
+        min-height: var(--input-height);
         font-family: inherit;
 
         .multiselect__tags {
-            border: 2px solid rgba(0, 0, 0, 0.1);
-            border-radius: 8px;
+            border: 1px solid var(--color-border, #e2e8f0);
+            border-radius: var(--radius-md, 0.5rem);
             padding: 8px 40px 8px 12px;
-            min-height: 46px;
-            background: white;
+            min-height: var(--input-height);
+            background: var(--color-surface, #ffffff);
+            transition: var(--transition, all 0.2s ease);
 
             &:hover {
-                border-color: rgba(0, 0, 0, 0.2);
+                border-color: var(--color-primary, #4f46e5);
             }
         }
 
@@ -239,52 +244,57 @@ export default defineComponent({
             border: none;
             padding: 0;
             margin: 0;
-            font-size: 14px;
-            color: var(--textColor);
+            font-size: 0.875rem;
+            color: var(--color-text, #1e293b);
+            background: transparent;
 
             &::placeholder {
-                color: rgba(0, 0, 0, 0.4);
+                color: var(--color-text-muted, #94a3b8);
             }
         }
 
         .multiselect__select {
-            height: 46px;
+            height: var(--input-height);
             padding: 0;
 
             &:before {
-                border-color: var(--textColor) transparent transparent;
-                opacity: 0.5;
+                border-color: var(--color-text-muted, #64748b) transparent transparent;
+                opacity: 1;
             }
         }
 
         .multiselect__content-wrapper {
-            border: 1px solid rgba(0, 0, 0, 0.1);
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            border: 1px solid var(--color-border, #e2e8f0);
+            border-radius: var(--radius-md, 0.5rem);
+            box-shadow: var(--shadow-lg, 0 10px 15px -3px rgba(0, 0, 0, 0.1));
             margin-top: 4px;
             z-index: 50;
+            background: var(--color-surface, #ffffff);
         }
 
         .multiselect__option {
-            padding: 12px 16px;
+            padding: 0.75rem 1rem;
             min-height: auto;
+            font-size: 0.875rem;
+            color: var(--color-text, #1e293b);
+            transition: var(--transition, all 0.2s ease);
 
             &:hover {
-                background: rgba(0, 0, 0, 0.02);
+                background: var(--option-hover-bg);
             }
 
             &--selected {
-                background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
-                color: var(--primaryColor);
+                background: rgba(79, 70, 229, 0.1);
+                color: var(--color-primary, #4f46e5);
                 font-weight: 500;
 
                 &:after {
-                    color: var(--primaryColor);
+                    color: var(--color-primary, #4f46e5);
                 }
             }
 
             &--highlight {
-                background: var(--primaryColor);
+                background: var(--color-primary, #4f46e5);
                 color: white;
 
                 &:after {
@@ -297,7 +307,7 @@ export default defineComponent({
     .currency-option {
         display: flex;
         align-items: center;
-        gap: 12px;
+        gap: 0.75rem;
 
         .currency-flag {
             width: 24px;
@@ -305,7 +315,7 @@ export default defineComponent({
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 16px;
+            font-size: 1rem;
             flex-shrink: 0;
         }
 
@@ -313,25 +323,24 @@ export default defineComponent({
             flex: 1;
             display: flex;
             flex-direction: column;
-            gap: 2px;
+            gap: 0.125rem;
 
             .currency-code {
                 font-weight: 600;
-                color: var(--titleColor);
-                font-size: 14px;
+                color: var(--color-text, #1e293b);
+                font-size: 0.875rem;
             }
 
             .currency-name {
-                font-size: 12px;
-                color: var(--textColor);
-                opacity: 0.8;
+                font-size: 0.75rem;
+                color: var(--color-text-muted, #64748b);
             }
         }
 
         .currency-symbol {
-            font-size: 14px;
+            font-size: 0.875rem;
             font-weight: 500;
-            color: var(--textColor);
+            color: var(--color-text, #1e293b);
             margin-left: auto;
             flex-shrink: 0;
         }
@@ -340,39 +349,39 @@ export default defineComponent({
     .selected-currency {
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: 0.5rem;
 
         .currency-flag {
-            font-size: 16px;
+            font-size: 1rem;
         }
 
         .currency-code {
             font-weight: 600;
-            color: var(--titleColor);
+            color: var(--color-text, #1e293b);
+            font-size: 0.875rem;
         }
 
         .currency-name {
-            font-size: 13px;
-            color: var(--textColor);
-            opacity: 0.8;
+            font-size: 0.75rem;
+            color: var(--color-text-muted, #64748b);
         }
     }
 
     .currency-tag {
         display: inline-flex;
         align-items: center;
-        gap: 6px;
-        background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
-        border: 1px solid rgba(102, 126, 234, 0.3);
-        border-radius: 16px;
-        padding: 4px 8px 4px 6px;
-        margin: 2px 4px 2px 0;
-        font-size: 13px;
+        gap: 0.375rem;
+        background: var(--tag-bg);
+        border: 1px solid rgba(79, 70, 229, 0.3);
+        border-radius: 2rem;
+        padding: 0.25rem 0.5rem 0.25rem 0.375rem;
+        margin: 0.125rem 0.25rem 0.125rem 0;
+        font-size: 0.75rem;
         font-weight: 500;
-        color: var(--primaryColor);
+        color: var(--tag-color);
 
         .tag-flag {
-            font-size: 14px;
+            font-size: 0.875rem;
         }
 
         .tag-code {
@@ -382,17 +391,17 @@ export default defineComponent({
         .tag-remove {
             background: none;
             border: none;
-            width: 16px;
-            height: 16px;
+            width: 1.125rem;
+            height: 1.125rem;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             padding: 0;
             cursor: pointer;
-            color: var(--primaryColor);
+            color: var(--tag-color);
             opacity: 0.7;
-            margin-left: 2px;
+            transition: var(--transition, all 0.2s ease);
 
             &:hover {
                 opacity: 1;
@@ -400,7 +409,7 @@ export default defineComponent({
             }
 
             i {
-                font-size: 12px;
+                font-size: 0.75rem;
             }
         }
     }
@@ -415,8 +424,20 @@ export default defineComponent({
     .multiselect__placeholder {
         padding: 0;
         margin: 0;
-        color: rgba(0, 0, 0, 0.4);
-        font-size: 14px;
+        color: var(--color-text-muted, #94a3b8);
+        font-size: 0.875rem;
+    }
+
+    .empty-state {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.75rem 1rem;
+        background: rgba(239, 68, 68, 0.1);
+        border: 1px solid var(--color-danger, #ef4444);
+        border-radius: var(--radius-md, 0.5rem);
+        color: var(--color-danger, #ef4444);
+        font-size: 0.875rem;
     }
 }
 </style>

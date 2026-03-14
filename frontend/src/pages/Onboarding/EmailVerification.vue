@@ -7,11 +7,11 @@
                     <div class="form-group">
                         <input type="email" id="email" v-model="email" placeholder="name@company.com" required
                             :class="{ 'error-input': errors.email }" @keyup.enter="sendVerification"
-                            @input="clearError">
+                            @input="clearError" />
                         <div v-if="errors.email" class="error-message">
                             <i class="ri-error-warning-line"></i> {{ errors.email }}
                         </div>
-                        <div class="email-hint">
+                        <div class="input-hint">
                             We'll send a verification code to this address
                         </div>
                     </div>
@@ -21,9 +21,7 @@
                         <span v-if="isSending" class="btn-loading">
                             <i class="ri-loader-4-line spin"></i> Sending...
                         </span>
-                        <span v-else>
-                            Continue with Email
-                        </span>
+                        <span v-else>Continue with Email</span>
                     </button>
                 </div>
 
@@ -33,12 +31,10 @@
                     </div>
                     <div class="social-buttons">
                         <button class="btn btn-outline social-btn" @click="signupWithGoogle">
-                            <i class="ri-google-fill"></i>
-                            Google
+                            <i class="ri-google-fill"></i> Google
                         </button>
                         <button class="btn btn-outline social-btn" @click="signupWithMicrosoft">
-                            <i class="ri-microsoft-fill"></i>
-                            Microsoft
+                            <i class="ri-microsoft-fill"></i> Microsoft
                         </button>
                     </div>
                 </div>
@@ -52,7 +48,9 @@
         <!-- Verification Code Step -->
         <div v-else-if="!verificationComplete" class="verification-step">
             <div class="step-header">
-                <p class="subtitle">We sent a 6-digit code to <strong>{{ email }}</strong></p>
+                <p class="subtitle">
+                    We sent a 6-digit code to <strong>{{ email }}</strong>
+                </p>
             </div>
 
             <div class="verification-card">
@@ -63,7 +61,7 @@
                                 :ref="el => inputRefs[i - 1] = el as HTMLInputElement"
                                 @input="e => handleCodeInput(e, i - 1)"
                                 @keydown.delete="e => handleCodeDelete(e, i - 1)" @paste="handlePaste"
-                                :class="{ 'filled': code[i - 1] }" />
+                                :class="{ filled: code[i - 1] }" />
                         </div>
                         <div v-if="errors.code" class="error-message">
                             <i class="ri-error-warning-line"></i> {{ errors.code }}
@@ -74,9 +72,7 @@
                         <p v-if="timeLeft > 0" class="timer">
                             Code expires in <span class="timer-countdown">{{ formatTime(timeLeft) }}</span>
                         </p>
-                        <p v-else class="timer expired">
-                            Code has expired
-                        </p>
+                        <p v-else class="timer expired">Code has expired</p>
                     </div>
 
                     <div class="verification-actions">
@@ -85,18 +81,14 @@
                             <span v-if="isVerifying" class="btn-loading">
                                 <i class="ri-loader-4-line spin"></i> Verifying...
                             </span>
-                            <span v-else>
-                                Verify Email
-                            </span>
+                            <span v-else>Verify Email</span>
                         </button>
 
                         <button class="btn btn-text" @click="resendCode" :disabled="isResending || timeLeft > 0">
                             <span v-if="isResending" class="btn-loading">
                                 <i class="ri-loader-4-line spin"></i>
                             </span>
-                            <span v-else>
-                                <i class="ri-refresh-line"></i> Resend Code
-                            </span>
+                            <span v-else><i class="ri-refresh-line"></i> Resend Code</span>
                         </button>
                     </div>
 
@@ -165,6 +157,22 @@ export default defineComponent({
 
         // Errors
         const errors = ref<Record<string, string>>({})
+
+        // Helper to extract error message from API response
+        const getErrorMessage = (error: any): string => {
+            if (error.response?.data) {
+                const data = error.response.data
+                // Handle { status, error } format
+                if (typeof data === 'object') {
+                    if (data.error) return data.error
+                    if (data.message) return data.message
+                }
+                // If data is a string, use it
+                if (typeof data === 'string') return data
+            }
+            // Fallback to error.message or generic message
+            return error.message || 'An unexpected error occurred'
+        }
 
         // Computed
         const isCodeComplete = computed(() => {
@@ -265,7 +273,7 @@ export default defineComponent({
                 }, 100)
             } catch (error: any) {
                 console.error('Failed to send verification:', error)
-                errors.value.email = error.response?.data?.message || error.message || 'Failed to send verification code'
+                errors.value.email = getErrorMessage(error)
             } finally {
                 isSending.value = false
             }
@@ -342,7 +350,7 @@ export default defineComponent({
                 }
             } catch (error: any) {
                 console.error('Verification failed:', error)
-                errors.value.code = error.response?.data?.message || error.message || 'Verification failed'
+                errors.value.code = getErrorMessage(error)
                 code.value = ['', '', '', '', '', '']
                 inputRefs.value[0]?.focus()
             } finally {
@@ -353,6 +361,7 @@ export default defineComponent({
         const resendCode = async () => {
             try {
                 isResending.value = true
+                errors.value.code = ''
 
                 await verificationStore.resend(email.value, VerificationType.USER_REGISTRATION)
 
@@ -364,12 +373,9 @@ export default defineComponent({
 
                 code.value = ['', '', '', '', '', '']
                 inputRefs.value[0]?.focus()
-
-                // Optionally show a success toast/message
-                alert('Verification code has been resent to your email.')
             } catch (error: any) {
                 console.error('Failed to resend code:', error)
-                alert('Failed to resend code. Please try again.')
+                errors.value.code = getErrorMessage(error)
             } finally {
                 isResending.value = false
             }
@@ -442,183 +448,149 @@ export default defineComponent({
 </script>
 
 <style lang="scss" scoped>
+/* --------------------------------------------
+   Email Verification – Styled for OnboardingLayout
+   Uses global design variables
+-------------------------------------------- */
 .email-verification-step {
-    // margin: 0 auto;
-    // padding: 2rem 1rem;
+    // No extra padding – layout provides spacing
 
     .step-header {
+        margin-bottom: 2rem;
         text-align: center;
-        margin-bottom: 2.5rem;
 
         h1 {
-            font-size: 2rem;
+            font-size: 1.875rem;
             font-weight: 700;
-            color: var(--titleColor);
+            color: var(--color-text, #1e293b);
             margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+
+            .success-icon {
+                color: var(--color-success, #10b981);
+                font-size: 2rem;
+            }
         }
 
         .subtitle {
-            font-size: 1.125rem;
-            color: var(--textColor);
-            opacity: 0.8;
+            font-size: 1rem;
+            color: var(--color-text-light, #475569);
+            line-height: 1.5;
 
             strong {
-                color: var(--titleColor);
+                color: var(--color-text, #1e293b);
                 font-weight: 600;
             }
         }
     }
 
     .email-card,
-    .verification-card,
-    .success-card {
-        background: white;
-        border-radius: 16px;
-        // padding: 2.5rem;
-        // box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
-        // border: 1px solid rgba(0, 0, 0, 0.06);
+    .verification-card {
+        background: var(--color-surface, #ffffff);
+        border-radius: var(--radius-lg, 0.75rem);
+        padding: 1.5rem;
+        border: 1px solid var(--color-border, #e2e8f0);
     }
 
-    .email-icon,
-    .verification-icon,
-    .success-icon {
-        // text-align: center;
+    .form-group {
         margin-bottom: 1.5rem;
 
-        i {
-            font-size: 3.5rem;
-            color: var(--primaryColor);
-        }
-    }
+        input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 1px solid var(--color-border, #e2e8f0);
+            border-radius: var(--radius-md, 0.5rem);
+            font-size: 1rem;
+            transition: var(--transition, all 0.2s ease);
+            background: var(--color-surface, #ffffff);
 
-    .email-form,
-    .verification-form,
-    .success-content {
-        .form-group {
-            margin-bottom: 1.5rem;
-
-            label {
-                display: block;
-                margin-bottom: 0.5rem;
-                font-weight: 500;
-                color: var(--titleColor);
+            &:focus {
+                outline: none;
+                border-color: var(--color-primary, #4f46e5);
+                box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
             }
 
-            input {
-                width: 100%;
-                padding: 0.875rem 1rem;
-                border: 2px solid rgba(0, 0, 0, 0.1);
-                border-radius: 8px;
-                font-size: 1rem;
-                transition: all 0.3s ease;
+            &.error-input {
+                border-color: var(--color-danger, #ef4444);
+                background-color: rgba(239, 68, 68, 0.02);
 
                 &:focus {
-                    outline: none;
-                    border-color: var(--primaryColor);
-                    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+                    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
                 }
-
-                &.error-input {
-                    border-color: #ff4444;
-                    background-color: rgba(255, 68, 68, 0.02);
-
-                    &:focus {
-                        box-shadow: 0 0 0 3px rgba(255, 68, 68, 0.1);
-                    }
-                }
-            }
-
-            .email-hint {
-                font-size: 0.875rem;
-                color: var(--textColor);
-                opacity: 0.7;
-                margin-top: 0.5rem;
             }
         }
 
-        .terms-group {
-            margin-top: 1.5rem;
-            padding-top: 1.5rem;
-            border-top: 1px solid rgba(0, 0, 0, 0.06);
-
-            .checkbox-label {
-                display: flex;
-                align-items: flex-start;
-                gap: 0.75rem;
-                cursor: pointer;
-                font-size: 0.9375rem;
-
-                input {
-                    display: none;
-                }
-
-                .checkmark {
-                    flex-shrink: 0;
-                    width: 20px;
-                    height: 20px;
-                    border: 2px solid rgba(0, 0, 0, 0.2);
-                    border-radius: 4px;
-                    position: relative;
-
-                    &::after {
-                        content: '';
-                        position: absolute;
-                        display: none;
-                        left: 5px;
-                        top: 2px;
-                        width: 6px;
-                        height: 10px;
-                        border: solid white;
-                        border-width: 0 2px 2px 0;
-                        transform: rotate(45deg);
-                    }
-                }
-
-                input:checked+.checkmark {
-                    background: var(--primaryColor);
-                    border-color: var(--primaryColor);
-
-                    &::after {
-                        display: block;
-                    }
-                }
-
-                a {
-                    color: var(--primaryColor);
-                    text-decoration: none;
-                    font-weight: 500;
-
-                    &:hover {
-                        text-decoration: underline;
-                    }
-                }
-            }
+        .input-hint {
+            font-size: 0.875rem;
+            color: var(--color-text-muted, #64748b);
+            margin-top: 0.5rem;
         }
     }
 
-    .btn {
-        width: 100%;
-        margin-bottom: 1rem;
+    .error-message {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: var(--color-danger, #ef4444);
+        font-size: 0.875rem;
+        margin-top: 0.5rem;
 
+        i {
+            font-size: 1rem;
+        }
+    }
+
+    // Buttons
+    .btn {
         &.btn-primary {
-            padding: 1rem;
-            font-size: 1.125rem;
+            background: linear-gradient(135deg, var(--color-primary, #4f46e5) 0%, var(--color-primary-dark, #3730a3) 100%);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
             font-weight: 600;
+            transition: var(--transition, all 0.2s ease);
+
+            &:hover:not(:disabled) {
+                transform: translateY(-2px);
+                box-shadow: 0 10px 20px -5px var(--color-primary, #4f46e5);
+            }
 
             &:disabled {
-                opacity: 0.6;
+                opacity: 0.5;
                 cursor: not-allowed;
+            }
+
+            &.btn-large {
+                width: 100%;
+                padding: 0.875rem 1.5rem;
+                font-size: 1rem;
+            }
+        }
+
+        &.btn-outline {
+            background: transparent;
+            border: 1px solid var(--color-border, #e2e8f0);
+            color: var(--color-text, #1e293b);
+            padding: 0.625rem 1.25rem;
+
+            &:hover {
+                background: var(--color-background, #f8fafc);
+                border-color: var(--color-primary, #4f46e5);
             }
         }
 
         &.btn-text {
-            background: none;
+            background: transparent;
             border: none;
-            color: var(--primaryColor);
+            color: var(--color-primary, #4f46e5);
             padding: 0.5rem;
+            font-size: 0.875rem;
 
-            &:hover {
-                background: rgba(102, 126, 234, 0.05);
+            &:hover:not(:disabled) {
+                background: rgba(79, 70, 229, 0.05);
             }
 
             &:disabled {
@@ -649,10 +621,11 @@ export default defineComponent({
         }
     }
 
+    // Alternative options (Google/Microsoft)
     .alternative-options {
         margin-top: 2rem;
-        padding-top: 2rem;
-        border-top: 1px solid rgba(0, 0, 0, 0.06);
+        padding-top: 1.5rem;
+        border-top: 1px solid var(--color-border, #e2e8f0);
 
         .divider {
             text-align: center;
@@ -660,9 +633,9 @@ export default defineComponent({
             position: relative;
 
             span {
-                background: white;
+                background: var(--color-surface, #ffffff);
                 padding: 0 1rem;
-                color: var(--textColor);
+                color: var(--color-text-muted, #64748b);
                 font-size: 0.875rem;
                 position: relative;
                 z-index: 1;
@@ -675,7 +648,7 @@ export default defineComponent({
                 left: 0;
                 right: 0;
                 height: 1px;
-                background: rgba(0, 0, 0, 0.1);
+                background: var(--color-border, #e2e8f0);
             }
         }
 
@@ -689,37 +662,32 @@ export default defineComponent({
                 align-items: center;
                 justify-content: center;
                 gap: 0.75rem;
-                padding: 0.875rem;
-                border: 2px solid rgba(0, 0, 0, 0.1);
-                background: white;
+                padding: 0.75rem;
                 font-weight: 500;
+                background: var(--color-surface, #ffffff);
 
                 i {
                     font-size: 1.25rem;
-                }
-
-                &:hover {
-                    border-color: var(--primaryColor);
-                    background: rgba(102, 126, 234, 0.05);
                 }
             }
         }
     }
 
+    // Login link
     .login-link {
         text-align: center;
-        margin-top: 2rem;
+        margin-top: 1.5rem;
         padding-top: 1.5rem;
-        border-top: 1px solid rgba(0, 0, 0, 0.06);
+        border-top: 1px solid var(--color-border, #e2e8f0);
 
         p {
-            color: var(--textColor);
-            font-size: 0.9375rem;
+            color: var(--color-text-muted, #64748b);
+            font-size: 0.875rem;
 
             a {
-                color: var(--primaryColor);
-                text-decoration: none;
+                color: var(--color-primary, #4f46e5);
                 font-weight: 500;
+                text-decoration: none;
 
                 &:hover {
                     text-decoration: underline;
@@ -728,6 +696,7 @@ export default defineComponent({
         }
     }
 
+    // Code input boxes
     .code-input-container {
         margin-bottom: 2rem;
 
@@ -738,45 +707,46 @@ export default defineComponent({
             margin-bottom: 1rem;
 
             input {
-                width: 3.5rem;
-                height: 3.5rem;
-                border: 2px solid rgba(0, 0, 0, 0.1);
-                border-radius: 8px;
+                width: 3rem;
+                height: 3rem;
+                border: 2px solid var(--color-border, #e2e8f0);
+                border-radius: var(--radius-md, 0.5rem);
                 font-size: 1.5rem;
                 font-weight: 600;
                 text-align: center;
-                background: white;
-                transition: all 0.3s ease;
+                background: var(--color-surface, #ffffff);
+                transition: var(--transition, all 0.2s ease);
 
                 &:focus {
                     outline: none;
-                    border-color: var(--primaryColor);
-                    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+                    border-color: var(--color-primary, #4f46e5);
+                    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
                 }
 
                 &.filled {
-                    border-color: var(--primaryColor);
-                    background-color: rgba(102, 126, 234, 0.05);
+                    border-color: var(--color-primary, #4f46e5);
+                    background-color: rgba(79, 70, 229, 0.05);
                 }
             }
         }
     }
 
+    // Timer
     .timer-section {
         text-align: center;
         margin-bottom: 2rem;
 
         .timer {
-            color: var(--textColor);
-            font-size: 0.9375rem;
+            color: var(--color-text-muted, #64748b);
+            font-size: 0.875rem;
 
             .timer-countdown {
                 font-weight: 600;
-                color: var(--primaryColor);
+                color: var(--color-primary, #4f46e5);
             }
 
             &.expired {
-                color: #ff4444;
+                color: var(--color-danger, #ef4444);
                 font-weight: 500;
             }
         }
@@ -789,22 +759,24 @@ export default defineComponent({
         margin-bottom: 2rem;
     }
 
+    // Email tips box
     .email-tips {
-        background: rgba(102, 126, 234, 0.05);
-        border-radius: 8px;
-        padding: 1.5rem;
+        background: var(--color-background, #f8fafc);
+        border-radius: var(--radius-md, 0.5rem);
+        padding: 1.25rem;
         margin-bottom: 2rem;
 
         h4 {
             display: flex;
             align-items: center;
             gap: 0.5rem;
-            margin-bottom: 1rem;
-            color: var(--titleColor);
-            font-size: 1rem;
+            margin-bottom: 0.75rem;
+            color: var(--color-text, #1e293b);
+            font-size: 0.875rem;
+            font-weight: 600;
 
             i {
-                color: #ffbb33;
+                color: var(--color-warning, #f59e0b);
             }
         }
 
@@ -818,121 +790,34 @@ export default defineComponent({
                 align-items: center;
                 gap: 0.5rem;
                 margin-bottom: 0.5rem;
-                color: var(--textColor);
-                font-size: 0.9375rem;
+                color: var(--color-text-light, #475569);
+                font-size: 0.875rem;
 
                 &::before {
                     content: '•';
-                    color: var(--primaryColor);
+                    color: var(--color-primary, #4f46e5);
                     font-weight: bold;
                 }
             }
         }
     }
 
-    .success-content {
-        text-align: center;
-
-        h3 {
-            font-size: 1.5rem;
-            font-weight: 600;
-            color: var(--titleColor);
-            margin-bottom: 1rem;
-        }
-
-        p {
-            color: var(--textColor);
-            margin-bottom: 2rem;
-            line-height: 1.6;
-
-            strong {
-                color: var(--titleColor);
-            }
-        }
-
-        .next-steps {
-            text-align: left;
-            background: rgba(102, 126, 234, 0.05);
-            border-radius: 8px;
-            padding: 1.5rem;
-            margin-bottom: 2rem;
-
-            h4 {
-                color: var(--titleColor);
-                margin-bottom: 1rem;
-                font-size: 1rem;
-            }
-
-            ul {
-                list-style: none;
-                padding: 0;
-                margin: 0;
-
-                li {
-                    display: flex;
-                    align-items: center;
-                    gap: 0.75rem;
-                    margin-bottom: 0.75rem;
-                    color: var(--textColor);
-
-                    i {
-                        color: var(--primaryColor);
-                        font-size: 1.25rem;
-                    }
-                }
-            }
-        }
-
-        .btn {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
-
-            i {
-                transition: transform 0.3s ease;
-            }
-
-            &:hover i {
-                transform: translateX(4px);
-            }
-        }
-    }
-}
-
-.error-message {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    color: #ff4444;
-    font-size: 0.875rem;
-    margin-top: 0.5rem;
-
-    i {
-        font-size: 1rem;
-    }
-}
-
-@media (max-width: 480px) {
-    .email-verification-step {
-        // padding: 1rem;
-
-        .email-card,
-        .verification-card,
-        .success-card {
-            padding: 1.5rem;
-        }
-
-        .code-inputs {
-            input {
-                width: 2.75rem !important;
-                height: 2.75rem !important;
-                font-size: 1.25rem !important;
-            }
+    // Responsive adjustments
+    @media (max-width: 480px) {
+        .code-inputs input {
+            width: 2.5rem;
+            height: 2.5rem;
+            font-size: 1.25rem;
         }
 
         .social-buttons {
-            grid-template-columns: 1fr !important;
+            grid-template-columns: 1fr;
+        }
+
+        .step-header h1 {
+            font-size: 1.5rem;
+            flex-direction: column;
+            gap: 0.5rem;
         }
     }
 }

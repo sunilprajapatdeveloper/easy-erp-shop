@@ -31,7 +31,7 @@
                 popular: plan.name === 'Professional',
                 selected: selectedPlanId === plan.id,
             }" @click="selectPlan(plan, false)">
-                <!-- Popular badge (example logic) -->
+                <!-- Popular badge -->
                 <div v-if="plan.name === 'Professional'" class="popular-badge">
                     Most Popular
                 </div>
@@ -138,6 +138,22 @@ export default defineComponent({
         const selectedPlanName = ref<string>('')
         const error = ref<string | null>(null)
 
+        // Helper to extract error message from API response
+        const getErrorMessage = (error: any): string => {
+            if (error.response?.data) {
+                const data = error.response.data
+                // Handle { status, error } format
+                if (typeof data === 'object') {
+                    if (data.error) return data.error
+                    if (data.message) return data.message
+                }
+                // If data is a string, use it
+                if (typeof data === 'string') return data
+            }
+            // Fallback to error.message or generic message
+            return error.message || 'An unexpected error occurred'
+        }
+
         const selectedPlanIdForComparison = computed<PlanId>(() => {
             const name = selectedPlanName.value.toLowerCase()
             if (name.includes('starter')) return 'starter'
@@ -174,13 +190,12 @@ export default defineComponent({
         onMounted(async () => {
             try {
                 await planStore.fetchPlans()
-            } catch (err) {
-                error.value = 'Failed to load plans. Please try again.'
-                console.error(err)
+            } catch (err: any) {
+                console.error('Failed to load plans:', err)
+                error.value = getErrorMessage(err)
             }
         })
 
-        // When billing period changes, update the stored plan price if a plan is already selected
         watch(billingPeriod, () => {
             if (selectedPlanId.value) {
                 const plan = planStore.plans.find(p => p.id === selectedPlanId.value)
@@ -215,19 +230,16 @@ export default defineComponent({
 
 <style lang="scss" scoped>
 .plans-step {
-    width: 100%;
-    max-width: 100%;
-    margin: 0 auto;
-    padding: 0 1rem;
+    // No outer padding – layout provides spacing
 
     .plans-header {
         text-align: center;
-        margin-bottom: 2rem;
+        margin-bottom: 2.5rem;
 
         .billing-toggle {
             display: inline-block;
-            background: #f1f5f9;
-            border-radius: 40px;
+            background: var(--color-background, #f1f5f9);
+            border-radius: 2.5rem;
             padding: 0.25rem;
 
             .toggle-switch {
@@ -238,30 +250,31 @@ export default defineComponent({
                     padding: 0.5rem 1.5rem;
                     border: none;
                     background: transparent;
-                    border-radius: 30px;
+                    border-radius: 2rem;
                     font-size: 1rem;
                     font-weight: 600;
-                    color: #64748b;
+                    color: var(--color-text-muted, #64748b);
                     cursor: pointer;
-                    transition: all 0.2s ease;
+                    transition: var(--transition, all 0.2s ease);
                     position: relative;
 
                     &.active {
-                        background: white;
-                        color: #3b82f6;
-                        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+                        background: var(--color-surface, #ffffff);
+                        color: var(--color-primary, #4f46e5);
+                        box-shadow: var(--shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.1));
                     }
 
                     .discount-badge {
                         position: absolute;
                         top: -8px;
                         right: -8px;
-                        background: #10b981;
+                        background: var(--color-success, #10b981);
                         color: white;
                         font-size: 0.7rem;
                         padding: 0.2rem 0.5rem;
-                        border-radius: 20px;
+                        border-radius: 1.25rem;
                         font-weight: 600;
+                        white-space: nowrap;
                     }
                 }
             }
@@ -272,7 +285,7 @@ export default defineComponent({
     .error-state {
         text-align: center;
         padding: 3rem;
-        color: #64748b;
+        color: var(--color-text-muted, #64748b);
 
         i {
             font-size: 2rem;
@@ -292,11 +305,11 @@ export default defineComponent({
         margin-bottom: 3rem;
 
         .plan-card {
-            background: white;
-            border-radius: 24px;
-            padding: 2rem 1.5rem;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
-            transition: all 0.3s ease;
+            background: var(--color-surface, #ffffff);
+            border-radius: var(--radius-xl, 1rem);
+            padding: 1.75rem 1.5rem;
+            box-shadow: var(--shadow-md, 0 4px 6px -1px rgba(0, 0, 0, 0.1));
+            transition: var(--transition, all 0.2s ease);
             border: 2px solid transparent;
             cursor: pointer;
             display: flex;
@@ -306,31 +319,31 @@ export default defineComponent({
 
             &:hover {
                 transform: translateY(-4px);
-                box-shadow: 0 20px 30px rgba(0, 0, 0, 0.08);
-                border-color: #e2e8f0;
+                box-shadow: var(--shadow-lg, 0 20px 25px -5px rgba(0, 0, 0, 0.1));
+                border-color: var(--color-border, #e2e8f0);
             }
 
             &.popular {
-                border-color: #3b82f6;
-                background: linear-gradient(to bottom, #ffffff, #f8fafc);
+                border-color: var(--color-primary, #4f46e5);
+                background: linear-gradient(to bottom, var(--color-surface, #ffffff), var(--color-background, #f8fafc));
 
                 .popular-badge {
                     position: absolute;
                     top: 12px;
                     right: 12px;
-                    background: #3b82f6;
+                    background: var(--color-primary, #4f46e5);
                     color: white;
                     font-size: 0.75rem;
                     font-weight: 600;
                     padding: 0.25rem 1rem;
-                    border-radius: 20px;
+                    border-radius: 1.25rem;
                     letter-spacing: 0.5px;
                 }
             }
 
             &.selected {
-                border-color: #3b82f6;
-                box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+                border-color: var(--color-primary, #4f46e5);
+                box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
             }
 
             .plan-header {
@@ -339,13 +352,13 @@ export default defineComponent({
                 h3 {
                     font-size: 1.5rem;
                     font-weight: 700;
-                    color: #0f172a;
+                    color: var(--color-text, #1e293b);
                     margin: 0 0 0.25rem;
                 }
 
                 .plan-description {
                     font-size: 0.875rem;
-                    color: #64748b;
+                    color: var(--color-text-muted, #64748b);
                     line-height: 1.4;
                     margin: 0;
                 }
@@ -362,25 +375,25 @@ export default defineComponent({
                     .currency {
                         font-size: 1.25rem;
                         font-weight: 600;
-                        color: #0f172a;
+                        color: var(--color-text, #1e293b);
                     }
 
                     .amount {
                         font-size: 2.5rem;
                         font-weight: 800;
-                        color: #0f172a;
+                        color: var(--color-text, #1e293b);
                         line-height: 1;
                     }
 
                     .period {
                         font-size: 1rem;
-                        color: #64748b;
+                        color: var(--color-text-muted, #64748b);
                     }
                 }
 
                 .billing-note {
                     font-size: 0.8rem;
-                    color: #94a3b8;
+                    color: var(--color-text-muted, #94a3b8);
                     margin: 0.25rem 0 0;
                 }
             }
@@ -399,11 +412,11 @@ export default defineComponent({
                         align-items: flex-start;
                         gap: 0.5rem;
                         font-size: 0.875rem;
-                        color: #334155;
+                        color: var(--color-text-light, #475569);
                         margin-bottom: 0.75rem;
 
                         i {
-                            color: #10b981;
+                            color: var(--color-success, #10b981);
                             font-size: 1.1rem;
                             flex-shrink: 0;
                             margin-top: 0.1rem;
@@ -421,27 +434,29 @@ export default defineComponent({
                     width: 100%;
                     padding: 0.75rem;
                     font-weight: 600;
-                    border-radius: 12px;
-                    transition: all 0.2s ease;
+                    border-radius: var(--radius-md, 0.5rem);
+                    transition: var(--transition, all 0.2s ease);
 
                     &.btn-primary {
-                        background: #3b82f6;
+                        background: linear-gradient(135deg, var(--color-primary, #4f46e5) 0%, var(--color-primary-dark, #3730a3) 100%);
                         color: white;
                         border: none;
 
-                        &:hover {
-                            background: #2563eb;
+                        &:hover:not(:disabled) {
+                            transform: translateY(-2px);
+                            box-shadow: 0 10px 20px -5px var(--color-primary, #4f46e5);
                         }
                     }
 
                     &.btn-outline {
                         background: transparent;
-                        border: 2px solid #e2e8f0;
-                        color: #334155;
+                        border: 1px solid var(--color-border, #e2e8f0);
+                        color: var(--color-text, #1e293b);
 
                         &:hover {
-                            border-color: #3b82f6;
-                            color: #3b82f6;
+                            background: var(--color-background, #f8fafc);
+                            border-color: var(--color-primary, #4f46e5);
+                            color: var(--color-primary, #4f46e5);
                         }
                     }
                 }
@@ -456,13 +471,13 @@ export default defineComponent({
         h2 {
             font-size: 2rem;
             font-weight: 700;
-            color: #0f172a;
+            color: var(--color-text, #1e293b);
             margin-bottom: 0.5rem;
         }
 
         .section-subtitle {
             font-size: 1.125rem;
-            color: #64748b;
+            color: var(--color-text-muted, #64748b);
             margin-bottom: 2rem;
         }
     }
@@ -471,7 +486,7 @@ export default defineComponent({
         h2 {
             font-size: 2rem;
             font-weight: 700;
-            color: #0f172a;
+            color: var(--color-text, #1e293b);
             text-align: center;
             margin-bottom: 2rem;
         }
@@ -484,21 +499,22 @@ export default defineComponent({
             margin: 0 auto;
 
             .faq-item {
-                background: white;
-                border-radius: 16px;
+                background: var(--color-surface, #ffffff);
+                border-radius: var(--radius-lg, 0.75rem);
                 padding: 1.5rem;
-                box-shadow: 0 2px 12px rgba(0, 0, 0, 0.02);
+                box-shadow: var(--shadow-sm, 0 1px 3px rgba(0, 0, 0, 0.05));
+                border: 1px solid var(--color-border, #e2e8f0);
 
                 h4 {
                     font-size: 1.125rem;
                     font-weight: 600;
-                    color: #0f172a;
+                    color: var(--color-text, #1e293b);
                     margin: 0 0 0.5rem;
                 }
 
                 p {
                     font-size: 0.9375rem;
-                    color: #475569;
+                    color: var(--color-text-light, #475569);
                     line-height: 1.5;
                     margin: 0;
                 }
@@ -519,8 +535,6 @@ export default defineComponent({
 
 @media (max-width: 768px) {
     .plans-step {
-        padding: 0 0.5rem;
-
         .plans-grid {
             grid-template-columns: 1fr;
         }
