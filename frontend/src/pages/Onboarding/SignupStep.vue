@@ -41,7 +41,7 @@
 
         <div class="form-group terms-group">
             <label class="checkbox-label">
-                <input type="checkbox" v-model="form.acceptTerms" />
+                <input type="checkbox" v-model="form.acceptTerms" @change="validateForm" />
                 <span class="checkmark"></span>
                 I agree to the <a href="/terms" target="_blank">Terms of Service</a> and <a href="/privacy"
                     target="_blank">Privacy Policy</a>
@@ -78,19 +78,15 @@ export default defineComponent({
         const errors = ref<Record<string, string>>({})
         const isSubmitting = ref(false)
 
-        // Helper to extract error message from API response
         const getErrorMessage = (error: any): string => {
             if (error.response?.data) {
                 const data = error.response.data
-                // Handle { status, error } format
                 if (typeof data === 'object') {
                     if (data.error) return data.error
                     if (data.message) return data.message
                 }
-                // If data is a string, use it
                 if (typeof data === 'string') return data
             }
-            // Fallback to error.message or generic message
             return error.message || 'An unexpected error occurred'
         }
 
@@ -174,7 +170,7 @@ export default defineComponent({
             }
         }
 
-        watch(form, validateForm, { deep: true, immediate: true })
+        watch(form, validateForm, { deep: true })
 
         return {
             form,

@@ -16,6 +16,7 @@ import nextpos.app.nextpos.model.entity.POSGeneralSettings;
 import nextpos.app.nextpos.model.entity.User;
 import nextpos.app.nextpos.model.entity.Warehouse;
 import nextpos.app.nextpos.model.entity.WarehouseCurrency;
+import nextpos.app.nextpos.model.enums.CurrencyStatus;
 import nextpos.app.nextpos.repository.CompanyRepository;
 import nextpos.app.nextpos.repository.CustomerRepository;
 import nextpos.app.nextpos.repository.POSGeneralSettingsRepository;
@@ -53,10 +54,16 @@ public class POSGeneralSettingsServiceImpl implements POSGeneralSettingsService 
             throw new IllegalArgumentException("Warehouse does not belong to the provided company");
         }
 
-        // Validate currency
+        // Validate currency: must exist, belong to the warehouse, and be active
         WarehouseCurrency currency = warehouseCurrencyRepo.findById(request.getDefaultCurrencyId())
                 .orElseThrow(() -> new NoSuchElementException(
-                        "Default currency not found: " + request.getDefaultCurrencyId()));
+                        "Currency not found: " + request.getDefaultCurrencyId()));
+        if (!currency.getWarehouse().getId().equals(warehouseId)) {
+            throw new IllegalArgumentException("Currency does not belong to the specified warehouse");
+        }
+        if (currency.getStatus() != CurrencyStatus.ACTIVE) {
+            throw new IllegalStateException("Currency is not active");
+        }
 
         // Validate optional customer
         Customer customer = null;
@@ -136,6 +143,13 @@ public class POSGeneralSettingsServiceImpl implements POSGeneralSettingsService 
             WarehouseCurrency currency = warehouseCurrencyRepo.findById(request.getDefaultCurrencyId())
                     .orElseThrow(
                             () -> new NoSuchElementException("Currency not found: " + request.getDefaultCurrencyId()));
+            // Also verify that the currency belongs to the warehouse and is active
+            if (!currency.getWarehouse().getId().equals(warehouseId)) {
+                throw new IllegalArgumentException("Currency does not belong to the specified warehouse");
+            }
+            if (currency.getStatus() != CurrencyStatus.ACTIVE) {
+                throw new IllegalStateException("Currency is not active");
+            }
             settings.setDefaultCurrency(currency);
         }
 

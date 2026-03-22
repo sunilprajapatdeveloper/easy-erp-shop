@@ -31,6 +31,11 @@
         <div v-else-if="currentStep === (paymentRequired ? 6 : 5)">
             <WarehouseSetup ref="warehouseRef" @validated="handleWarehouseValidated" />
         </div>
+
+        <!-- Step after warehouse: POS Configuration -->
+        <div v-else-if="currentStep === (paymentRequired ? 7 : 6)">
+            <POSGeneralConfig ref="posConfigRef" @validated="handlePosConfigValidated" />
+        </div>
     </OnboardingLayout>
 </template>
 
@@ -47,6 +52,7 @@ import CompanySetupStep from './CompanySetup.vue'
 import PlansStep from './PlansPage.vue'
 import CheckoutStep from './CheckoutStep.vue'
 import WarehouseSetup from '@/components/Onboarding/WarehouseSetup.vue'
+import POSGeneralConfig from './POSGeneralConfig.vue'
 import { PaymentSourceType } from '@/enums/paymentSourceType'
 import { PaymentType } from '@/enums/paymentType'
 import { PaymentStatus } from '@/enums/paymentStatus'
@@ -64,6 +70,7 @@ export default defineComponent({
         PlansStep,
         CheckoutStep,
         WarehouseSetup,
+        POSGeneralConfig,
     },
     setup() {
         const router = useRouter()
@@ -78,6 +85,7 @@ export default defineComponent({
         const plansRef = ref<InstanceType<typeof PlansStep>>()
         const checkoutRef = ref<InstanceType<typeof CheckoutStep>>()
         const warehouseRef = ref<InstanceType<typeof WarehouseSetup> & { saveWarehouses: () => Promise<void> }>()
+        const posConfigRef = ref<InstanceType<typeof POSGeneralConfig> & { savePosSettings: () => Promise<void> }>()
 
         // Current step and validation flags
         const currentStep = ref(1)
@@ -87,8 +95,13 @@ export default defineComponent({
         const planSelected = ref(false)
         const paymentValidated = ref(false)
         const warehouseValidated = ref(false)
+        const posConfigValidated = ref(false)
 
         const paymentRequired = computed(() => onboardingStore.isPaymentRequired)
+
+        // Step numbers for clarity
+        const warehouseStep = computed(() => paymentRequired.value ? 6 : 5)
+        const posStep = computed(() => paymentRequired.value ? 7 : 6)
 
         // Dynamic steps (new order)
         const steps = computed(() => {
@@ -102,6 +115,7 @@ export default defineComponent({
                 baseSteps.push({ title: 'Payment', description: 'Enter your payment details' })
             }
             baseSteps.push({ title: 'Warehouse Setup', description: 'Configure your first location' })
+            baseSteps.push({ title: 'POS Configuration', description: 'Configure your point of sale system' })
             return baseSteps
         })
 
@@ -114,13 +128,14 @@ export default defineComponent({
             if (step === 3) return signupValidated.value
             if (step === 4) return planSelected.value
             if (step === 5 && paymentRequired.value) return paymentValidated.value
-            if (step === (paymentRequired.value ? 6 : 5)) return warehouseValidated.value
+            if (step === warehouseStep.value) return warehouseValidated.value
+            if (step === posStep.value) return posConfigValidated.value
             return false
         })
 
         const canSkipCurrentStep = computed(() => {
             const step = currentStep.value
-            return step === 4 || step === (paymentRequired.value ? 6 : 5)
+            return step === 4 || step === warehouseStep.value || step === posStep.value
         })
 
         const showBackButton = computed(() => {
@@ -166,6 +181,10 @@ export default defineComponent({
             warehouseValidated.value = isValid
         }
 
+        const handlePosConfigValidated = (isValid: boolean) => {
+            posConfigValidated.value = isValid
+        }
+
         // Navigation
         const handleContinue = async () => {
             // Step 2: save company
@@ -188,17 +207,30 @@ export default defineComponent({
                 }
             }
 
-            // Final step: save warehouses and complete onboarding
-            if (currentStep.value === totalSteps.value) {
-                // Save warehouses before final submission
+            // Warehouse step: save warehouses
+            if (currentStep.value === warehouseStep.value && warehouseValidated.value) {
                 try {
                     await warehouseRef.value?.saveWarehouses()
                 } catch (error) {
                     console.error('Warehouse creation failed:', error)
                     return
                 }
+            }
+
+            // POS step: save POS settings and complete onboarding
+            if (currentStep.value === posStep.value && posConfigValidated.value) {
+                try {
+                    await posConfigRef.value?.savePosSettings()
+                } catch (error) {
+                    console.error('POS settings creation failed:', error)
+                    return
+                }
                 await submitOnboarding()
-            } else {
+                return
+            }
+
+            // Move to next step if not final
+            if (currentStep.value < totalSteps.value) {
                 currentStep.value++
             }
         }
@@ -212,9 +244,12 @@ export default defineComponent({
             if (step === 4) {
                 onboardingStore.setDefaultPlan()
                 planSelected.value = true
-            } else if (step === (paymentRequired.value ? 6 : 5)) {
+            } else if (step === warehouseStep.value) {
                 onboardingStore.setDefaultWarehouse()
                 warehouseValidated.value = true
+            } else if (step === posStep.value) {
+                // Optionally set default POS settings or just mark validated
+                posConfigValidated.value = true
             }
         }
 
@@ -319,6 +354,7 @@ export default defineComponent({
             plansRef,
             checkoutRef,
             warehouseRef,
+            posConfigRef,
             handleEmailVerified,
             handleCompanyValidated,
             handleCompanyCreated,
@@ -327,6 +363,7 @@ export default defineComponent({
             handlePlanSelected,
             handlePaymentValidated,
             handleWarehouseValidated,
+            handlePosConfigValidated,
             handleContinue,
             handleBack,
             handleSkip,

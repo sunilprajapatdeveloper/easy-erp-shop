@@ -74,6 +74,14 @@
                 </div>
             </div>
 
+            <!-- Additional Currencies (Optional) -->
+            <div class="form-group">
+                <label>Additional Currencies (Optional)</label>
+                <CurrencySelector v-model="additionalCurrencyCodes" :currencies="currencyOptions" multiple
+                    @change="validateForm" />
+                <p class="input-hint">Add currencies for this warehouse (optional)</p>
+            </div>
+
             <div class="form-group">
                 <label class="checkbox-label">
                     <input type="checkbox" v-model="warehouseData.isDefault" />
@@ -157,7 +165,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, watch, onMounted, computed } from 'vue'
+import { defineComponent, ref, watch, onMounted, onUnmounted, computed } from 'vue'
 import { useOnboardingStore } from '@/stores/onboardingStore'
 import { useCompanyCurrencyStore } from '@/stores/companyCurrencyStore'
 import { useWarehouseStore } from '@/stores/warehouseStore'
@@ -173,9 +181,7 @@ interface AdditionalWarehouse {
 
 export default defineComponent({
     name: 'WarehouseSetupStep',
-    components: {
-        CurrencySelector
-    },
+    components: { CurrencySelector },
     emits: ['validated'],
     setup(_, { emit }) {
         const onboardingStore = useOnboardingStore()
@@ -213,10 +219,13 @@ export default defineComponent({
         })
 
         const additionalWarehouses = ref<AdditionalWarehouse[]>([])
+        const additionalCurrencyCodes = ref<string[]>([])
+        const additionalCurrencyObjs = ref<{ id: number; code: string }[]>([])
+
         const errors = ref<Record<string, string>>({})
         const loadingCurrencies = ref(false)
+        const isValidationActive = ref(false)
 
-        // Transform to CurrencyOption format for the selector
         const currencyOptions = computed<CurrencyOption[]>(() =>
             companyCurrencyStore.list.map(c => ({
                 id: c.currencyId,
@@ -226,26 +235,41 @@ export default defineComponent({
             }))
         )
 
-        // Helper to get currency ID by code
+        const getCurrencyByCode = (code: string) => {
+            return companyCurrencyStore.list.find(c => c.currencyCode === code) || null
+        }
+
         const getCurrencyIdByCode = (code: string): number | undefined => {
             const currency = companyCurrencyStore.list.find(c => c.currencyCode === code)
             return currency?.currencyId
         }
 
-        // Helper to extract error message from API response
         const getErrorMessage = (error: any): string => {
             if (error.response?.data) {
                 const data = error.response.data
-                // Handle { status, error } format
                 if (typeof data === 'object') {
                     if (data.error) return data.error
                     if (data.message) return data.message
                 }
-                // If data is a string, use it
                 if (typeof data === 'string') return data
             }
-            // Fallback to error.message or generic message
             return error.message || 'An unexpected error occurred'
+        }
+
+        const syncAdditionalCurrencies = () => {
+            if (additionalCurrencyCodes.value.length > 0) {
+                additionalCurrencyObjs.value = additionalCurrencyCodes.value
+                    .map(code => {
+                        const currency = getCurrencyByCode(code);
+                        if (currency) {
+                            return { id: currency.currencyId, code: currency.currencyCode };
+                        }
+                        return null;
+                    })
+                    .filter((item): item is { id: number; code: string } => item !== null);
+            } else {
+                additionalCurrencyObjs.value = [];
+            }
         }
 
         onMounted(async () => {
@@ -265,6 +289,32 @@ export default defineComponent({
             } finally {
                 loadingCurrencies.value = false
             }
+
+            // Activate validation on first user interaction
+            const rootElement = document.querySelector('.warehouse-setup')
+            if (rootElement) {
+                const activateValidation = () => {
+                    if (!isValidationActive.value) {
+                        isValidationActive.value = true
+                        validateForm()
+                    }
+                }
+                rootElement.addEventListener('input', activateValidation)
+                rootElement.addEventListener('change', activateValidation)
+                onUnmounted(() => {
+                    rootElement.removeEventListener('input', activateValidation)
+                    rootElement.removeEventListener('change', activateValidation)
+                })
+            }
+        })
+
+        watch(() => companyCurrencyStore.list, () => {
+            syncAdditionalCurrencies()
+        }, { deep: true })
+
+        watch(additionalCurrencyCodes, (newCodes) => {
+            syncAdditionalCurrencies()
+            validateForm()
         })
 
         const validatePhone = (phone: string): boolean => {
@@ -273,9 +323,14 @@ export default defineComponent({
         };
 
         const validateForm = () => {
+            if (!isValidationActive.value) {
+                errors.value = {}
+                emit('validated', false)
+                return false
+            }
+
             const newErrors: Record<string, string> = {}
 
-            // Required fields validation
             if (!warehouseData.value.name.trim()) {
                 newErrors.name = 'Warehouse name is required'
             }
@@ -290,7 +345,6 @@ export default defineComponent({
                 newErrors.currency = 'Currency is required'
             }
 
-            // Address validation
             const address = warehouseData.value.address
             if (!address.street || !address.city || !address.state || !address.postalCode || !address.country) {
                 newErrors.address = 'Complete warehouse address is required'
@@ -306,7 +360,6 @@ export default defineComponent({
         const getFullAddress = () => {
             const address = warehouseData.value.address
             if (!address.street) return 'Address not specified'
-
             const parts = [
                 address.street,
                 address.city,
@@ -314,7 +367,6 @@ export default defineComponent({
                 address.postalCode,
                 address.country
             ].filter(part => part.trim())
-
             return parts.join(', ')
         }
 
@@ -329,33 +381,11 @@ export default defineComponent({
             additionalWarehouses.value.splice(index, 1)
         }
 
-        // Save to store when valid (original behavior)
-        watch(() => validateForm(), (isValid) => {
-            if (isValid) {
-                // Create warehouse data matching the store type
-                const mainWarehouse: WarehouseData = {
-                    ...warehouseData.value,
-                    // Only include required settings plus any optional ones
-                    settings: {
-                        enableInventoryTracking: warehouseData.value.settings.enableInventoryTracking,
-                        enableBarcode: warehouseData.value.settings.enableBarcode,
-                        lowStockAlert: warehouseData.value.settings.lowStockAlert,
-                        requireApproval: warehouseData.value.settings.requireApproval,
-                        // Optional settings
-                        enablePos: warehouseData.value.settings.enablePos,
-                        defaultTaxRate: warehouseData.value.settings.defaultTaxRate,
-                        enableReceiving: warehouseData.value.settings.enableReceiving,
-                        enableQualityCheck: warehouseData.value.settings.enableQualityCheck,
-                        defaultSupplier: warehouseData.value.settings.defaultSupplier
-                    }
-                }
-
-                onboardingStore.setWarehouseData(mainWarehouse)
-            }
-        })
-
-        // Called by parent wizard to actually create warehouse and currency
         const saveWarehouses = async (): Promise<void> => {
+            if (!isValidationActive.value) {
+                isValidationActive.value = true
+            }
+
             if (!validateForm()) return
 
             const companyId = onboardingStore.companyId
@@ -368,7 +398,6 @@ export default defineComponent({
             }
 
             try {
-                // Create main warehouse
                 const created = await warehouseStore.addWarehouse({
                     name: warehouseData.value.name,
                     city: warehouseData.value.address.city,
@@ -376,14 +405,12 @@ export default defineComponent({
                     zipCode: warehouseData.value.address.postalCode,
                     currencyId: currencyId,
                     isDefault: warehouseData.value.isDefault,
-                    // additional fields from original data
                     phone: warehouseData.value.phone,
                     addressLine1: warehouseData.value.address.street,
                     addressLine2: '',
                     state: warehouseData.value.address.state,
                 })
 
-                // Create warehouse-currency association
                 await warehouseCurrencyStore.create(
                     created.id,
                     {
@@ -393,19 +420,31 @@ export default defineComponent({
                     },
                     companyId
                 )
+
+                for (const curr of additionalCurrencyObjs.value) {
+                    await warehouseCurrencyStore.create(
+                        created.id,
+                        {
+                            currencyId: curr.id,
+                            defaultCurrency: false,
+                            status: CurrencyStatus.ACTIVE
+                        },
+                        companyId
+                    )
+                }
             } catch (error: any) {
                 console.error('Warehouse creation failed:', error)
                 errors.value.general = getErrorMessage(error)
-                throw error // Re-throw so parent knows it failed
+                throw error
             }
         }
 
-        // Watch for validation changes
-        watch(warehouseData, validateForm, { deep: true, immediate: true })
+        watch(warehouseData, validateForm, { deep: true })
 
         return {
             warehouseData,
             additionalWarehouses,
+            additionalCurrencyCodes,
             currencyOptions,
             loadingCurrencies,
             errors,

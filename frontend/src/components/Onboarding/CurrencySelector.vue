@@ -144,6 +144,15 @@ export default defineComponent({
             }
         })
 
+        // Multiple mode: emit on internalMultipleValue change
+        watch(internalMultipleValue, (newVal) => {
+            if (props.multiple) {
+                const uniqueCodes = [...new Set(newVal.map(c => c.code))]
+                emit('update:modelValue', uniqueCodes)
+                emit('change', uniqueCodes)
+            }
+        }, { deep: true })
+
         const getFlagEmoji = (currencyCode: string): string => {
             const flagMap: Record<string, string> = {
                 USD: '🇺🇸', EUR: '🇪🇺', GBP: '🇬🇧', JPY: '🇯🇵',
@@ -166,26 +175,18 @@ export default defineComponent({
             const alreadySelected = internalMultipleValue.value.some(c => c.code === selected.code)
             if (!alreadySelected) {
                 internalMultipleValue.value = [...internalMultipleValue.value, selected]
-                updateModelValue()
             }
         }
 
         const handleRemoveCurrency = (removed: CurrencyOption) => {
             internalMultipleValue.value = internalMultipleValue.value.filter(c => c.code !== removed.code)
-            updateModelValue()
         }
 
         const handleMultipleInput = (value: CurrencyOption[]) => {
             internalMultipleValue.value = value
-            updateModelValue()
         }
 
-        const updateModelValue = () => {
-            const uniqueCodes = [...new Set(internalMultipleValue.value.map(c => c.code))]
-            emit('update:modelValue', uniqueCodes)
-            emit('change', uniqueCodes)
-        }
-
+        // Watch for external modelValue changes
         watch(() => props.modelValue, () => {
             const currentCodes = internalMultipleValue.value.map(c => c.code)
             const newCodes = Array.isArray(props.modelValue) ? props.modelValue : []

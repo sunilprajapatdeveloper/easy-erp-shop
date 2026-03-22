@@ -41,7 +41,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, watch, onMounted, computed } from 'vue'
+import { defineComponent, ref, watch, onMounted, onUnmounted, computed } from 'vue'
 import { useOnboardingStore } from '@/stores/onboardingStore'
 import { useCompanyStore } from '@/stores/companyStore'
 import { useCompanyCurrencyStore } from '@/stores/companyCurrencyStore'
@@ -73,6 +73,7 @@ export default defineComponent({
 
         const errors = ref<Record<string, string>>({})
         const isSubmitting = ref(false)
+        const isValidationActive = ref(false)
 
         // Helper to extract error message from API response
         const getErrorMessage = (error: any): string => {
@@ -103,16 +104,53 @@ export default defineComponent({
             return currencyStore.currencies.find(c => c.code === code) || null
         }
 
+        // Helper to sync currency objects based on current codes and store currencies
+        const syncCurrencyObjects = () => {
+            if (primaryCurrencyCode.value) {
+                primaryCurrencyObj.value = getCurrencyByCode(primaryCurrencyCode.value) || null
+            }
+            if (additionalCurrencyCodes.value.length > 0) {
+                additionalCurrencyObjs.value = additionalCurrencyCodes.value
+                    .map(code => getCurrencyByCode(code))
+                    .filter(Boolean) as { id: number; code: string }[]
+            } else {
+                additionalCurrencyObjs.value = []
+            }
+        }
+
         onMounted(async () => {
             if (currencyStore.currencies.length === 0) {
                 try {
                     await currencyStore.fetchCurrencies()
                 } catch (error: any) {
-                    // If currency fetch fails, show a general error
                     errors.value.general = getErrorMessage(error)
                 }
             }
+            // Sync after currencies are loaded (or if already loaded)
+            syncCurrencyObjects()
+
+            // Activate validation on first user interaction
+            const rootElement = document.querySelector('.company-setup-step')
+            if (rootElement) {
+                const activateValidation = () => {
+                    if (!isValidationActive.value) {
+                        isValidationActive.value = true
+                        validateForm()
+                    }
+                }
+                rootElement.addEventListener('input', activateValidation)
+                rootElement.addEventListener('change', activateValidation)
+                onUnmounted(() => {
+                    rootElement.removeEventListener('input', activateValidation)
+                    rootElement.removeEventListener('change', activateValidation)
+                })
+            }
         })
+
+        // Watch the currency store to sync whenever currencies change (e.g., after async load)
+        watch(() => currencyStore.currencies, () => {
+            syncCurrencyObjects()
+        }, { deep: true })
 
         // Watch primary currency code to update the corresponding currency object
         watch(primaryCurrencyCode, (newCode) => {
@@ -132,6 +170,13 @@ export default defineComponent({
         };
 
         const validateForm = () => {
+            // If validation is not yet active, clear errors and emit false (no error display)
+            if (!isValidationActive.value) {
+                errors.value = {}
+                emit('validated', false)
+                return false
+            }
+
             const newErrors: Record<string, string> = {}
 
             if (!form.value.companyName.trim()) {
@@ -166,6 +211,11 @@ export default defineComponent({
         }
 
         const saveCompany = async (): Promise<void> => {
+            // Force validation to be active so errors show on submit
+            if (!isValidationActive.value) {
+                isValidationActive.value = true
+            }
+
             if (!validateForm()) {
                 throw new Error('Form validation failed')
             }

@@ -3,14 +3,22 @@
     <div class="row">
       <div class="col-xxl-9 col-xl-8 col-lg-8 pe-xxl-6 mb-md-25">
         <div class="row gx-xxl-6">
-
-          <!-- Product Name -->
+          <!-- Product Name with AI button -->
           <div class="col-lg-6">
             <div class="form-group mb-25">
               <label class="d-block fs-14 text-black mb-2">Product Name</label>
-              <input v-model="product.name" type="text"
-                class="w-100 d-block shadow-none fs-14 bg-white rounded-1 text-title" placeholder="Enter Product Name"
-                required />
+              <div class="d-flex gap-2">
+                <input v-model="product.name" type="text"
+                  class="w-100 d-block shadow-none fs-14 bg-white rounded-1 text-title" placeholder="Enter Product Name"
+                  required />
+                <button type="button" class="btn btn-outline-primary d-flex align-items-center gap-1"
+                  @click="generateWithAI" :disabled="!product.name || aiGenerating" style="white-space: nowrap;">
+                  <span v-if="aiGenerating" class="spinner-border spinner-border-sm" role="status"
+                    aria-hidden="true"></span>
+                  <i v-else class="ri-robot-line"></i>
+                  <span class="d-none d-md-inline">Generate with AI</span>
+                </button>
+              </div>
             </div>
           </div>
 
@@ -33,12 +41,20 @@
             </div>
           </div>
 
-          <!-- Barcode -->
+          <!-- Barcode with Lookup button -->
           <div class="col-lg-6">
             <div class="form-group mb-25">
               <label class="d-block fs-14 text-black mb-2">Barcode</label>
-              <input v-model="product.barcode" type="text"
-                class="w-100 d-block shadow-none fs-14 bg-white rounded-1 text-title" placeholder="Enter Barcode" />
+              <div class="d-flex gap-2">
+                <input v-model="product.barcode" type="text"
+                  class="w-100 d-block shadow-none fs-14 bg-white rounded-1 text-title" placeholder="Enter Barcode" />
+                <button type="button" class="btn btn-outline-secondary d-flex align-items-center" @click="lookupBarcode"
+                  :disabled="!product.barcode || lookupLoading">
+                  <span v-if="lookupLoading" class="spinner-border spinner-border-sm" role="status"
+                    aria-hidden="true"></span>
+                  <i v-else class="ri-search-line"></i>
+                </button>
+              </div>
             </div>
           </div>
 
@@ -132,22 +148,22 @@
             <label class="d-block fs-14 text-black mb-2">Product Features</label>
             <div class="d-flex flex-wrap gap-3">
               <div class="form-check form-check-inline">
-                <input class="form-check-input" type="checkbox" v-model="product.isBatchManaged" id="flagBatch">
+                <input class="form-check-input" type="checkbox" v-model="product.isBatchManaged" id="flagBatch" />
                 <label class="form-check-label" for="flagBatch">Batch Managed</label>
               </div>
 
               <div class="form-check form-check-inline">
-                <input class="form-check-input" type="checkbox" v-model="product.isSerialized" id="flagSerialized">
+                <input class="form-check-input" type="checkbox" v-model="product.isSerialized" id="flagSerialized" />
                 <label class="form-check-label" for="flagSerialized">Serialized Item</label>
               </div>
 
               <div class="form-check form-check-inline">
-                <input class="form-check-input" type="checkbox" v-model="product.isComposite" id="flagComposite">
+                <input class="form-check-input" type="checkbox" v-model="product.isComposite" id="flagComposite" />
                 <label class="form-check-label" for="flagComposite">Composite Product</label>
               </div>
 
               <div class="form-check form-check-inline">
-                <input class="form-check-input" type="checkbox" v-model="product.hasVariants" id="flagVariants">
+                <input class="form-check-input" type="checkbox" v-model="product.hasVariants" id="flagVariants" />
                 <label class="form-check-label" for="flagVariants">Has Variants</label>
               </div>
             </div>
@@ -178,7 +194,7 @@
             </div>
           </div>
 
-          <!-- Description -->
+          <!-- Description (AI can fill this) -->
           <div class="col-lg-12">
             <div class="form-group mb-25">
               <label class="d-block fs-14 text-black mb-2">Description</label>
@@ -188,10 +204,23 @@
             </div>
           </div>
 
+          <!-- AI Suggestion Preview (optional) -->
+          <div v-if="aiSuggestions" class="col-12 mb-25">
+            <div class="alert alert-info">
+              <h6 class="fw-semibold">✨ AI Suggestions</h6>
+              <p><strong>Category:</strong> {{ aiSuggestions.categoryName || 'Not suggested' }}</p>
+              <p><strong>Brand:</strong> {{ aiSuggestions.brandName || 'Not suggested' }}</p>
+              <p><strong>Description:</strong> {{ aiSuggestions.description }}</p>
+              <button type="button" class="btn btn-sm btn-outline-primary" @click="applyAISuggestions">
+                Apply All
+              </button>
+            </div>
+          </div>
+
           <!-- Submit -->
           <div class="col-12">
             <button class="btn style-one transition border-0 fw-medium text-white rounded-1 fs-md-15 fs-lg-16"
-              type="submit">
+              type="submit" :disabled="saving">
               {{ isEditMode ? 'Update Product' : 'Submit Product' }}
             </button>
           </div>
@@ -199,7 +228,7 @@
       </div>
 
       <div class="col-xxl-3 col-xl-4 col-lg-4">
-        <AddImages :product-id="product.id || null" :existing-media="product.mediaImages || []"
+        <AddImages :product-id="product.id || undefined" :existing-media="product.mediaImages || []"
           @images-uploaded="handleImagesUploaded" @image-deleted="handleImageDeleted" />
       </div>
     </div>
@@ -232,8 +261,11 @@ export default defineComponent({
     const productId = route.params.id ? Number(route.params.id) : null;
     const isEditMode = computed(() => !!productId);
     const saving = ref(false);
+    const aiGenerating = ref(false);
+    const lookupLoading = ref(false);
+    const aiSuggestions = ref<any>(null); // store AI-generated suggestions
 
-    // Initialize product with proper typing
+    // Initialize product
     const product = ref<Partial<ProductResponse>>({
       name: '',
       code: '',
@@ -256,24 +288,108 @@ export default defineComponent({
       description: '',
       productImage: '',
       imageUrls: [],
-      mediaImages: [], // This will hold the media images from backend
+      mediaImages: [],
       isDeleted: false,
     });
 
-    const handleImagesUploaded = (uploadedMedia: any[]) => {
-      // Add new media images to the product
-      if (!product.value.mediaImages) {
-        product.value.mediaImages = [];
+    // AI generation method
+    const generateWithAI = async () => {
+      if (!product.value.name) return;
+      aiGenerating.value = true;
+      aiSuggestions.value = null;
+
+      try {
+        // Mock AI call – replace with actual backend endpoint
+        // In production, you might send the product name and receive suggestions
+        await new Promise(resolve => setTimeout(resolve, 1500)); // simulate delay
+
+        // Example mock response
+        const mockSuggestions = {
+          categoryName: 'Electronics',
+          brandName: 'Samsung',
+          description: 'High-quality electronic device with advanced features.',
+          // optionally include categoryId, brandId if you can map
+        };
+
+        // Find matching category and brand IDs (if available)
+        const matchedCategory = categoryStore.categories.find(
+          c => c.name.toLowerCase().includes(mockSuggestions.categoryName.toLowerCase())
+        );
+        const matchedBrand = brandStore.brands.find(
+          b => b.name.toLowerCase().includes(mockSuggestions.brandName.toLowerCase())
+        );
+
+        aiSuggestions.value = {
+          categoryId: matchedCategory?.id || null,
+          brandId: matchedBrand?.id || null,
+          categoryName: matchedCategory?.name || mockSuggestions.categoryName,
+          brandName: matchedBrand?.name || mockSuggestions.brandName,
+          description: mockSuggestions.description,
+        };
+      } catch (error) {
+        console.error('AI generation failed:', error);
+        alert('Failed to generate suggestions. Please try again.');
+      } finally {
+        aiGenerating.value = false;
       }
+    };
+
+    // Apply AI suggestions to product
+    const applyAISuggestions = () => {
+      if (!aiSuggestions.value) return;
+      if (aiSuggestions.value.categoryId) product.value.categoryId = aiSuggestions.value.categoryId;
+      if (aiSuggestions.value.brandId) product.value.brandId = aiSuggestions.value.brandId;
+      if (aiSuggestions.value.description) product.value.description = aiSuggestions.value.description;
+      aiSuggestions.value = null; // clear after applying
+    };
+
+    // Barcode lookup
+    const lookupBarcode = async () => {
+      if (!product.value.barcode) return;
+      lookupLoading.value = true;
+
+      try {
+        // Mock external API call – replace with real service like upcitemdb.com
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        // Mock response
+        const mockProductInfo = {
+          name: 'Sample Product from Barcode',
+          brand: 'Generic',
+          description: 'This product was found via barcode lookup.',
+          category: 'Miscellaneous',
+        };
+
+        // Optionally update product fields
+        if (!product.value.name) product.value.name = mockProductInfo.name;
+        if (!product.value.description) product.value.description = mockProductInfo.description;
+
+        // Try to match category
+        const matchedCategory = categoryStore.categories.find(
+          c => c.name.toLowerCase().includes(mockProductInfo.category.toLowerCase())
+        );
+        if (matchedCategory && !product.value.categoryId) {
+          product.value.categoryId = matchedCategory.id;
+        }
+
+        alert('Barcode lookup successful!');
+      } catch (error) {
+        console.error('Barcode lookup failed:', error);
+        alert('Failed to lookup barcode. Please try again.');
+      } finally {
+        lookupLoading.value = false;
+      }
+    };
+
+    // Existing methods (unchanged)
+    const handleImagesUploaded = (uploadedMedia: any[]) => {
+      if (!product.value.mediaImages) product.value.mediaImages = [];
       product.value.mediaImages = [...product.value.mediaImages, ...uploadedMedia];
     };
 
     const handleImageDeleted = (mediaId: string) => {
-      // Remove the deleted image from the product
       if (product.value.mediaImages) {
-        product.value.mediaImages = product.value.mediaImages.filter(
-          img => img.id !== mediaId
-        );
+        product.value.mediaImages = product.value.mediaImages.filter(img => img.id !== mediaId);
       }
     };
 
@@ -282,12 +398,7 @@ export default defineComponent({
         try {
           const fetched = await productStore.fetchProductById(productId);
           if (fetched) {
-            // Merge fetched data with existing product data
-            product.value = {
-              ...product.value,
-              ...fetched,
-              mediaImages: fetched.mediaImages || [] // Ensure mediaImages is set
-            };
+            product.value = { ...product.value, ...fetched, mediaImages: fetched.mediaImages || [] };
           }
         } catch (error) {
           console.error('Failed to load product:', error);
@@ -298,14 +409,11 @@ export default defineComponent({
 
     const submit = async () => {
       if (saving.value) return;
-
       saving.value = true;
 
       try {
         if (isEditMode.value && productId) {
-          // Update product - exclude mediaImages from update request
           const { mediaImages, ...updateDataWithoutMedia } = product.value;
-
           const updateData: UpdateProductRequest = {
             id: productId,
             name: product.value.name!,
@@ -331,13 +439,10 @@ export default defineComponent({
             imageUrls: product.value.imageUrls,
             isDeleted: product.value.isDeleted || false,
           };
-
           await productStore.updateProduct(productId, updateData);
           alert('Product updated successfully!');
         } else {
-          // Create new product - exclude mediaImages from create request
           const { mediaImages, ...createDataWithoutMedia } = product.value;
-
           const createData: CreateProductRequest = {
             name: product.value.name!,
             code: product.value.code!,
@@ -362,14 +467,9 @@ export default defineComponent({
             imageUrls: product.value.imageUrls || [],
             isDeleted: false,
           };
-
           const newProduct = await productStore.addProduct(createData);
           alert('Product created successfully!');
-
-          // Redirect to edit page with new ID for image upload
-          if (newProduct?.id) {
-            router.push(`/products/edit/${newProduct.id}`);
-          }
+          if (newProduct?.id) router.push(`/products/edit/${newProduct.id}`);
         }
       } catch (err: any) {
         console.error('Save failed:', err);
@@ -384,12 +484,11 @@ export default defineComponent({
     const units = computed(() => unitStore.units);
 
     onMounted(async () => {
-      // Load initial data
       await Promise.all([
         categoryStore.fetchCategories(),
         brandStore.fetchBrands(),
         unitStore.fetchUnits(),
-        loadProduct()
+        loadProduct(),
       ]);
     });
 
@@ -401,11 +500,16 @@ export default defineComponent({
       units,
       isEditMode,
       saving,
-      loadProduct,
       handleImagesUploaded,
       handleImageDeleted,
       ProductTypeLabels,
       ProductStatusLabels,
+      generateWithAI,
+      aiGenerating,
+      aiSuggestions,
+      applyAISuggestions,
+      lookupBarcode,
+      lookupLoading,
     };
   },
 });

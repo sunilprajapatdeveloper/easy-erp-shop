@@ -15,6 +15,13 @@ interface EmailVerificationData {
   verificationCode?: string;
 }
 
+export interface PosSettingsData {
+  warehouseId: number;
+  defaultCurrencyId: number;
+  defaultPaymentMethod?: string;
+  defaultCustomerId?: number;
+}
+
 export const useOnboardingStore = defineStore("onboarding", () => {
   // State
   const currentStep = ref(1);
@@ -26,6 +33,7 @@ export const useOnboardingStore = defineStore("onboarding", () => {
   const paymentInfo = ref<PaymentInfo | null>(null);
   const warehouseData = ref<WarehouseData | null>(null);
   const configData = ref<ConfigData | null>(null);
+  const posSettingsData = ref<PosSettingsData | null>(null);
   const completedSteps = ref<number[]>([]);
   const emailData = ref<EmailVerificationData>({
     email: "",
@@ -38,6 +46,9 @@ export const useOnboardingStore = defineStore("onboarding", () => {
   const isPaymentRequired = computed(() => {
     return planData.value ? !planData.value.isTrial : false;
   });
+
+  const posStepNumber = computed(() => (isPaymentRequired.value ? 7 : 6));
+  const warehouseStepNumber = computed(() => (isPaymentRequired.value ? 6 : 5));
 
   // Actions
   const setUserId = (id: number) => (userId.value = id);
@@ -66,8 +77,12 @@ export const useOnboardingStore = defineStore("onboarding", () => {
 
   const setWarehouseData = (data: WarehouseData) => {
     warehouseData.value = data;
-    const step = isPaymentRequired.value ? 6 : 5;
-    markStepComplete(step);
+    markStepComplete(warehouseStepNumber.value);
+  };
+
+  const setPosSettingsData = (data: PosSettingsData) => {
+    posSettingsData.value = data;
+    markStepComplete(posStepNumber.value);
   };
 
   const setConfigData = (data: ConfigData) => {
@@ -111,8 +126,7 @@ export const useOnboardingStore = defineStore("onboarding", () => {
         enableReceiving: true,
       },
     };
-    const step = isPaymentRequired.value ? 6 : 5;
-    markStepComplete(step);
+    markStepComplete(warehouseStepNumber.value);
   };
 
   const setDefaultPlan = () => {
@@ -180,6 +194,7 @@ export const useOnboardingStore = defineStore("onboarding", () => {
       paymentInfo: paymentInfo.value,
       warehouseData: warehouseData.value,
       configData: configData.value,
+      posSettingsData: posSettingsData.value,
       completedSteps: completedSteps.value,
       emailData: emailData.value,
     };
@@ -199,6 +214,7 @@ export const useOnboardingStore = defineStore("onboarding", () => {
       paymentInfo.value = data.paymentInfo || null;
       warehouseData.value = data.warehouseData || null;
       configData.value = data.configData || null;
+      posSettingsData.value = data.posSettingsData || null;
       completedSteps.value = data.completedSteps || [];
       emailData.value = data.emailData || { email: "", verified: false };
     }
@@ -216,6 +232,7 @@ export const useOnboardingStore = defineStore("onboarding", () => {
     paymentInfo.value = null;
     warehouseData.value = null;
     configData.value = null;
+    posSettingsData.value = null;
     completedSteps.value = [];
     emailData.value = { email: "", verified: false };
   };
@@ -250,6 +267,7 @@ export const useOnboardingStore = defineStore("onboarding", () => {
     paymentInfo,
     warehouseData,
     configData,
+    posSettingsData,
     completedSteps,
     emailData,
 
@@ -257,6 +275,8 @@ export const useOnboardingStore = defineStore("onboarding", () => {
     getEmail,
     isEmailVerified,
     isPaymentRequired,
+    posStepNumber,
+    warehouseStepNumber,
 
     // Actions
     setUserId,
@@ -266,6 +286,7 @@ export const useOnboardingStore = defineStore("onboarding", () => {
     setPlanData,
     setPaymentInfo,
     setWarehouseData,
+    setPosSettingsData,
     setConfigData,
     setCurrentStep,
     markStepComplete,
