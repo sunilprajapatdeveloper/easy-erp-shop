@@ -62,8 +62,9 @@
           <div class="col-lg-6">
             <div class="form-group mb-25">
               <label class="d-block fs-14 text-black mb-2">Category</label>
-              <select v-model.number="product.categoryId" class="bg-white border-0 rounded-1 fs-14 text-optional">
-                <option disabled :value="null">Choose Category</option>
+              <select v-model.number="product.categoryId" class="bg-white border-0 rounded-1 fs-14 text-optional"
+                required>
+                <option disabled :value="0">Choose Category</option>
                 <option v-for="cat in categories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
               </select>
             </div>
@@ -110,8 +111,9 @@
           <div class="col-lg-6">
             <div class="form-group mb-25">
               <label class="d-block fs-14 text-black mb-2">Product Unit</label>
-              <select v-model.number="product.productUnitId" class="bg-white border-0 rounded-1 fs-14 text-optional">
-                <option disabled :value="null">Choose Product Unit</option>
+              <select v-model.number="product.productUnitId" class="bg-white border-0 rounded-1 fs-14 text-optional"
+                required>
+                <option disabled :value="0">Choose Product Unit</option>
                 <option v-for="unit in units" :key="unit.id" :value="unit.id">
                   {{ unit.name }} ({{ unit.shortName }})
                 </option>
