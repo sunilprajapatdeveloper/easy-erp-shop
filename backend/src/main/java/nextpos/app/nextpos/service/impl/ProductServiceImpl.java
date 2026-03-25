@@ -451,6 +451,21 @@ public class ProductServiceImpl implements ProductService {
         }).collect(Collectors.toList());
     }
 
+    @Override
+    public List<ProductResponse> searchProducts(String query, int limit) {
+        List<Product> products = productRepository
+                .findByNameContainingIgnoreCaseOrCodeContainingIgnoreCaseOrSkuContainingIgnoreCase(query, query, query);
+        return products.stream()
+                .limit(limit)
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
+    private ProductResponse mapToResponse(Product product) {
+        List<MediaResponse> mediaResponse = getProductImagesFromMedia(product.getId(), product.getCompanyId());
+        return ProductResponse.fromEntity(product, mediaResponse);
+    }
+
     private List<MediaResponse> getProductImagesFromMedia(Long productId, Long companyId) {
         Map<Long, List<MediaResponse>> mediaMap = mediaService.getMediaForEntities(
                 "PRODUCT",

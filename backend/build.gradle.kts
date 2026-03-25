@@ -111,6 +111,16 @@ dependencies {
     // Retry support
     implementation("org.springframework.retry:spring-retry:2.0.5")
     implementation("org.springframework:spring-aspects:6.1.5")
+
+    // WebFlux for reactive WebClient (used by AI providers)
+    implementation("org.springframework.boot:spring-boot-starter-webflux")
+
+    // Mustache for prompt templating
+    implementation("com.github.spullara.mustache.java:compiler:0.9.10") // or implementation("com.github.mustachejava:mustache-java:0.9.10")
+
+    // OpenTelemetry for distributed tracing (optional but recommended)
+    implementation("io.opentelemetry:opentelemetry-api:1.38.0")
+    implementation("io.opentelemetry:opentelemetry-sdk:1.38.0")
 }
 
 tasks.withType<Test> {

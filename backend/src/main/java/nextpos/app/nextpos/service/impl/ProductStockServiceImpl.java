@@ -241,4 +241,15 @@ public class ProductStockServiceImpl implements ProductStockService {
                         "ProductStock not found for productId=" + productId + " and warehouseId=" + warehouseId));
         return stock.getQuantity() != null ? stock.getQuantity() : 0;
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ProductStockResponse> listStocksByProduct(Long productId) {
+        User user = UserContext.getAuthenticatedUser(userRepository);
+        List<ProductStock> stocks = productStockRepository.findAllByProductIdAndCompanyId(productId,
+                user.getCompanyId());
+        return stocks.stream()
+                .map(ProductStockResponse::fromEntity)
+                .collect(Collectors.toList());
+    }
 }

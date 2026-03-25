@@ -146,6 +146,8 @@ services:
       INIT_DATASOURCE_USERNAME: ${INIT_DATASOURCE_USERNAME:-postgres}
       INIT_DATASOURCE_PASSWORD: ${INIT_DATASOURCE_PASSWORD:-12345678}
       JAVA_OPTS: "-Xmx768m -Xms512m -XX:+UseSerialGC -Xss512k"
+      AI_PROVIDERS_OLLAMA_BASE_URL: http://ollama:11434
+      AI_PROVIDERS_OLLAMA_DEFAULT_MODEL: llama2
     volumes:
       - uploads_data:/app/uploads
     networks:
@@ -184,6 +186,25 @@ services:
           memory: 256M
           cpus: "0.2"
 
+  # 7. OLLAMA – local LLM provider
+  ollama:
+    image: ollama/ollama:latest
+    container_name: easy-erp-ollama
+    restart: unless-stopped
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - easy-erp-network
+    ports:
+      - "11434:11434"   # optional, for direct access from host
+    environment:
+      OLLAMA_HOST: 0.0.0.0
+    deploy:
+      resources:
+        limits:
+          memory: 8G
+          cpus: "2.0"
+
 networks:
   easy-erp-network:
     driver: bridge
@@ -194,3 +215,4 @@ volumes:
   zookeeper_data:
   kafka_data:
   uploads_data:
+  ollama_data:

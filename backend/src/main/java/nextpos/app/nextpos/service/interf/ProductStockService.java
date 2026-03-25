@@ -47,4 +47,6 @@ public interface ProductStockService {
      * Get current stock quantity for a product in a warehouse.
      */
     int getStock(Long productId, Long warehouseId);
+
+    List<ProductStockResponse> listStocksByProduct(Long productId);
 }

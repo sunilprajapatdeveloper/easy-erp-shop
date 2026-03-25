@@ -24,4 +24,6 @@ public interface ProductStockRepository extends JpaRepository<ProductStock, Long
 
         List<ProductStock> findAllByProductIdInAndWarehouseIdAndCompanyId(
                         List<Long> productIds, Long warehouseId, Long companyId);
+
+        List<ProductStock> findAllByProductIdAndCompanyId(Long productId, Long companyId);
 }

@@ -35,4 +35,6 @@ public interface SaleRepository extends JpaRepository<Sale, Long> {
     BigDecimal sumAllSalesByCompany(@Param("companyId") Long companyId);
 
     List<Sale> findTop5ByOrderByCreatedAtDesc();
+
+    List<Sale> findTop5ByCompanyIdOrderByCreatedAtDesc(Long companyId);
 }

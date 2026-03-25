@@ -7,6 +7,7 @@ import nextpos.app.nextpos.model.dto.response.SaleResponse;
 
 // import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 
 public interface SaleService {
     SaleResponse createSale(CreateSaleRequest request);
@@ -24,4 +25,8 @@ public interface SaleService {
     // BigDecimal getTotalSales();
 
     // List<RecentSaleResponse> getRecentSales();
+
+    List<SaleResponse> findRecentSalesByTenant(Long tenantId, int limit);
+
+    Map<String, Object> getSalesSummary(String period, Long warehouseId);
 }

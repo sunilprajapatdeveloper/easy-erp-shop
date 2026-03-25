@@ -78,4 +78,6 @@ public interface ProductService {
             boolean includePrice,
             boolean includeStock,
             boolean includeTax);
+
+    List<ProductResponse> searchProducts(String query, int limit);
 }

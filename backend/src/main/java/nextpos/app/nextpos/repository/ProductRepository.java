@@ -63,4 +63,7 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     boolean existsByBarcodeAndCompanyIdAndIsDeletedFalse(String barcode, Long companyId);
 
     boolean existsBySkuAndCompanyIdAndIsDeletedFalse(String sku, Long companyId);
+
+    List<Product> findByNameContainingIgnoreCaseOrCodeContainingIgnoreCaseOrSkuContainingIgnoreCase(
+            String name, String code, String sku);
 }

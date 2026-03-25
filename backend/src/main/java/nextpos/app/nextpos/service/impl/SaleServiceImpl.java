@@ -35,7 +35,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -420,8 +422,6 @@ public class SaleServiceImpl implements SaleService {
         @Override
         @Transactional
         public void deleteSale(Long id) {
-                User user = UserContext.getAuthenticatedUser(userRepository);
-
                 Sale sale = saleRepository.findById(id)
                                 .orElseThrow(() -> new RuntimeException("Sale not found"));
 
@@ -441,8 +441,25 @@ public class SaleServiceImpl implements SaleService {
                 saleRepository.delete(sale);
         }
 
-        // @Override
-        // public BigDecimal getTotalSales() {
-        // return saleRepository.sumAllSales();
-        // }
+        @Override
+        public List<SaleResponse> findRecentSalesByTenant(Long tenantId, int limit) {
+                List<Sale> sales = saleRepository.findTop5ByCompanyIdOrderByCreatedAtDesc(tenantId);
+                return sales.stream().map(this::mapToResponse).collect(Collectors.toList());
+        }
+
+        private SaleResponse mapToResponse(Sale sale) {
+                List<PaymentResponse> payments = paymentService.getPaymentsByReference(PaymentSourceType.SALE,
+                                sale.getId());
+                return new SaleResponse(sale, payments);
+        }
+
+        @Override
+        public Map<String, Object> getSalesSummary(String period, Long warehouseId) {
+                // Implement aggregation based on period (today, week, month)
+                // For testing, return a dummy map
+                Map<String, Object> summary = new HashMap<>();
+                summary.put("totalSales", 10000.0);
+                summary.put("totalOrders", 50);
+                return summary;
+        }
 }
