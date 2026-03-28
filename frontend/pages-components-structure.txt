@@ -29,8 +29,18 @@
 ├── MobileScannerPage.vue
 ├── NotFound
 │   └── NotFoundPage.vue
+├── Onboarding
+│   ├── CheckoutStep.vue
+│   ├── CompanySetup.vue
+│   ├── EmailVerification.vue
+│   ├── HomePage.vue
+│   ├── PlansPage.vue
+│   ├── POSGeneralConfig.vue
+│   ├── SetupWizard.vue
+│   └── SignupStep.vue
 ├── Payments
-│   └── PaymentGatewayPage.vue
+│   ├── PaymentGatewayPage.vue
+│   └── PaymentPage.vue
 ├── People
 │   ├── CreateUserPage.vue
 │   ├── CustomerListPage.vue
@@ -186,6 +196,7 @@
 │       ├── ExpensesList.vue
 │       └── FilterContent.vue
 ├── Layouts
+│   ├── EmptyLayout.vue
 │   ├── HeaderContent
 │   │   ├── LanguageDropdown.vue
 │   │   ├── NotificationDropdown.vue
@@ -196,8 +207,32 @@
 │   ├── MainFooter.vue
 │   ├── MainHeader.vue
 │   ├── MainSidebar.vue
+│   ├── OnboardingLayout.vue
 │   ├── PreLoader.vue
+│   ├── PublicLayout.vue
 │   └── SettingSidebar.vue
+├── Onboarding
+│   ├── BusinessTypeSelector.vue
+│   ├── Configuration.vue
+│   ├── CurrencySelector.vue
+│   ├── FeatureComparison.vue
+│   ├── Home
+│   │   ├── DashboardPreview.vue
+│   │   ├── FaqSection.vue
+│   │   ├── FeaturesGrid.vue
+│   │   ├── FinalCta.vue
+│   │   ├── HeroSection.vue
+│   │   ├── HowItWorks.vue
+│   │   ├── PosPreview.vue
+│   │   ├── PricingPreview.vue
+│   │   ├── TestimonialsSection.vue
+│   │   └── TrustBadges.vue
+│   ├── Layouts
+│   │   ├── MarketingFooter.vue
+│   │   └── MarketingHeader.vue
+│   ├── ProgressStepper.vue
+│   └── WarehouseSetup.vue
+├── Payment
 ├── PaymentMethods
 │   ├── methods
 │   │   ├── CardPayment.vue
@@ -237,6 +272,8 @@
 │   │   └── ManageProductPrices.vue
 │   ├── ManageProductStocks
 │   │   └── ManageProductStocks.vue
+│   ├── ManageProductTaxes
+│   │   └── ManageProductTaxes.vue
 │   ├── PrintBarcode
 │   │   ├── BarcodeWrapper.vue
 │   │   ├── ChooseForm.vue

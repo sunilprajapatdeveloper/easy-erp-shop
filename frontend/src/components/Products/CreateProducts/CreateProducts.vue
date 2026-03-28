@@ -149,25 +149,10 @@
           <div class="col-lg-12 mb-25">
             <label class="d-block fs-14 text-black mb-2">Product Features</label>
             <div class="d-flex flex-wrap gap-3">
-              <div class="form-check form-check-inline">
-                <input class="form-check-input" type="checkbox" v-model="product.isBatchManaged" id="flagBatch" />
-                <label class="form-check-label" for="flagBatch">Batch Managed</label>
-              </div>
-
-              <div class="form-check form-check-inline">
-                <input class="form-check-input" type="checkbox" v-model="product.isSerialized" id="flagSerialized" />
-                <label class="form-check-label" for="flagSerialized">Serialized Item</label>
-              </div>
-
-              <div class="form-check form-check-inline">
-                <input class="form-check-input" type="checkbox" v-model="product.isComposite" id="flagComposite" />
-                <label class="form-check-label" for="flagComposite">Composite Product</label>
-              </div>
-
-              <div class="form-check form-check-inline">
-                <input class="form-check-input" type="checkbox" v-model="product.hasVariants" id="flagVariants" />
-                <label class="form-check-label" for="flagVariants">Has Variants</label>
-              </div>
+              <BaseCheckbox v-model="product.isBatchManaged" label="Batch Managed" />
+              <BaseCheckbox v-model="product.isSerialized" label="Serialized Item" />
+              <BaseCheckbox v-model="product.isComposite" label="Composite Product" />
+              <BaseCheckbox v-model="product.hasVariants" label="Has Variants" />
             </div>
           </div>
 
@@ -248,10 +233,11 @@ import { useUnitStore } from '@/stores/unitStore';
 import type { CreateProductRequest, UpdateProductRequest, ProductResponse } from '@/types/Product';
 import { ProductType, ProductTypeLabels } from '@/enums/productType';
 import { ProductStatus, ProductStatusLabels } from '@/enums/productStatus';
+import BaseCheckbox from '@/components/ui/BaseCheckbox.vue';
 
 export default defineComponent({
   name: 'CreateProduct',
-  components: { AddImages },
+  components: { AddImages, BaseCheckbox },
   setup() {
     const route = useRoute();
     const router = useRouter();
@@ -471,7 +457,9 @@ export default defineComponent({
           };
           const newProduct = await productStore.addProduct(createData);
           alert('Product created successfully!');
-          if (newProduct?.id) router.push(`/products/edit/${newProduct.id}`);
+          if (newProduct?.id) {
+            router.push(`/products/manage-to-warehouse?product_id=${newProduct.id}`);
+          }
         }
       } catch (err: any) {
         console.error('Save failed:', err);

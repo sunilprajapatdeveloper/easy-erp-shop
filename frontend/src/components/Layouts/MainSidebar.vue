@@ -26,22 +26,10 @@
                 Product List
               </router-link>
             </li>
-            <li class="nav-item" v-if="hasPermission('PRODUCT_CREATE')">
-              <router-link to="/manage-product-stock">
+            <li class="nav-item" v-if="hasPermission('PRODUCT_LIST')">
+              <router-link to="/products/manage-to-warehouse">
                 <img src="../../assets/img/icons/create-item.svg" alt="Image" />
-                Manage Product Stocks
-              </router-link>
-            </li>
-            <li class="nav-item" v-if="hasPermission('PRODUCT_CREATE')">
-              <router-link to="/manage-product-prices">
-                <img src="../../assets/img/icons/create-item.svg" alt="Image" />
-                Manage Product Prices
-              </router-link>
-            </li>
-            <li class="nav-item" v-if="hasPermission('PRODUCT_CREATE')">
-              <router-link to="/manage-product-taxes">
-                <img src="../../assets/img/icons/create-item.svg" alt="Image" />
-                Manage Product Taxes
+                Manage Product
               </router-link>
             </li>
             <li class="nav-item" v-if="hasPermission('PRINT_BARCODE')">

@@ -10,9 +10,7 @@ import DashboardPage from "../pages/Dashboard/DashboardPage.vue";
 import CreateProductsPage from "../pages/Products/CreateProductsPage.vue";
 import ProductsListPage from "../pages/Products/ProductsListPage.vue";
 import EditProductsPage from "../pages/Products/EditProductsPage.vue";
-import ManageProductStocksPage from "@/pages/Products/ManageProductStocksPage.vue";
-import ManageProductPricesPage from "@/pages/Products/ManageProductPricesPage.vue";
-import ManageProductTaxesPage from "@/pages/Products/ManageProductTaxesPage.vue";
+import ManageProductToWarehousePage from "@/pages/Products/ManageProductToWarehousePage.vue";
 import PrintBarcodePage from "../pages/Products/PrintBarcodePage.vue";
 import ProductDetailsPage from "../pages/Products/ProductDetailsPage.vue";
 import CreateAdjustmentsPage from "../pages/Adjustments/CreateAdjustmentsPage.vue";
@@ -139,21 +137,9 @@ const routes: Array<RouteRecordRaw> = [
     meta: { requiresAuth: true, permission: "PRODUCT_CREATE" },
   },
   {
-    path: "/manage-product-stock",
-    name: "ManageProductStocksPage",
-    component: ManageProductStocksPage,
-    meta: { requiresAuth: true, permission: "PRODUCT_CREATE" },
-  },
-  {
-    path: "/manage-product-prices",
-    name: "ManageProductPricesPage",
-    component: ManageProductPricesPage,
-    meta: { requiresAuth: true, permission: "PRODUCT_CREATE" },
-  },
-  {
-    path: "/manage-product-taxes",
-    name: "ManageProductTaxesPage",
-    component: ManageProductTaxesPage,
+    path: "/products/manage-to-warehouse",
+    name: "ManageProductToWarehouse",
+    component: ManageProductToWarehousePage,
     meta: { requiresAuth: true, permission: "PRODUCT_CREATE" },
   },
   {
