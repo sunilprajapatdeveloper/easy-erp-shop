@@ -21,4 +21,6 @@ public interface ProductUnitRepository extends JpaRepository<ProductUnit, Long> 
 
     // Optionally, find by name if needed
     Optional<ProductUnit> findByName(@NonNull String name);
+
+    boolean existsByIdAndCompanyId(Long id, Long companyId);
 }

@@ -8,6 +8,13 @@ storage:
     - image/webp
     - image/svg+xml
     - application/pdf
+    - application/vnd.ms-excel
+    - application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+    - application/x-tika-ooxml
+    - application/octet-stream
+    - text/csv
+    - application/csv
+    - text/plain
 
   thumbnail:
     enabled: true

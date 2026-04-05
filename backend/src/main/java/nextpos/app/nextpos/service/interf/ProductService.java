@@ -16,6 +16,8 @@ public interface ProductService {
      */
     ProductResponse createProduct(CreateProductRequest request);
 
+    ProductResponse createProduct(CreateProductRequest request, Long userId, Long companyId);
+
     /**
      * Get product by ID scoped to company
      */
@@ -35,6 +37,8 @@ public interface ProductService {
      * Get all products for a company
      */
     List<ProductResponse> getAllProducts();
+
+    List<ProductResponse> getAllProducts(Long companyId);
 
     /**
      * Update a product scoped to company

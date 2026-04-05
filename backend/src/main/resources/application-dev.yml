@@ -11,3 +11,33 @@ storage:
     width: 300
     height: 300
     quality: 0.7
+
+# ===============================
+# KAFKA
+# ===============================
+spring:
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: verification-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "*"
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+    listener:
+      missing-topics-fatal: false
+
+# Kafka Topics
+kafka:
+  topics:
+    verification-email: verification-email
+    import-job: import-job
+    export-job: export-job
+  consumer-groups:
+    verification: verification-group
+    import: import-group
+    export: export-group

@@ -15,6 +15,8 @@ public interface MediaService {
 
         MediaResponse uploadFile(MultipartFile file, MediaUploadRequest request) throws IOException;
 
+        MediaResponse uploadFile(MultipartFile file, MediaUploadRequest request, Long userId, Long companyId) throws IOException;
+
         List<MediaResponse> uploadFiles(List<MultipartFile> files, MediaUploadRequest request) throws IOException;
 
         MediaResponse getMedia(String mediaId);

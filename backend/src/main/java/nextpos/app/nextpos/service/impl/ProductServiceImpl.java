@@ -160,6 +160,108 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+    @Transactional
+    public ProductResponse createProduct(CreateProductRequest request, Long userId, Long companyId) {
+        // Generate code and barcode if not provided
+        String codeToUse = (request.getCode() != null && !request.getCode().isBlank())
+                ? request.getCode().trim()
+                : barcodeHelper.generateProductCode();
+
+        if (productRepository.findByCodeAndCompanyIdAndIsDeletedFalse(codeToUse, companyId).isPresent()) {
+            throw new IllegalArgumentException("Product code already in use for company: " + codeToUse);
+        }
+
+        String barcodeToUse = (request.getBarcode() != null && !request.getBarcode().isBlank())
+                ? request.getBarcode().trim()
+                : barcodeHelper.generateBarcode();
+
+        if (productRepository.findByBarcodeAndCompanyIdAndIsDeletedFalse(barcodeToUse, companyId).isPresent()) {
+            throw new IllegalArgumentException("Product barcode already in use for company: " + barcodeToUse);
+        }
+
+        // Create product entity
+        Product product = new Product();
+        product.setCode(codeToUse);
+        product.setBarcode(barcodeToUse);
+        product.setCreatedBy(userId);
+        product.setUpdatedBy(userId);
+        product.setCompanyId(companyId);
+
+        // Directly map request fields (same as original)
+        if (request.getName() != null)
+            product.setName(request.getName());
+        if (request.getSku() != null)
+            product.setSku(request.getSku());
+
+        if (request.getCategoryId() != null) {
+            Category category = categoryRepository.findById(request.getCategoryId())
+                    .orElseThrow(() -> new IllegalArgumentException("Category not found: " + request.getCategoryId()));
+            product.setCategory(category);
+        }
+
+        if (request.getBrandId() != null) {
+            Brand brand = brandRepository.findById(request.getBrandId())
+                    .orElseThrow(() -> new IllegalArgumentException("Brand not found: " + request.getBrandId()));
+            product.setBrand(brand);
+        }
+
+        if (request.getProductUnitId() != null) {
+            ProductUnit unit = productUnitRepository.findById(request.getProductUnitId())
+                    .orElseThrow(() -> new IllegalArgumentException(
+                            "Product unit not found: " + request.getProductUnitId()));
+            product.setProductUnit(unit);
+        }
+
+        if (request.getSalesUnitId() != null) {
+            ProductUnit salesUnit = productUnitRepository.findById(request.getSalesUnitId())
+                    .orElseThrow(
+                            () -> new IllegalArgumentException("Sales unit not found: " + request.getSalesUnitId()));
+            product.setSalesUnit(salesUnit);
+        }
+
+        if (request.getPurchaseUnitId() != null) {
+            ProductUnit purchaseUnit = productUnitRepository.findById(request.getPurchaseUnitId())
+                    .orElseThrow(() -> new IllegalArgumentException(
+                            "Purchase unit not found: " + request.getPurchaseUnitId()));
+            product.setPurchaseUnit(purchaseUnit);
+        }
+
+        if (request.getUnitConversionFactor() != null)
+            product.setUnitConversionFactor(request.getUnitConversionFactor());
+        if (request.getIsBatchManaged() != null)
+            product.setIsBatchManaged(request.getIsBatchManaged());
+        if (request.getIsSerialized() != null)
+            product.setIsSerialized(request.getIsSerialized());
+        if (request.getIsComposite() != null)
+            product.setIsComposite(request.getIsComposite());
+        if (request.getHasVariants() != null)
+            product.setHasVariants(request.getHasVariants());
+        if (request.getWeight() != null)
+            product.setWeight(request.getWeight());
+        if (request.getVolume() != null)
+            product.setVolume(request.getVolume());
+        if (request.getDimensions() != null)
+            product.setDimensions(request.getDimensions());
+        if (request.getDescription() != null)
+            product.setDescription(request.getDescription());
+        if (request.getProductImage() != null)
+            product.setProductImage(request.getProductImage());
+        if (request.getImageUrls() != null && !request.getImageUrls().isEmpty()) {
+            product.setImageUrls(String.join(",", request.getImageUrls()));
+        }
+        if (request.getStatus() != null)
+            product.setStatus(request.getStatus());
+        if (request.getProductType() != null)
+            product.setProductType(request.getProductType());
+        if (request.getIsDeleted() != null)
+            product.setIsDeleted(request.getIsDeleted());
+
+        // Save and return response (no media images in batch context – pass empty list)
+        Product saved = productRepository.save(product);
+        return ProductResponse.fromEntity(saved, Collections.emptyList());
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public ProductResponse getProductById(Long id) {
         User user = UserContext.getAuthenticatedUser(userRepository);
@@ -221,6 +323,15 @@ public class ProductServiceImpl implements ProductService {
                     List<MediaResponse> mediaResponse = getProductImagesFromMedia(product.getId(), companyId);
                     return ProductResponse.fromEntity(product, mediaResponse);
                 })
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ProductResponse> getAllProducts(Long companyId) {
+        List<Product> products = productRepository.findAllByCompanyIdAndIsDeletedFalse(companyId);
+        return products.stream()
+                .map(product -> ProductResponse.fromEntity(product, Collections.emptyList()))
                 .collect(Collectors.toList());
     }
 

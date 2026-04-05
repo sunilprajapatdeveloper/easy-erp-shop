@@ -76,6 +76,34 @@ public class MediaServiceImpl implements MediaService {
 
     @Override
     @Transactional
+    public MediaResponse uploadFile(MultipartFile file, MediaUploadRequest request, Long userId, Long companyId)
+            throws IOException {
+        validateUploadRequest(request, companyId, userId);
+
+        StorageContext context = StorageContext.builder()
+                .companyId(companyId)
+                .warehouseId(request.getWarehouseId())
+                .userId(userId)
+                .mediaType(request.getMediaType())
+                .entityType(request.getEntityType())
+                .entityId(request.getEntityId())
+                .isPublic(request.isPublic())
+                .generateThumbnail(request.isGenerateThumbnail())
+                .metadata(request.getMetadata())
+                .build();
+
+        StorageService storageService = storageServiceFactory.getStorageService();
+        Media media = storageService.store(file, context);
+
+        // Save to database
+        media = mediaRepository.save(media);
+
+        log.info("Media uploaded: {} for company {}", media.getId(), companyId);
+        return convertToResponse(media);
+    }
+
+    @Override
+    @Transactional
     public List<MediaResponse> uploadFiles(List<MultipartFile> files, MediaUploadRequest request) throws IOException {
         User user = UserContext.getAuthenticatedUser(userRepository);
         Long companyId = user.getCompanyId();

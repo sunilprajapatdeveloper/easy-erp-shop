@@ -19,4 +19,6 @@ public interface CategoryRepository extends JpaRepository<Category, Long> {
 
     @NonNull
     Optional<Category> findByCode(@NonNull String code);
+    
+    boolean existsByIdAndCompanyId(Long id, Long companyId);
 }

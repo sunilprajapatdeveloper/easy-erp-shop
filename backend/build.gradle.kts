@@ -104,7 +104,7 @@ dependencies {
     implementation("jakarta.persistence:jakarta.persistence-api:3.1.0")
     
     // Jackson for JSON serialization in Kafka
-    implementation("com.fasterxml.jackson.core:jackson-databind")  // ADD THIS LINE
+    implementation("com.fasterxml.jackson.core:jackson-databind")
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
 
@@ -121,6 +121,19 @@ dependencies {
     // OpenTelemetry for distributed tracing (optional but recommended)
     implementation("io.opentelemetry:opentelemetry-api:1.38.0")
     implementation("io.opentelemetry:opentelemetry-sdk:1.38.0")
+
+    // Import/Export System Dependencies
+    // Spring Batch for processing large datasets
+    implementation("org.springframework.boot:spring-boot-starter-batch")
+
+    // Apache POI for Excel (XLSX) support
+    implementation("org.apache.poi:poi-ooxml:5.2.5")
+
+    // OpenCSV for CSV handling (optional, but recommended)
+    implementation("com.opencsv:opencsv:5.8")
+
+    // Apache PDFBox for PDF export
+    implementation("org.apache.pdfbox:pdfbox:2.0.30")
 }
 
 tasks.withType<Test> {
