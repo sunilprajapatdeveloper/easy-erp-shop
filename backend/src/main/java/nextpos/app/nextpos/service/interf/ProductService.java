@@ -84,4 +84,6 @@ public interface ProductService {
             boolean includeTax);
 
     List<ProductResponse> searchProducts(String query, int limit);
+
+    List<ProductResponse> searchProducts(String query, int page, int size);
 }

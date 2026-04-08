@@ -60,3 +60,9 @@ export const updateProduct = (id: number, data: UpdateProductRequest) =>
 
 export const deleteProduct = (id: number) =>
   api.delete<void>(`/products/${id}`, { headers: getHeaders() });
+
+export const searchProducts = (query: string, page = 0, size = 20) =>
+  api.get<ProductResponse[]>(`/products/search`, {
+    headers: getHeaders(),
+    params: { q: query, page, size },
+  });

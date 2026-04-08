@@ -46,4 +46,6 @@ public interface MediaService {
         Resource loadMediaResource(String filename, Long companyId, boolean thumbnail) throws IOException;
 
         Resource loadMediaResourceById(String mediaId, boolean thumbnail) throws IOException;
+
+        Resource loadMediaResourceById(String mediaId, boolean thumbnail, Long companyId) throws IOException;
 }

@@ -12,6 +12,7 @@ import nextpos.app.nextpos.service.interf.ProductService;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.batch.item.file.FlatFileItemReader;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -71,13 +72,16 @@ public class ProductImportExportStrategy implements ImportExportStrategy {
     public ItemWriter<Object> getWriter(Map<String, Object> options) {
         Long userId = (Long) options.get("userId");
         Long companyId = (Long) options.get("companyId");
+
         return items -> {
             for (Object item : items.getItems()) {
                 CreateProductRequest req = (CreateProductRequest) item;
                 try {
                     productService.createProduct(req, userId, companyId);
+                } catch (DataIntegrityViolationException | IllegalArgumentException e) {
+                    throw e;
                 } catch (Exception e) {
-                    log.error("Failed to create product: {}", req.getSku(), e);
+                    log.error("Unexpected failure to create product: {}", req.getSku(), e);
                     throw new RuntimeException("Failed to create product: " + e.getMessage(), e);
                 }
             }

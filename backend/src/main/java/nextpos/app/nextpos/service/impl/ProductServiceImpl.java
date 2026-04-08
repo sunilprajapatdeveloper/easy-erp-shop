@@ -1,6 +1,7 @@
 package nextpos.app.nextpos.service.impl;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -563,18 +564,44 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<ProductResponse> searchProducts(String query, int limit) {
+        User user = UserContext.getAuthenticatedUser(userRepository);
+        Long companyId = user.getCompanyId();
+
         List<Product> products = productRepository
-                .findByNameContainingIgnoreCaseOrCodeContainingIgnoreCaseOrSkuContainingIgnoreCase(query, query, query);
-        return products.stream()
+                .findByNameContainingIgnoreCaseOrCodeContainingIgnoreCaseOrSkuContainingIgnoreCase(query, query, query)
+                .stream()
+                .filter(p -> p.getCompanyId().equals(companyId) && !p.getIsDeleted())
                 .limit(limit)
-                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+
+        return products.stream()
+                .map(p -> ProductResponse.fromEntity(p, Collections.emptyList()))
                 .collect(Collectors.toList());
     }
 
-    private ProductResponse mapToResponse(Product product) {
-        List<MediaResponse> mediaResponse = getProductImagesFromMedia(product.getId(), product.getCompanyId());
-        return ProductResponse.fromEntity(product, mediaResponse);
+    @Override
+    @Transactional(readOnly = true)
+    public List<ProductResponse> searchProducts(String query, int page, int size) {
+        User user = UserContext.getAuthenticatedUser(userRepository);
+        Long companyId = user.getCompanyId();
+        int offset = page * size;
+
+        String tsQuery = Arrays.stream(query.trim().toLowerCase().split("\\s+"))
+                .filter(word -> word.length() > 0)
+                .map(word -> word + ":*")
+                .collect(Collectors.joining(" & "));
+
+        // If the query is empty after processing, return empty list
+        if (tsQuery.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        List<Product> products = productRepository.searchByFullText(companyId, tsQuery, offset, size);
+        return products.stream()
+                .map(p -> ProductResponse.fromEntity(p, Collections.emptyList()))
+                .collect(Collectors.toList());
     }
 
     private List<MediaResponse> getProductImagesFromMedia(Long productId, Long companyId) {

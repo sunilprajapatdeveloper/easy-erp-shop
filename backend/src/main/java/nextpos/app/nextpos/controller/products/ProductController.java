@@ -99,6 +99,14 @@ public class ProductController {
                 productService.getProducts(warehouseId, userId, includePrice, includeStock, includeTax));
     }
 
+    @GetMapping("/search")
+    public ResponseEntity<List<ProductResponse>> searchProducts(
+            @RequestParam("q") String query,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return ResponseEntity.ok(productService.searchProducts(query, page, size));
+    }
+
     @PostMapping("/{productId}/upload-images")
     public ResponseEntity<List<MediaResponse>> uploadProductImages(
             @PathVariable Long productId,

@@ -19,6 +19,7 @@ import org.springframework.batch.item.file.FlatFileItemReader;
 import org.springframework.batch.item.file.mapping.DefaultLineMapper;
 import org.springframework.batch.item.file.transform.DelimitedLineTokenizer;
 import org.springframework.core.io.FileSystemResource;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.PlatformTransactionManager;
 
@@ -52,9 +53,8 @@ public class ImportJobConfig {
                 .writer(strategy.getWriter(options))
                 .faultTolerant()
                 .skip(IllegalArgumentException.class)
+                .skip(DataIntegrityViolationException.class)
                 .skipLimit(10000)
-                .retry(Exception.class)
-                .retryLimit(3)
                 .listener(skipListener)
                 .listener(new ImportStepListener(job, importExportJobRepository))
                 .build();
@@ -75,13 +75,11 @@ public class ImportJobConfig {
     }
 
     private ItemReader<Map<String, Object>> createCsvReader(ImportExportJob job, Map<String, Object> options) {
-        // Get the media entity to locate the file
         Media media = mediaRepository.findById(job.getSourceMediaId())
                 .orElseThrow(() -> new IllegalStateException("Media not found for job " + job.getId()));
 
         FileSystemResource resource = new FileSystemResource(media.getFilePath());
 
-        // Read the first line to get actual column names from the CSV
         String[] headers;
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(resource.getInputStream()))) {
             String headerLine = reader.readLine();
@@ -97,12 +95,12 @@ public class ImportJobConfig {
 
         FlatFileItemReader<Map<String, Object>> reader = new FlatFileItemReader<>();
         reader.setResource(resource);
-        reader.setLinesToSkip(1); // skip the header row (already read)
+        reader.setLinesToSkip(1);
         reader.setStrict(true);
 
         DelimitedLineTokenizer tokenizer = new DelimitedLineTokenizer();
-        tokenizer.setNames(headers); // use the actual CSV headers
-        tokenizer.setStrict(false); // allow fewer columns if needed
+        tokenizer.setNames(headers);
+        tokenizer.setStrict(false);
 
         DefaultLineMapper<Map<String, Object>> lineMapper = new DefaultLineMapper<>();
         lineMapper.setLineTokenizer(tokenizer);
@@ -125,7 +123,8 @@ public class ImportJobConfig {
             @Override
             public Map<String, Object> read() throws Exception {
                 if (iterator == null) {
-                    try (InputStream is = mediaService.loadMediaResourceById(job.getSourceMediaId(), false)
+                    try (InputStream is = mediaService
+                            .loadMediaResourceById(job.getSourceMediaId(), false, job.getCompanyId())
                             .getInputStream()) {
                         Workbook workbook = WorkbookFactory.create(is);
                         Sheet sheet = workbook.getSheetAt(0);

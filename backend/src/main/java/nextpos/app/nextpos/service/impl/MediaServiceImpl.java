@@ -490,6 +490,16 @@ public class MediaServiceImpl implements MediaService {
         return loadMediaResourceInternal(media, thumbnail);
     }
 
+    @Override
+    public Resource loadMediaResourceById(String mediaId, boolean thumbnail, Long companyId) throws IOException {
+        Media media = mediaRepository.findById(mediaId)
+                .orElseThrow(() -> new IOException("Media not found: " + mediaId));
+        if (!media.getCompanyId().equals(companyId)) {
+            throw new IOException("Access denied to media");
+        }
+        return loadMediaResourceInternal(media, thumbnail);
+    }
+
     private Resource loadMediaResourceInternal(Media media, boolean thumbnail) throws IOException {
         StorageService storageService = storageServiceFactory.getStorageService(media.getStorageProvider());
 

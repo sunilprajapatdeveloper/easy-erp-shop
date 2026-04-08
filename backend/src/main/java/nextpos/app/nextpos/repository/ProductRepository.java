@@ -2,7 +2,9 @@ package nextpos.app.nextpos.repository;
 
 import nextpos.app.nextpos.model.entity.Product;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
+import io.lettuce.core.dynamic.annotation.Param;
 
 import java.util.List;
 import java.util.Optional;
@@ -65,5 +67,18 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     boolean existsBySkuAndCompanyIdAndIsDeletedFalse(String sku, Long companyId);
 
     List<Product> findByNameContainingIgnoreCaseOrCodeContainingIgnoreCaseOrSkuContainingIgnoreCase(
-            String name, String code, String sku);
+                    String name, String code, String sku);
+
+    @Query(value = """
+                    SELECT p.* FROM products p
+                    WHERE p.company_id = :companyId
+                      AND p.is_deleted = false
+                      AND p.search_vector::tsvector @@ to_tsquery('simple', :tsQuery)
+                    ORDER BY ts_rank(p.search_vector::tsvector, to_tsquery('simple', :tsQuery)) DESC
+                    OFFSET :offset LIMIT :limit
+                    """, nativeQuery = true)
+    List<Product> searchByFullText(@Param("companyId") Long companyId,
+                    @Param("tsQuery") String tsQuery,
+                    @Param("offset") int offset,
+                    @Param("limit") int limit);
 }

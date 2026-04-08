@@ -159,6 +159,9 @@ public class Product extends BaseEntity {
     @Builder.Default
     private Boolean isDeleted = false;
 
+    @Column(name = "search_vector", insertable = false, updatable = false)
+    private String searchVector;
+
     /** Hook for defaulting enums and flags */
     @PrePersist
     protected void onCreate() {

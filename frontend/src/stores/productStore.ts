@@ -8,6 +8,7 @@ import {
   createProduct,
   updateProduct,
   deleteProduct,
+  searchProducts,
   type CreateProductRequest,
   type UpdateProductRequest,
 } from "@/services/productService";
@@ -91,6 +92,20 @@ export const useProductStore = defineStore("product", {
     async removeProduct(id: number) {
       await deleteProduct(id);
       this.products = this.products.filter((p) => p.id !== id);
+    },
+
+    async searchProducts(query: string, page = 0, size = 20) {
+      this.loading = true;
+      this.error = null;
+      try {
+        const res = await searchProducts(query, page, size);
+        this.products = res.data;
+      } catch (err: any) {
+        console.error("Search failed:", err);
+        this.error = err.message ?? "Failed to search products";
+      } finally {
+        this.loading = false;
+      }
     },
   },
 });
