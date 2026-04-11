@@ -442,12 +442,16 @@ public class MediaServiceImpl implements MediaService {
 
     @Override
     public Map<Long, List<MediaResponse>> getMediaForEntities(String entityType, List<Long> entityIds) {
+        User user = UserContext.getAuthenticatedUser(userRepository);
+        Long companyId = user.getCompanyId();
+        return getMediaForEntities(entityType, entityIds, companyId);
+    }
+
+    @Override
+    public Map<Long, List<MediaResponse>> getMediaForEntities(String entityType, List<Long> entityIds, Long companyId) {
         if (entityIds == null || entityIds.isEmpty()) {
             return new HashMap<>();
         }
-
-        User user = UserContext.getAuthenticatedUser(userRepository);
-        Long companyId = user.getCompanyId();
 
         try {
             // Get media for all entities in one query
@@ -460,7 +464,7 @@ public class MediaServiceImpl implements MediaService {
                             Media::getEntityId,
                             Collectors.mapping(this::convertToResponse, Collectors.toList())));
         } catch (Exception e) {
-            log.error("Failed to get media for multiple entities", e);
+            log.error("Failed to get media for multiple entities with companyId {}", companyId, e);
             return new HashMap<>();
         }
     }

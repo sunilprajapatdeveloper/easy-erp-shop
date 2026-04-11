@@ -10,6 +10,7 @@ import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.Page;
 
 import lombok.RequiredArgsConstructor;
 import nextpos.app.nextpos.model.dto.request.CreateRequest.CreateProductRequest;
@@ -25,6 +26,8 @@ import nextpos.app.nextpos.model.entity.Product;
 import nextpos.app.nextpos.model.entity.ProductStatus;
 import nextpos.app.nextpos.model.entity.ProductUnit;
 import nextpos.app.nextpos.model.entity.User;
+import nextpos.app.nextpos.pagination.dto.PaginationRequest;
+import nextpos.app.nextpos.pagination.dto.PaginationResponse;
 import nextpos.app.nextpos.repository.BrandRepository;
 import nextpos.app.nextpos.repository.CategoryRepository;
 import nextpos.app.nextpos.repository.ProductPriceRepository;
@@ -340,9 +343,12 @@ public class ProductServiceImpl implements ProductService {
     @Transactional
     public ProductResponse updateProduct(Long id, UpdateProductRequest request) {
         User user = UserContext.getAuthenticatedUser(userRepository);
-        Long companyId = user.getCompanyId();
-        Long currentUserId = user.getId();
+        return updateProduct(id, request, user.getId(), user.getCompanyId());
+    }
 
+    @Override
+    @Transactional
+    public ProductResponse updateProduct(Long id, UpdateProductRequest request, Long userId, Long companyId) {
         Product product = productRepository.findByIdAndCompanyIdAndIsDeletedFalse(id, companyId)
                 .orElseThrow(() -> new IllegalArgumentException("Product not found with id: " + id));
 
@@ -429,7 +435,7 @@ public class ProductServiceImpl implements ProductService {
         if (request.getIsDeleted() != null)
             product.setIsDeleted(request.getIsDeleted());
 
-        product.setUpdatedBy(currentUserId);
+        product.setUpdatedBy(userId);
         product.setUpdatedAt(LocalDateTime.now());
 
         // Fetch media for THIS product
@@ -604,13 +610,70 @@ public class ProductServiceImpl implements ProductService {
                 .collect(Collectors.toList());
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public PaginationResponse<ProductResponse> getProducts(PaginationRequest request) {
+        User user = UserContext.getAuthenticatedUser(userRepository);
+        Long companyId = user.getCompanyId();
+
+        Page<Product> productPage;
+        if (request.getSearch() != null && !request.getSearch().isBlank()) {
+            productPage = productRepository.searchFullText(companyId, request.getSearch(), request.toPageable());
+        } else {
+            productPage = productRepository.findAllByCompanyIdAndSearch(companyId, request.getSearch(),
+                    request.toPageable());
+        }
+
+        Page<ProductResponse> dtoPage = productPage.map(p -> ProductResponse.fromEntity(p, Collections.emptyList()));
+        return PaginationResponse.of(dtoPage);
+    }
+
     private List<MediaResponse> getProductImagesFromMedia(Long productId, Long companyId) {
         Map<Long, List<MediaResponse>> mediaMap = mediaService.getMediaForEntities(
                 "PRODUCT",
-                Collections.singletonList(productId));
-
+                Collections.singletonList(productId),
+                companyId);
         List<MediaResponse> media = mediaMap.get(productId);
 
         return (media != null && !media.isEmpty()) ? media : Collections.emptyList();
+    }
+
+    @Override
+    @Transactional
+    public void bulkDelete(List<Long> ids) {
+        User user = UserContext.getAuthenticatedUser(userRepository);
+        Long companyId = user.getCompanyId();
+        Long currentUserId = user.getId();
+
+        List<Product> products = productRepository.findAllById(ids);
+        for (Product product : products) {
+            if (!product.getCompanyId().equals(companyId)) {
+                throw new IllegalArgumentException("Product not found in company: " + product.getId());
+            }
+            product.setIsDeleted(true);
+            product.setStatus(ProductStatus.INACTIVE);
+            product.setUpdatedBy(currentUserId);
+            product.setUpdatedAt(LocalDateTime.now());
+        }
+        productRepository.saveAll(products);
+    }
+
+    @Override
+    @Transactional
+    public void bulkUpdateStatus(List<Long> ids, ProductStatus status) {
+        User user = UserContext.getAuthenticatedUser(userRepository);
+        Long companyId = user.getCompanyId();
+        Long currentUserId = user.getId();
+
+        List<Product> products = productRepository.findAllById(ids);
+        for (Product product : products) {
+            if (!product.getCompanyId().equals(companyId)) {
+                throw new IllegalArgumentException("Product not found in company: " + product.getId());
+            }
+            product.setStatus(status);
+            product.setUpdatedBy(currentUserId);
+            product.setUpdatedAt(LocalDateTime.now());
+        }
+        productRepository.saveAll(products);
     }
 }

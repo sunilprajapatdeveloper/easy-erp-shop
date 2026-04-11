@@ -3,6 +3,9 @@ package nextpos.app.nextpos.service.interf;
 import nextpos.app.nextpos.model.dto.request.CreateRequest.CreateProductRequest;
 import nextpos.app.nextpos.model.dto.request.UpdateRequest.UpdateProductRequest;
 import nextpos.app.nextpos.model.dto.response.ProductResponse;
+import nextpos.app.nextpos.model.entity.ProductStatus;
+import nextpos.app.nextpos.pagination.dto.PaginationRequest;
+import nextpos.app.nextpos.pagination.dto.PaginationResponse;
 
 import java.util.List;
 
@@ -49,6 +52,8 @@ public interface ProductService {
      */
     ProductResponse updateProduct(Long id, UpdateProductRequest request);
 
+    ProductResponse updateProduct(Long id, UpdateProductRequest request, Long userId, Long companyId);
+
     /**
      * Soft delete product scoped to company
      *
@@ -86,4 +91,10 @@ public interface ProductService {
     List<ProductResponse> searchProducts(String query, int limit);
 
     List<ProductResponse> searchProducts(String query, int page, int size);
+
+    PaginationResponse<ProductResponse> getProducts(PaginationRequest request);
+
+    void bulkDelete(List<Long> ids);
+
+    void bulkUpdateStatus(List<Long> ids, ProductStatus status);
 }

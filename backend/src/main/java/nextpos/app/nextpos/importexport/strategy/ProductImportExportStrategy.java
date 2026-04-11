@@ -3,6 +3,7 @@ package nextpos.app.nextpos.importexport.strategy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nextpos.app.nextpos.model.dto.request.CreateRequest.CreateProductRequest;
+import nextpos.app.nextpos.model.dto.request.UpdateRequest.UpdateProductRequest;
 import nextpos.app.nextpos.model.dto.response.ProductResponse;
 import nextpos.app.nextpos.model.entity.*;
 import nextpos.app.nextpos.model.enums.ProductType;
@@ -16,6 +17,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -28,6 +30,7 @@ public class ProductImportExportStrategy implements ImportExportStrategy {
     private final CategoryRepository categoryRepository;
     private final BrandRepository brandRepository;
     private final ProductUnitRepository productUnitRepository;
+    private final ProductRepository productRepository;
     private final BarcodeHelper barcodeHelper;
 
     @Override
@@ -77,12 +80,35 @@ public class ProductImportExportStrategy implements ImportExportStrategy {
             for (Object item : items.getItems()) {
                 CreateProductRequest req = (CreateProductRequest) item;
                 try {
-                    productService.createProduct(req, userId, companyId);
+                    // Check for existing product (including soft-deleted) by code and company
+                    Optional<Product> existingOpt = productRepository.findByCodeAndCompanyId(req.getCode(), companyId);
+                    if (existingOpt.isPresent()) {
+                        Product existing = existingOpt.get();
+                        if (existing.getIsDeleted()) {
+                            // Reactivate and update the existing product
+                            log.info("Reactivating deleted product with code: {}", req.getCode());
+                            existing.setIsDeleted(false);
+                            existing.setStatus(ProductStatus.ACTIVE);
+                            existing.setUpdatedBy(userId);
+                            existing.setUpdatedAt(LocalDateTime.now());
+                            productRepository.save(existing);
+
+                            // Convert CreateProductRequest to UpdateProductRequest with the existing product ID
+                            UpdateProductRequest updateReq = toUpdateProductRequest(req, existing.getId());
+                            productService.updateProduct(existing.getId(), updateReq, userId, companyId);
+                        } else {
+                            // Active product already exists → skip (current behavior)
+                            log.info("Product already exists (active) with code: {}, skipping", req.getCode());
+                        }
+                    } else {
+                        // No product with this code → create new
+                        productService.createProduct(req, userId, companyId);
+                    }
                 } catch (DataIntegrityViolationException | IllegalArgumentException e) {
                     throw e;
                 } catch (Exception e) {
-                    log.error("Unexpected failure to create product: {}", req.getSku(), e);
-                    throw new RuntimeException("Failed to create product: " + e.getMessage(), e);
+                    log.error("Unexpected failure to create/update product: {}", req.getSku(), e);
+                    throw new RuntimeException("Failed to create/update product: " + e.getMessage(), e);
                 }
             }
         };
@@ -235,5 +261,34 @@ public class ProductImportExportStrategy implements ImportExportStrategy {
                         "Purchase unit not found in company: " + request.getPurchaseUnitId());
             }
         }
+    }
+
+    private UpdateProductRequest toUpdateProductRequest(CreateProductRequest createReq, Long productId) {
+        UpdateProductRequest updateReq = new UpdateProductRequest();
+        updateReq.setId(productId);
+        updateReq.setName(createReq.getName());
+        updateReq.setCode(createReq.getCode());
+        updateReq.setSku(createReq.getSku());
+        updateReq.setBarcode(createReq.getBarcode());
+        updateReq.setCategoryId(createReq.getCategoryId());
+        updateReq.setBrandId(createReq.getBrandId());
+        updateReq.setProductType(createReq.getProductType());
+        updateReq.setStatus(createReq.getStatus());
+        updateReq.setProductUnitId(createReq.getProductUnitId());
+        updateReq.setSalesUnitId(createReq.getSalesUnitId());
+        updateReq.setPurchaseUnitId(createReq.getPurchaseUnitId());
+        updateReq.setUnitConversionFactor(createReq.getUnitConversionFactor());
+        updateReq.setIsBatchManaged(createReq.getIsBatchManaged());
+        updateReq.setIsSerialized(createReq.getIsSerialized());
+        updateReq.setIsComposite(createReq.getIsComposite());
+        updateReq.setHasVariants(createReq.getHasVariants());
+        updateReq.setWeight(createReq.getWeight());
+        updateReq.setVolume(createReq.getVolume());
+        updateReq.setDimensions(createReq.getDimensions());
+        updateReq.setDescription(createReq.getDescription());
+        updateReq.setProductImage(createReq.getProductImage());
+        updateReq.setImageUrls(createReq.getImageUrls());
+        updateReq.setIsDeleted(createReq.getIsDeleted());
+        return updateReq;
     }
 }

@@ -2,12 +2,18 @@ package nextpos.app.nextpos.controller.products;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import nextpos.app.nextpos.model.dto.request.BulkIdsRequest;
+import nextpos.app.nextpos.model.dto.request.BulkStatusRequest;
 import nextpos.app.nextpos.model.dto.request.MediaUploadRequest;
 import nextpos.app.nextpos.model.dto.request.CreateRequest.CreateProductRequest;
 import nextpos.app.nextpos.model.dto.request.UpdateRequest.UpdateProductRequest;
 import nextpos.app.nextpos.model.dto.response.MediaResponse;
 import nextpos.app.nextpos.model.dto.response.ProductResponse;
 import nextpos.app.nextpos.model.enums.MediaType;
+import nextpos.app.nextpos.pagination.dto.ApiResponse;
+import nextpos.app.nextpos.pagination.dto.PaginationRequest;
+import nextpos.app.nextpos.pagination.dto.PaginationResponse;
+import nextpos.app.nextpos.model.entity.ProductStatus;
 import nextpos.app.nextpos.model.entity.User;
 import nextpos.app.nextpos.repository.UserRepository;
 import nextpos.app.nextpos.security.context.UserContext;
@@ -107,6 +113,13 @@ public class ProductController {
         return ResponseEntity.ok(productService.searchProducts(query, page, size));
     }
 
+    @GetMapping("/paginated")
+    public ApiResponse<PaginationResponse<ProductResponse>> getProducts(
+            @ModelAttribute PaginationRequest request) {
+        PaginationResponse<ProductResponse> response = productService.getProducts(request);
+        return ApiResponse.success(response);
+    }
+
     @PostMapping("/{productId}/upload-images")
     public ResponseEntity<List<MediaResponse>> uploadProductImages(
             @PathVariable Long productId,
@@ -132,5 +145,17 @@ public class ProductController {
     public ResponseEntity<List<MediaResponse>> getProductImages(@PathVariable Long productId) {
         List<MediaResponse> responses = mediaService.getMediaByEntity("PRODUCT", productId);
         return ResponseEntity.ok(responses);
+    }
+
+    @PostMapping("/bulk-delete")
+    public ResponseEntity<Void> bulkDelete(@RequestBody BulkIdsRequest request) {
+        productService.bulkDelete(request.getIds());
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/bulk-update-status")
+    public ResponseEntity<Void> bulkUpdateStatus(@RequestBody BulkStatusRequest request) {
+        productService.bulkUpdateStatus(request.getIds(), ProductStatus.valueOf(request.getStatus()));
+        return ResponseEntity.noContent().build();
     }
 }

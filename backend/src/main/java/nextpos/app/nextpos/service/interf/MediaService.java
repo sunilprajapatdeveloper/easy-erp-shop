@@ -15,7 +15,8 @@ public interface MediaService {
 
         MediaResponse uploadFile(MultipartFile file, MediaUploadRequest request) throws IOException;
 
-        MediaResponse uploadFile(MultipartFile file, MediaUploadRequest request, Long userId, Long companyId) throws IOException;
+        MediaResponse uploadFile(MultipartFile file, MediaUploadRequest request, Long userId, Long companyId)
+                        throws IOException;
 
         List<MediaResponse> uploadFiles(List<MultipartFile> files, MediaUploadRequest request) throws IOException;
 
@@ -42,6 +43,8 @@ public interface MediaService {
         MediaResponse updateMediaMetadata(String mediaId, Map<String, Object> metadata);
 
         Map<Long, List<MediaResponse>> getMediaForEntities(String entityType, List<Long> entityIds);
+
+        Map<Long, List<MediaResponse>> getMediaForEntities(String entityType, List<Long> entityIds, Long companyId);
 
         Resource loadMediaResource(String filename, Long companyId, boolean thumbnail) throws IOException;
 

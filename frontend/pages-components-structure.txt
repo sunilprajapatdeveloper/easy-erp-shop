@@ -51,9 +51,7 @@
 │   ├── CreateProductsPage.vue
 │   ├── EditProductsPage.vue
 │   ├── EditProductStockPage.vue
-│   ├── ManageProductPricesPage.vue
-│   ├── ManageProductStocksPage.vue
-│   ├── ManageProductTaxesPage.vue
+│   ├── ManageProductToWarehousePage.vue
 │   ├── PrintBarcodePage.vue
 │   ├── ProductDetailsPage.vue
 │   └── ProductsListPage.vue
@@ -174,7 +172,9 @@
 │   ├── BreadcrumbMenu.vue
 │   ├── FilterContent.vue
 │   ├── FilterModal.vue
-│   └── Popup.vue
+│   ├── Popup.vue
+│   ├── ProductSearch.vue
+│   └── WarehouseSelect.vue
 ├── Dashboard
 │   ├── PaymentSentReceivedChart.vue
 │   ├── RecentInvoices.vue
@@ -268,12 +268,11 @@
 │   ├── CreateProducts
 │   │   ├── AddImages.vue
 │   │   └── CreateProducts.vue
-│   ├── ManageProductPrices
-│   │   └── ManageProductPrices.vue
-│   ├── ManageProductStocks
-│   │   └── ManageProductStocks.vue
-│   ├── ManageProductTaxes
-│   │   └── ManageProductTaxes.vue
+│   ├── ManageProductToWarehouse
+│   │   ├── ProductPriceForm.vue
+│   │   ├── ProductStockForm.vue
+│   │   ├── ProductTaxForm.vue
+│   │   └── ProductWarehouseConfigurator.vue
 │   ├── PrintBarcode
 │   │   ├── BarcodeWrapper.vue
 │   │   ├── ChooseForm.vue
@@ -408,13 +407,15 @@
 │       ├── WarehouseGeneralDetails.vue
 │       ├── WarehouseList.vue
 │       └── WarehouseOtherSettings.vue
-└── Transfer
-    ├── CreateTransfer
-    │   ├── ChooseForm.vue
-    │   ├── CreateTransferFrom.vue
-    │   ├── QuantityCounter.vue
-    │   └── SelectedProducts.vue
-    └── TransferList
-        ├── DetailsModal.vue
-        └── TransferList.vue
+├── Transfer
+│   ├── CreateTransfer
+│   │   ├── ChooseForm.vue
+│   │   ├── CreateTransferFrom.vue
+│   │   ├── QuantityCounter.vue
+│   │   └── SelectedProducts.vue
+│   └── TransferList
+│       ├── DetailsModal.vue
+│       └── TransferList.vue
+└── ui
+    └── BaseCheckbox.vue
 

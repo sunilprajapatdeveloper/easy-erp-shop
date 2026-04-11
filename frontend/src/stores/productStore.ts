@@ -9,21 +9,31 @@ import {
   updateProduct,
   deleteProduct,
   searchProducts,
+  getProductsPaginated,
+  bulkDeleteProducts,
   type CreateProductRequest,
   type UpdateProductRequest,
 } from "@/services/productService";
+import type { PaginationRequest, PaginationResponse } from "@/types/pagination";
 
 export const useProductStore = defineStore("product", {
   state: () => ({
     products: [] as Product[],
     loading: false,
     error: null as string | null,
+    pagination: {
+      page: 0,
+      size: 20,
+      totalElements: 0,
+      totalPages: 0,
+      hasNext: false,
+      hasPrevious: false,
+    } as PaginationResponse<any>["pagination"],
+    currentSort: "" as string,
+    currentSearch: "" as string,
   }),
 
   actions: {
-    /**
-     * Fetch products with optional filters (warehouse, stock, tax, etc.)
-     */
     async fetchProducts(filters?: {
       warehouseId?: number;
       userId?: number;
@@ -83,9 +93,7 @@ export const useProductStore = defineStore("product", {
     async updateProduct(id: number, data: UpdateProductRequest) {
       const res = await updateProduct(id, data);
       const index = this.products.findIndex((p) => p.id === id);
-      if (index !== -1) {
-        this.products[index] = res.data;
-      }
+      if (index !== -1) this.products[index] = res.data;
       return res.data;
     },
 
@@ -103,6 +111,54 @@ export const useProductStore = defineStore("product", {
       } catch (err: any) {
         console.error("Search failed:", err);
         this.error = err.message ?? "Failed to search products";
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    async fetchProductsPaginated(params: PaginationRequest) {
+      this.loading = true;
+      this.error = null;
+      try {
+        const res = await getProductsPaginated(params);
+        const paginatedData = res.data.data;
+        this.products = paginatedData.data;
+        this.pagination = paginatedData.pagination;
+        this.currentSort = params.sort || "";
+        this.currentSearch = params.search || "";
+      } catch (err: any) {
+        console.error("Paginated fetch failed:", err);
+        this.error = err.message ?? "Failed to fetch products";
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    async resetAndFetch() {
+      await this.fetchProductsPaginated({
+        page: 0,
+        size: this.pagination.size,
+        sort: this.currentSort,
+        search: this.currentSearch,
+      });
+    },
+
+    async bulkDelete(ids: number[]) {
+      this.loading = true;
+      try {
+        await bulkDeleteProducts(ids);
+        // Remove from local state
+        this.products = this.products.filter((p) => !ids.includes(p.id));
+        // Optionally refresh pagination counts
+        if (this.pagination.totalElements) {
+          this.pagination.totalElements -= ids.length;
+          this.pagination.totalPages = Math.ceil(
+            this.pagination.totalElements / this.pagination.size,
+          );
+        }
+      } catch (err) {
+        console.error("Bulk delete error", err);
+        throw err;
       } finally {
         this.loading = false;
       }

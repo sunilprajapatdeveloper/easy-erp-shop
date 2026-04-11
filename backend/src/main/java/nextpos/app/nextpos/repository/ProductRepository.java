@@ -8,6 +8,8 @@ import io.lettuce.core.dynamic.annotation.Param;
 
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 @Repository
 public interface ProductRepository extends JpaRepository<Product, Long> {
@@ -70,15 +72,54 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
                     String name, String code, String sku);
 
     @Query(value = """
-                    SELECT p.* FROM products p
-                    WHERE p.company_id = :companyId
-                      AND p.is_deleted = false
-                      AND p.search_vector::tsvector @@ to_tsquery('simple', :tsQuery)
-                    ORDER BY ts_rank(p.search_vector::tsvector, to_tsquery('simple', :tsQuery)) DESC
-                    OFFSET :offset LIMIT :limit
-                    """, nativeQuery = true)
+        SELECT p.* FROM products p
+        WHERE p.company_id = :companyId
+          AND p.is_deleted = false
+          AND p.search_vector::tsvector @@ to_tsquery('simple', :tsQuery)
+        ORDER BY ts_rank(p.search_vector::tsvector, to_tsquery('simple', :tsQuery)) DESC
+        OFFSET :offset LIMIT :limit
+        """, nativeQuery = true)
     List<Product> searchByFullText(@Param("companyId") Long companyId,
-                    @Param("tsQuery") String tsQuery,
-                    @Param("offset") int offset,
-                    @Param("limit") int limit);
+        @Param("tsQuery") String tsQuery,
+        @Param("offset") int offset,
+        @Param("limit") int limit);
+
+    /**
+     * Basic paginated query with optional search (LIKE) and sorting.
+     */
+    @Query("SELECT p FROM Product p WHERE p.companyId = :companyId AND p.isDeleted = false " +
+        "AND (:search IS NULL OR :search = '' OR " +
+        "     LOWER(p.name) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+        "     LOWER(p.code) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+        "     LOWER(p.sku) LIKE LOWER(CONCAT('%', :search, '%')))")
+    Page<Product> findAllByCompanyIdAndSearch(@Param("companyId") Long companyId,
+        @Param("search") String search,
+        Pageable pageable);
+
+    /**
+     * Full‑text search using PostgreSQL tsvector (with GIN index) returning a Page.
+     */
+    @Query(value = """
+        SELECT p.* FROM products p
+        WHERE p.company_id = :companyId
+          AND p.is_deleted = false
+          AND (:search IS NULL OR :search = '' OR
+              p.search_vector @@ plainto_tsquery('simple', :search))
+        ORDER BY p.id ASC
+        """, countQuery = """
+        SELECT COUNT(*) FROM products p
+        WHERE p.company_id = :companyId
+          AND p.is_deleted = false
+          AND (:search IS NULL OR :search = '' OR
+              p.search_vector @@ plainto_tsquery('simple', :search))
+        """, nativeQuery = true)
+    Page<Product> searchFullText(@Param("companyId") Long companyId,
+        @Param("search") String search,
+        Pageable pageable);
+
+    /**
+     * Find product by code and company ID (including soft-deleted products).
+     * Used by import logic to detect deleted products and reactivate them.
+     */
+    Optional<Product> findByCodeAndCompanyId(String code, Long companyId);
 }

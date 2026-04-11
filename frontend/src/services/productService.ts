@@ -1,8 +1,14 @@
 import api from "./api";
 import { useUserStore } from "@/stores/userStore";
 import type { Product } from "@/types/Product";
+import type { PaginationRequest, PaginationResponse } from "@/types/pagination";
 
-// Request/Response DTOs (keep aligned with backend)
+export interface ApiResponse<T> {
+  success: boolean;
+  message: string | null;
+  data: T;
+}
+
 export type CreateProductRequest = Omit<
   Product,
   "id" | "createdAt" | "updatedAt"
@@ -10,7 +16,6 @@ export type CreateProductRequest = Omit<
 export type UpdateProductRequest = Partial<CreateProductRequest>;
 export type ProductResponse = Product;
 
-// Helper: build headers
 const getHeaders = () => {
   const userStore = useUserStore();
   const companyId = userStore.currentUser?.companyId;
@@ -26,9 +31,6 @@ const getHeaders = () => {
   };
 };
 
-/**
- * Get products with optional filters
- */
 export const getProducts = (params?: {
   warehouseId?: number;
   userId?: number;
@@ -36,10 +38,7 @@ export const getProducts = (params?: {
   includeStock?: boolean;
   includeTax?: boolean;
 }) =>
-  api.get<ProductResponse[]>("/products", {
-    headers: getHeaders(),
-    params,
-  });
+  api.get<ProductResponse[]>("/products", { headers: getHeaders(), params });
 
 export const getProductById = (id: number) =>
   api.get<ProductResponse>(`/products/${id}`, { headers: getHeaders() });
@@ -66,3 +65,22 @@ export const searchProducts = (query: string, page = 0, size = 20) =>
     headers: getHeaders(),
     params: { q: query, page, size },
   });
+
+export const getProductsPaginated = (params: PaginationRequest) =>
+  api.get<ApiResponse<PaginationResponse<ProductResponse>>>(
+    "/products/paginated",
+    {
+      headers: getHeaders(),
+      params,
+    },
+  );
+
+export const bulkDeleteProducts = (ids: number[]) =>
+  api.post<void>("/products/bulk-delete", { ids }, { headers: getHeaders() });
+
+export const bulkUpdateProductStatus = (ids: number[], status: string) =>
+  api.post<void>(
+    "/products/bulk-update-status",
+    { ids, status },
+    { headers: getHeaders() },
+  );
