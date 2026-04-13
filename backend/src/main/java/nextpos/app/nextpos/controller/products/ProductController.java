@@ -52,8 +52,13 @@ public class ProductController {
      */
     @GetMapping("/{id}")
     public ResponseEntity<ProductResponse> getProductById(
-            @PathVariable Long id) {
-        return ResponseEntity.ok(productService.getProductById(id));
+            @PathVariable Long id,
+            @RequestParam(value = "warehouseId", required = false) Long warehouseId,
+            @RequestParam(value = "includePrice", defaultValue = "false") boolean includePrice,
+            @RequestParam(value = "includeStock", defaultValue = "false") boolean includeStock,
+            @RequestParam(value = "includeTax", defaultValue = "false") boolean includeTax) {
+        return ResponseEntity
+                .ok(productService.getProductById(id, warehouseId, includePrice, includeStock, includeTax));
     }
 
     /**

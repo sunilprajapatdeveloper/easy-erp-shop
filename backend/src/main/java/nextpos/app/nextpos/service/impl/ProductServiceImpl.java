@@ -270,15 +270,44 @@ public class ProductServiceImpl implements ProductService {
     public ProductResponse getProductById(Long id) {
         User user = UserContext.getAuthenticatedUser(userRepository);
         Long companyId = user.getCompanyId();
+        return getProductById(id, null, false, false, false, companyId);
+    }
 
+    @Override
+    @Transactional(readOnly = true)
+    public ProductResponse getProductById(Long id, Long warehouseId, boolean includePrice, boolean includeStock,
+            boolean includeTax) {
+        User user = UserContext.getAuthenticatedUser(userRepository);
+        Long companyId = user.getCompanyId();
+        return getProductById(id, warehouseId, includePrice, includeStock, includeTax, companyId);
+    }
+
+    private ProductResponse getProductById(Long id, Long warehouseId, boolean includePrice, boolean includeStock,
+            boolean includeTax, Long companyId) {
         Product product = productRepository.findByIdAndCompanyIdAndIsDeletedFalse(id, companyId)
                 .orElseThrow(() -> new IllegalArgumentException("Product not found with id: " + id));
 
-        // Fetch media for THIS product
+        // Fetch media
         List<MediaResponse> mediaResponse = getProductImagesFromMedia(product.getId(), companyId);
+        ProductResponse response = ProductResponse.fromEntity(product, mediaResponse);
 
-        // Return DTO with included image list
-        return ProductResponse.fromEntity(product, mediaResponse);
+        // If a warehouse is specified, attach price/stock/tax for that warehouse
+        if (warehouseId != null) {
+            if (includePrice) {
+                productPriceRepository.findByProductIdAndWarehouseIdAndCompanyId(id, warehouseId, companyId)
+                        .ifPresent(price -> response.setPrice(ProductPriceResponse.fromEntity(price)));
+            }
+            if (includeStock) {
+                productStockRepository.findByProductIdAndWarehouseIdAndCompanyId(id, warehouseId, companyId)
+                        .ifPresent(stock -> response.setStock(ProductStockResponse.fromEntity(stock)));
+            }
+            if (includeTax) {
+                productTaxRepository.findByProductIdAndWarehouseIdAndCompanyId(id, warehouseId, companyId)
+                        .ifPresent(tax -> response.setTax(ProductTaxResponse.fromEntity(tax)));
+            }
+        }
+
+        return response;
     }
 
     @Override
@@ -615,7 +644,12 @@ public class ProductServiceImpl implements ProductService {
     public PaginationResponse<ProductResponse> getProducts(PaginationRequest request) {
         User user = UserContext.getAuthenticatedUser(userRepository);
         Long companyId = user.getCompanyId();
+        Long warehouseId = request.getWarehouseId();
+        boolean includePrice = request.isIncludePrice();
+        boolean includeStock = request.isIncludeStock();
+        boolean includeTax = request.isIncludeTax();
 
+        // 1. Fetch paginated products (with search)
         Page<Product> productPage;
         if (request.getSearch() != null && !request.getSearch().isBlank()) {
             productPage = productRepository.searchFullText(companyId, request.getSearch(), request.toPageable());
@@ -624,8 +658,62 @@ public class ProductServiceImpl implements ProductService {
                     request.toPageable());
         }
 
-        Page<ProductResponse> dtoPage = productPage.map(p -> ProductResponse.fromEntity(p, Collections.emptyList()));
-        return PaginationResponse.of(dtoPage);
+        if (productPage.isEmpty()) {
+            return PaginationResponse.of(productPage.map(p -> ProductResponse.fromEntity(p, Collections.emptyList())));
+        }
+
+        List<Product> products = productPage.getContent();
+        List<Long> productIds = products.stream().map(Product::getId).collect(Collectors.toList());
+
+        // 2. Bulk fetch warehouse-specific data (only if a warehouse is selected)
+        Map<Long, ProductPriceResponse> priceMap = new HashMap<>();
+        Map<Long, ProductStockResponse> stockMap = new HashMap<>();
+        Map<Long, ProductTaxResponse> taxMap = new HashMap<>();
+
+        if (warehouseId != null) {
+            if (includePrice) {
+                productPriceRepository
+                        .findAllByProductIdInAndWarehouseIdAndCompanyId(productIds, warehouseId, companyId)
+                        .forEach(price -> priceMap.put(price.getProduct().getId(),
+                                ProductPriceResponse.fromEntity(price)));
+            }
+            if (includeStock) {
+                productStockRepository
+                        .findAllByProductIdInAndWarehouseIdAndCompanyId(productIds, warehouseId, companyId)
+                        .forEach(stock -> stockMap.put(stock.getProduct().getId(),
+                                ProductStockResponse.fromEntity(stock)));
+            }
+            if (includeTax) {
+                productTaxRepository
+                        .findAllByProductIdInAndWarehouseIdAndCompanyId(productIds, warehouseId, companyId)
+                        .forEach(tax -> taxMap.put(tax.getProduct().getId(), ProductTaxResponse.fromEntity(tax)));
+            }
+        }
+
+        // 3. Convert to response DTOs
+        List<ProductResponse> responseList = products.stream().map(product -> {
+            List<MediaResponse> mediaResponse = getProductImagesFromMedia(product.getId(), companyId);
+            ProductResponse response = ProductResponse.fromEntity(product, mediaResponse);
+            if (warehouseId != null) {
+                response.setPrice(priceMap.get(product.getId()));
+                response.setStock(stockMap.get(product.getId()));
+                response.setTax(taxMap.get(product.getId()));
+            }
+            return response;
+        }).collect(Collectors.toList());
+
+        // 4. Build pagination response
+        PaginationResponse<ProductResponse> paginationResponse = new PaginationResponse<>();
+        paginationResponse.setData(responseList);
+        paginationResponse.setPagination(PaginationResponse.PaginationMeta.builder()
+                .page(productPage.getNumber())
+                .size(productPage.getSize())
+                .totalElements(productPage.getTotalElements())
+                .totalPages(productPage.getTotalPages())
+                .hasNext(productPage.hasNext())
+                .hasPrevious(productPage.hasPrevious())
+                .build());
+        return paginationResponse;
     }
 
     private List<MediaResponse> getProductImagesFromMedia(Long productId, Long companyId) {

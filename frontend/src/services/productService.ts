@@ -40,8 +40,11 @@ export const getProducts = (params?: {
 }) =>
   api.get<ProductResponse[]>("/products", { headers: getHeaders(), params });
 
-export const getProductById = (id: number) =>
-  api.get<ProductResponse>(`/products/${id}`, { headers: getHeaders() });
+export const getProductById = (id: number, params?: any) =>
+  api.get<ProductResponse>(`/products/${id}`, {
+    headers: getHeaders(),
+    params,
+  });
 
 export const getProductByCode = (code: string) =>
   api.get<ProductResponse>(`/products/code/${code}`, { headers: getHeaders() });

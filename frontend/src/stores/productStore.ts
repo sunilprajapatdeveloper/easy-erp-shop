@@ -54,9 +54,19 @@ export const useProductStore = defineStore("product", {
       }
     },
 
-    async fetchProductById(id: number): Promise<Product | null> {
+    async fetchProductById(
+      id: number,
+      warehouseId?: number,
+    ): Promise<Product | null> {
       try {
-        const res = await getProductById(id);
+        const params: any = {};
+        if (warehouseId) {
+          params.warehouseId = warehouseId;
+          params.includePrice = true;
+          params.includeStock = true;
+          params.includeTax = true;
+        }
+        const res = await getProductById(id, params);
         return res.data;
       } catch (err) {
         console.error("Failed to fetch product by ID:", err);
@@ -120,7 +130,14 @@ export const useProductStore = defineStore("product", {
       this.loading = true;
       this.error = null;
       try {
-        const res = await getProductsPaginated(params);
+        // If a warehouse is selected, automatically include price/stock/tax
+        const requestParams = { ...params };
+        if (params.warehouseId) {
+          requestParams.includePrice = true;
+          requestParams.includeStock = true;
+          requestParams.includeTax = true;
+        }
+        const res = await getProductsPaginated(requestParams);
         const paginatedData = res.data.data;
         this.products = paginatedData.data;
         this.pagination = paginatedData.pagination;

@@ -11,6 +11,11 @@ public class PaginationRequest {
     private int size = 20;
     private String sort;
     private String search;
+    private Long warehouseId;
+    private Long userId;
+    private boolean includePrice = false;
+    private boolean includeStock = false;
+    private boolean includeTax = false;
 
     public Pageable toPageable() {
         if (sort == null || sort.isBlank()) {

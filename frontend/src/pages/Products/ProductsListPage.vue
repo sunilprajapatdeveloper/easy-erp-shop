@@ -4,11 +4,10 @@
   <div class="main-content bg_gray d-flex flex-column transition overflow-hidden">
     <BreadcrumbMenu pageTitle="Products List" />
     <FilterContent btnText="Product" btnLink="/create-product" module="Product" @refresh="refreshProducts"
-      @search="onSearch" />
+      @search="onSearch" @filter-change="onFilterChange" />
     <ProductsList :products="products" :loading="loading" :pagination="pagination" :sort-by="sortBy"
-      :sort-order="sortOrder" @page-change="onPageChange" @size-change="onSizeChange" @sort-change="onSortChange"
-      @bulk-delete="onBulkDelete" />
-    <div class="flex-grow-1"></div>
+      :sort-order="sortOrder" :warehouse-id="selectedWarehouseId ?? undefined" @page-change="onPageChange"
+      @size-change="onSizeChange" @sort-change="onSortChange" @bulk-delete="onBulkDelete" />
     <MainFooter />
   </div>
 </template>
@@ -16,12 +15,12 @@
 <script lang="ts">
 import { defineComponent, computed, onMounted, ref } from 'vue';
 import { useProductStore } from '@/stores/productStore';
-import MainHeader from '../../components/Layouts/MainHeader.vue';
-import MainSidebar from '../../components/Layouts/MainSidebar.vue';
-import BreadcrumbMenu from '../../components/Common/BreadcrumbMenu.vue';
-import FilterContent from '../../components/Common/FilterContent.vue';
-import ProductsList from '../../components/Products/ProductsList/ProductsList.vue';
-import MainFooter from '../../components/Layouts/MainFooter.vue';
+import MainHeader from '@/components/Layouts/MainHeader.vue';
+import MainSidebar from '@/components/Layouts/MainSidebar.vue';
+import BreadcrumbMenu from '@/components/Common/BreadcrumbMenu.vue';
+import FilterContent from '@/components/Products/ProductsList/FilterContent.vue';
+import ProductsList from '@/components/Products/ProductsList/ProductsList.vue';
+import MainFooter from '@/components/Layouts/MainFooter.vue';
 
 export default defineComponent({
   name: 'ProductsListPage',
@@ -36,15 +35,23 @@ export default defineComponent({
   setup() {
     const productStore = useProductStore();
 
-    // Local state for sorting
     const sortBy = ref('');
     const sortOrder = ref<'asc' | 'desc'>('asc');
+
+    const filters = ref({
+      warehouseId: null as number | null,
+      categoryId: null as number | null,
+      brandId: null as number | null,
+      status: null as string | null,
+      productType: null as string | null,
+    });
+
+    const selectedWarehouseId = computed(() => filters.value.warehouseId);
 
     const products = computed(() => productStore.products);
     const loading = computed(() => productStore.loading);
     const pagination = computed(() => productStore.pagination);
 
-    // Helper to build sort parameter for API
     const getSortParam = () => {
       if (!sortBy.value) return '';
       return `${sortBy.value},${sortOrder.value}`;
@@ -56,6 +63,11 @@ export default defineComponent({
         size,
         sort: getSortParam(),
         search,
+        warehouseId: filters.value.warehouseId ?? undefined,
+        categoryId: filters.value.categoryId ?? undefined,
+        brandId: filters.value.brandId ?? undefined,
+        status: filters.value.status ?? undefined,
+        productType: filters.value.productType ?? undefined,
       });
     };
 
@@ -71,6 +83,11 @@ export default defineComponent({
       fetchProducts(0, productStore.pagination.size, query);
     };
 
+    const onFilterChange = (newFilters: any) => {
+      filters.value = newFilters;
+      fetchProducts(0, productStore.pagination.size, productStore.currentSearch);
+    };
+
     const onPageChange = (page: number) => {
       fetchProducts(page, productStore.pagination.size, productStore.currentSearch);
     };
@@ -82,7 +99,6 @@ export default defineComponent({
     const onSortChange = (payload: { sortBy: string; sortOrder: 'asc' | 'desc' }) => {
       sortBy.value = payload.sortBy;
       sortOrder.value = payload.sortOrder;
-      // Reset to first page when sorting changes
       fetchProducts(0, productStore.pagination.size, productStore.currentSearch);
     };
 
@@ -90,7 +106,6 @@ export default defineComponent({
       if (!confirm(`Are you sure you want to delete ${ids.length} product(s)?`)) return;
       try {
         await productStore.bulkDelete(ids);
-        // Refresh current page after deletion
         fetchProducts(
           productStore.pagination.page,
           productStore.pagination.size,
@@ -113,8 +128,10 @@ export default defineComponent({
       pagination,
       sortBy,
       sortOrder,
+      selectedWarehouseId,
       refreshProducts,
       onSearch,
+      onFilterChange,
       onPageChange,
       onSizeChange,
       onSortChange,

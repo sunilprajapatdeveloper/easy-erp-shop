@@ -5,6 +5,7 @@ import { ProductPriceResponse } from "./ProductPrice";
 import { ProductStockResponse } from "./ProductStock";
 import { TaxType } from "./TaxTypes";
 import { MediaResponse } from "./Media";
+import { ProductTaxResponse } from "./ProductTax";
 
 // ------------------ Product Response from backend ------------------
 export interface ProductResponse {
@@ -90,12 +91,6 @@ export interface ProductResponse {
 //   availableQty: string;
 //   stockAlert?: string;
 // }
-
-export interface ProductTaxResponse {
-  id: number;
-  taxRate: string;
-  taxType: TaxType; // match your enum
-}
 
 // Create Product Request
 export interface CreateProductRequest {

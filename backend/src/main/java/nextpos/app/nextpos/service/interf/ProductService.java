@@ -26,6 +26,8 @@ public interface ProductService {
      */
     ProductResponse getProductById(Long id);
 
+    ProductResponse getProductById(Long id, Long warehouseId, boolean includePrice, boolean includeStock, boolean includeTax);
+
     /**
      * Get product by code scoped to company
      */

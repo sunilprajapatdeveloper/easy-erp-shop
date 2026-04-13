@@ -186,24 +186,39 @@ function onWarehouseChange(warehouseId: number | null) {
     }
 }
 
-async function loadProductFromQuery() {
-    const productId = route.query.product_id ? Number(route.query.product_id) : null;
-    if (productId && !isNaN(productId)) {
+onMounted(async () => {
+    // Read query parameters
+    let productIdParam = route.query.productId ? Number(route.query.productId) : null;
+    // Fallback to old parameter name for backward compatibility
+    if (!productIdParam && route.query.product_id) {
+        productIdParam = Number(route.query.product_id);
+    }
+    const warehouseIdParam = route.query.warehouseId ? Number(route.query.warehouseId) : null;
+    const eventParam = route.query.event as string;
+
+    // Set active tab based on event param
+    if (eventParam === 'price' || eventParam === 'stock' || eventParam === 'tax') {
+        activeTab.value = eventParam;
+    }
+
+    // Load product if productId is provided
+    if (productIdParam && !isNaN(productIdParam)) {
         try {
-            const product = await productStore.fetchProductById(productId);
+            const product = await productStore.fetchProductById(productIdParam);
             if (product) {
                 selectedProduct.value = product;
             } else {
-                console.warn('Product not found for ID:', productId);
+                console.warn('Product not found for ID:', productIdParam);
             }
         } catch (error) {
             console.error('Failed to load product from query:', error);
         }
     }
-}
 
-onMounted(async () => {
-    await loadProductFromQuery();
+    // Set warehouse if warehouseId is provided
+    if (warehouseIdParam && !isNaN(warehouseIdParam)) {
+        selectedWarehouseId.value = warehouseIdParam;
+    }
 });
 
 async function handlePriceSave(payload: CreateProductPriceRequest | UpdateProductPriceRequest) {
