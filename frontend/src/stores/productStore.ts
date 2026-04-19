@@ -40,6 +40,7 @@ export const useProductStore = defineStore("product", {
       includePrice?: boolean;
       includeStock?: boolean;
       includeTax?: boolean;
+      onlyComplete?: boolean;
     }) {
       this.loading = true;
       this.error = null;

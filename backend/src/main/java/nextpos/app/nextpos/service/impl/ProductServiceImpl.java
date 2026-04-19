@@ -502,7 +502,8 @@ public class ProductServiceImpl implements ProductService {
             Long userId,
             boolean includePrice,
             boolean includeStock,
-            boolean includeTax) {
+            boolean includeTax,
+            boolean onlyComplete) {
         User user = UserContext.getAuthenticatedUser(userRepository);
         Long companyId = user.getCompanyId();
 
@@ -549,7 +550,7 @@ public class ProductServiceImpl implements ProductService {
                                 ProductTaxResponse.fromEntity(tax)));
             }
         } else {
-            // Multi-warehouse mode — using groupingBy to avoid computeIfAbsent warnings
+            // Multi-warehouse mode — using groupingBy
             if (includePrice) {
                 Map<Long, List<ProductPriceResponse>> groupedPrices = productPriceRepository
                         .findAllByProductIdInAndCompanyId(productIds, companyId)
@@ -580,7 +581,7 @@ public class ProductServiceImpl implements ProductService {
         }
 
         // 3. Map products to response DTOs
-        return products.stream().map(product -> {
+        List<ProductResponse> responses = products.stream().map(product -> {
             List<MediaResponse> mediaResponse = getProductImagesFromMedia(product.getId(), companyId);
             ProductResponse response = ProductResponse.fromEntity(product, mediaResponse);
 
@@ -596,6 +597,15 @@ public class ProductServiceImpl implements ProductService {
 
             return response;
         }).collect(Collectors.toList());
+
+        // 4. Apply onlyComplete filter if requested (requires warehouseId)
+        if (onlyComplete && warehouseId != null) {
+            responses = responses.stream()
+                    .filter(product -> isProductCompleteForWarehouse(product))
+                    .collect(Collectors.toList());
+        }
+
+        return responses;
     }
 
     @Override
@@ -763,5 +773,25 @@ public class ProductServiceImpl implements ProductService {
             product.setUpdatedAt(LocalDateTime.now());
         }
         productRepository.saveAll(products);
+    }
+
+    /**
+     * Checks if a product response has valid price, stock and tax
+     */
+    private boolean isProductCompleteForWarehouse(ProductResponse product) {
+        // Price must exist and be > 0 (BigDecimal comparison)
+        boolean hasPrice = product.getPrice() != null &&
+                product.getPrice().getPrice() != null &&
+                product.getPrice().getPrice().compareTo(java.math.BigDecimal.ZERO) > 0;
+
+        // Stock must exist (any non-null object)
+        boolean hasStock = product.getStock() != null;
+
+        // Tax must exist and have tax rate > 0 (BigDecimal comparison)
+        boolean hasTax = product.getTax() != null &&
+                product.getTax().getTaxRate() != null &&
+                product.getTax().getTaxRate().compareTo(java.math.BigDecimal.ZERO) > 0;
+
+        return hasPrice && hasStock && hasTax;
     }
 }

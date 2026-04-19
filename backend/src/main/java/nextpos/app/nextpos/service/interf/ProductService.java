@@ -26,7 +26,8 @@ public interface ProductService {
      */
     ProductResponse getProductById(Long id);
 
-    ProductResponse getProductById(Long id, Long warehouseId, boolean includePrice, boolean includeStock, boolean includeTax);
+    ProductResponse getProductById(Long id, Long warehouseId, boolean includePrice, boolean includeStock,
+            boolean includeTax);
 
     /**
      * Get product by code scoped to company
@@ -81,14 +82,18 @@ public interface ProductService {
      * @param includePrice include price details
      * @param includeStock include stock details
      * @param includeTax   include tax details
-     * @return list of product responses (if only companyId given) OR
-     *         warehouse-specific enriched response
+     * @param onlyComplete if true and warehouseId is provided, return only products
+     *                     that have
+     *                     price (>0), stock (exists), and tax (>0) for that
+     *                     warehouse
+     * @return list of product responses
      */
     List<ProductResponse> getProducts(Long warehouseId,
             Long userId,
             boolean includePrice,
             boolean includeStock,
-            boolean includeTax);
+            boolean includeTax,
+            boolean onlyComplete);
 
     List<ProductResponse> searchProducts(String query, int limit);
 

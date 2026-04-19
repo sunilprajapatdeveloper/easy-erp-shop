@@ -105,9 +105,10 @@ public class ProductController {
             @RequestParam(value = "userId", required = false) Long userId,
             @RequestParam(value = "includePrice", defaultValue = "false") boolean includePrice,
             @RequestParam(value = "includeStock", defaultValue = "false") boolean includeStock,
-            @RequestParam(value = "includeTax", defaultValue = "false") boolean includeTax) {
+            @RequestParam(value = "includeTax", defaultValue = "false") boolean includeTax,
+            @RequestParam(value = "onlyComplete", defaultValue = "false") boolean onlyComplete) {
         return ResponseEntity.ok(
-                productService.getProducts(warehouseId, userId, includePrice, includeStock, includeTax));
+                productService.getProducts(warehouseId, userId, includePrice, includeStock, includeTax, onlyComplete));
     }
 
     @GetMapping("/search")

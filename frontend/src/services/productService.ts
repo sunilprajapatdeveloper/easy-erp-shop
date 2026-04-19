@@ -37,6 +37,7 @@ export const getProducts = (params?: {
   includePrice?: boolean;
   includeStock?: boolean;
   includeTax?: boolean;
+  onlyComplete?: boolean;
 }) =>
   api.get<ProductResponse[]>("/products", { headers: getHeaders(), params });
 

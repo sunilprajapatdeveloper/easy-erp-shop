@@ -322,6 +322,7 @@ const loadProducts = async (warehouseId: number) => {
     includePrice: true,
     includeStock: true,
     includeTax: true,
+    onlyComplete: true,
   });
   allProducts.value = productStore.products;
 };
