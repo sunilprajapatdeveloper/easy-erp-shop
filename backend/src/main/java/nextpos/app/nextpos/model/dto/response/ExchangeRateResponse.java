@@ -6,6 +6,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import nextpos.app.nextpos.model.enums.ExchangeRateLevel;
+import nextpos.app.nextpos.model.enums.ExternalExchangeRateProvider;
+import nextpos.app.nextpos.model.enums.ExchangeRateSource;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -44,9 +46,9 @@ public class ExchangeRateResponse {
 
     private String overrideReason;
 
-    private String rateSource;
+    private ExchangeRateSource rateSource;
 
-    private String providerName;
+    private ExternalExchangeRateProvider providerName;
 
     private String providerReferenceId;
 

@@ -6,6 +6,8 @@ import nextpos.app.nextpos.model.dto.response.ExternalRateResponse;
 import nextpos.app.nextpos.model.entity.Currency;
 import nextpos.app.nextpos.model.entity.ExchangeRate;
 import nextpos.app.nextpos.model.enums.ExchangeRateLevel;
+import nextpos.app.nextpos.model.enums.ExchangeRateSource;
+import nextpos.app.nextpos.model.enums.ExternalExchangeRateProvider;
 import nextpos.app.nextpos.repository.CurrencyRepository;
 import nextpos.app.nextpos.repository.ExchangeRateRepository;
 import nextpos.app.nextpos.service.interf.ExchangeRateProvider;
@@ -62,16 +64,17 @@ public class ExchangeRateSyncService {
             return;
         }
 
-        final String providerName = provider.getProviderName(); // capture for use inside lambda
+        final String providerName = provider.getProviderName();
+        final ExternalExchangeRateProvider providerEnum = ExternalExchangeRateProvider
+                .valueOf(providerName.toUpperCase());
         log.info("Using provider: {} (configured: {})", providerName, preferredProviderName);
 
-        // For each currency as base, fetch rates to all others (parallel)
         List<CompletableFuture<Void>> futures = new ArrayList<>();
         for (Currency baseCurrency : allCurrencies) {
             CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
                 try {
                     ExternalRateResponse rateResponse = provider.getRates(baseCurrency.getCode());
-                    processRates(baseCurrency, rateResponse, currencyMap, providerName);
+                    processRates(baseCurrency, rateResponse, currencyMap, providerEnum);
                 } catch (Exception e) {
                     log.error("Failed to fetch rates for base {}: {}", baseCurrency.getCode(), e.getMessage(), e);
                 }
@@ -88,7 +91,7 @@ public class ExchangeRateSyncService {
      * Process the rates from the external API and upsert global exchange rates.
      */
     private void processRates(Currency baseCurrency, ExternalRateResponse response, Map<String, Currency> currencyMap,
-            String providerName) {
+            ExternalExchangeRateProvider providerEnum) {
         if (response.getRates() == null || response.getRates().isEmpty()) {
             log.warn("No rates returned for base {}", baseCurrency.getCode());
             return;
@@ -115,6 +118,9 @@ public class ExchangeRateSyncService {
                 if (ex.getRate().compareTo(rate) != 0) {
                     ex.setRate(rate);
                     ex.setUpdatedAt(Instant.now());
+                    if (ex.getProviderName() == null) {
+                        ex.setProviderName(providerEnum);
+                    }
                     exchangeRateRepository.save(ex);
                     log.debug("Updated global rate {} -> {} : {}", baseCurrency.getCode(), targetCode, rate);
                 }
@@ -125,7 +131,8 @@ public class ExchangeRateSyncService {
                         .targetCurrency(targetCurrency)
                         .rate(rate)
                         .level(ExchangeRateLevel.GLOBAL)
-                        .rateSource(providerName)
+                        .rateSource(ExchangeRateSource.API)
+                        .providerName(providerEnum)
                         .validFrom(Instant.now())
                         .isManualOverride(false)
                         .build();

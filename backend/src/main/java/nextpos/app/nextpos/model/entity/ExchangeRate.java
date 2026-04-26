@@ -23,6 +23,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import nextpos.app.nextpos.model.enums.ExchangeRateLevel;
+import nextpos.app.nextpos.model.enums.ExternalExchangeRateProvider;
+import nextpos.app.nextpos.model.enums.ExchangeRateSource;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -79,10 +81,12 @@ public class ExchangeRate {
     private Warehouse warehouse;
 
     @Column(name = "rate_source", length = 50, nullable = false)
-    private String rateSource;
+    @Enumerated(EnumType.STRING)
+    private ExchangeRateSource rateSource;
 
     @Column(name = "provider_name", length = 100)
-    private String providerName;
+    @Enumerated(EnumType.STRING)
+    private ExternalExchangeRateProvider providerName;
 
     @Column(name = "provider_reference_id", length = 100)
     private String providerReferenceId;

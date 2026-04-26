@@ -9,6 +9,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import nextpos.app.nextpos.model.enums.ExchangeRateLevel;
+import nextpos.app.nextpos.model.enums.ExternalExchangeRateProvider;
+import nextpos.app.nextpos.model.enums.ExchangeRateSource;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -54,10 +56,10 @@ public class CreateExchangeRateRequest {
 
     @NotNull(message = "Rate source is required")
     @Size(max = 50, message = "Rate source cannot exceed 50 characters")
-    private String rateSource;
+    private ExchangeRateSource rateSource;
 
     @Size(max = 100, message = "Provider name cannot exceed 100 characters")
-    private String providerName;
+    private ExternalExchangeRateProvider providerName;
 
     @Size(max = 100, message = "Provider reference ID cannot exceed 100 characters")
     private String providerReferenceId;
