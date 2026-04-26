@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import nextpos.app.nextpos.model.enums.ExchangeRateMode;
 
 @Getter
 @Setter
@@ -27,9 +28,8 @@ public class UpdateCompanyRequest {
     private String postalCode;
     private String timezone;
 
-    // Feature toggles (partial update)
-    private Boolean enableOnlineOrdering;
-    private Boolean enableLoyaltyProgram;
+    // Exchange rate mode
+    private ExchangeRateMode exchangeRateMode;
 
     // Status flags
     private Boolean isActive;

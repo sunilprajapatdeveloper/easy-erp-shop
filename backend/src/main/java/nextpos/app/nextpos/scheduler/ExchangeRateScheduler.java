@@ -17,6 +17,7 @@ public class ExchangeRateScheduler {
     private final ExchangeRateSyncService syncService;
 
     // Run every day at 2:00 AM
+    // @Scheduled(initialDelay = 60 * 1000, fixedDelay = Long.MAX_VALUE)
     @Scheduled(cron = "0 0 2 * * *")
     public void syncGlobalRatesJob() {
         log.info("Running scheduled global exchange rate sync");

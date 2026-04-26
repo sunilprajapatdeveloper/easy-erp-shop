@@ -105,29 +105,6 @@ public class CompanyServiceImpl implements CompanyService {
 
         Company saved = companyRepository.save(company);
 
-        // Seed minimal settings if requested (still using null for createdBy)
-        if (Boolean.TRUE.equals(request.getEnableOnlineOrdering())) {
-            OnlineOrderingSettings oos = OnlineOrderingSettings.builder()
-                    .company(saved)
-                    .enabled(true)
-                    .createdBy(null)
-                    .createdAt(LocalDateTime.now())
-                    .build();
-            onlineOrderingSettingsRepository.save(oos);
-            saved.setOnlineOrderingSettings(oos);
-        }
-
-        if (Boolean.TRUE.equals(request.getEnableLoyaltyProgram())) {
-            LoyaltySettings ls = LoyaltySettings.builder()
-                    .company(saved)
-                    .enabled(true)
-                    .createdBy(null)
-                    .createdAt(LocalDateTime.now())
-                    .build();
-            loyaltySettingsRepository.save(ls);
-            saved.setLoyaltySettings(ls);
-        }
-
         // Refresh to load relationships
         saved = companyRepository.findById(saved.getId()).orElse(saved);
 
@@ -178,73 +155,14 @@ public class CompanyServiceImpl implements CompanyService {
         if (request.getIsDeleted() != null) {
             company.setIsDeleted(request.getIsDeleted());
         }
+        if (request.getExchangeRateMode() != null) {
+            company.setExchangeRateMode(request.getExchangeRateMode());
+        }
 
         company.setUpdatedBy(updatedBy);
         company.setUpdatedAt(LocalDateTime.now());
 
         Company saved = companyRepository.save(company);
-
-        // If toggles exist on request, reconcile minimal settings presence
-        if (request.getEnableOnlineOrdering() != null) {
-            OnlineOrderingSettings existingOos = onlineOrderingSettingsRepository.findByCompanyId(saved.getId())
-                    .orElse(null);
-            if (Boolean.TRUE.equals(request.getEnableOnlineOrdering())) {
-                if (existingOos == null) {
-                    OnlineOrderingSettings oos = OnlineOrderingSettings.builder()
-                            .company(saved)
-                            .enabled(true)
-                            .createdBy(updatedBy)
-                            .createdAt(LocalDateTime.now())
-                            .build();
-                    onlineOrderingSettingsRepository.save(oos);
-                    saved.setOnlineOrderingSettings(oos);
-                } else {
-                    existingOos.setEnabled(true);
-                    existingOos.setUpdatedBy(updatedBy);
-                    existingOos.setUpdatedAt(LocalDateTime.now());
-                    onlineOrderingSettingsRepository.save(existingOos);
-                    saved.setOnlineOrderingSettings(existingOos);
-                }
-            } else {
-                if (existingOos != null) {
-                    existingOos.setEnabled(false);
-                    existingOos.setUpdatedBy(updatedBy);
-                    existingOos.setUpdatedAt(LocalDateTime.now());
-                    onlineOrderingSettingsRepository.save(existingOos);
-                    saved.setOnlineOrderingSettings(existingOos);
-                }
-            }
-        }
-
-        if (request.getEnableLoyaltyProgram() != null) {
-            LoyaltySettings existingLs = loyaltySettingsRepository.findByCompanyId(saved.getId()).orElse(null);
-            if (Boolean.TRUE.equals(request.getEnableLoyaltyProgram())) {
-                if (existingLs == null) {
-                    LoyaltySettings ls = LoyaltySettings.builder()
-                            .company(saved)
-                            .enabled(true)
-                            .createdBy(updatedBy)
-                            .createdAt(LocalDateTime.now())
-                            .build();
-                    loyaltySettingsRepository.save(ls);
-                    saved.setLoyaltySettings(ls);
-                } else {
-                    existingLs.setEnabled(true);
-                    existingLs.setUpdatedBy(updatedBy);
-                    existingLs.setUpdatedAt(LocalDateTime.now());
-                    loyaltySettingsRepository.save(existingLs);
-                    saved.setLoyaltySettings(existingLs);
-                }
-            } else {
-                if (existingLs != null) {
-                    existingLs.setEnabled(false);
-                    existingLs.setUpdatedBy(updatedBy);
-                    existingLs.setUpdatedAt(LocalDateTime.now());
-                    loyaltySettingsRepository.save(existingLs);
-                    saved.setLoyaltySettings(existingLs);
-                }
-            }
-        }
 
         // refresh
         saved = companyRepository.findById(saved.getId()).orElse(saved);
@@ -482,6 +400,7 @@ public class CompanyServiceImpl implements CompanyService {
                 .updatedAt(company.getUpdatedAt())
                 .isActive(company.getIsActive())
                 .isDeleted(company.getIsDeleted())
+                .exchangeRateMode(company.getExchangeRateMode())
                 .onlineOrderingSettings(oosResp)
                 .securitySettings(secResp)
                 .shippingProviderSettings(shipResp)

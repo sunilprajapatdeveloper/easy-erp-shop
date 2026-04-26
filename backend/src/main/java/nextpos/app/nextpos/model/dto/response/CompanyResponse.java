@@ -6,6 +6,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import nextpos.app.nextpos.model.enums.ExchangeRateMode;
 
 @Getter
 @Setter
@@ -31,6 +32,9 @@ public class CompanyResponse {
     private LocalDateTime updatedAt;
     private Boolean isActive;
     private Boolean isDeleted;
+
+    // Exchange rate mode
+    private ExchangeRateMode exchangeRateMode;
 
     // Nested Settings
     private OnlineOrderingSettingsResponse onlineOrderingSettings;
