@@ -12,6 +12,7 @@ interface ExchangeRateState {
   currentExchangeRate: ExchangeRateDetail | null;
   loading: boolean;
   error: string | null;
+  rateCache: Map<string, ExchangeRateDetail>;
 }
 
 export const useExchangeRateStore = defineStore("exchangeRate", {
@@ -20,6 +21,7 @@ export const useExchangeRateStore = defineStore("exchangeRate", {
     currentExchangeRate: null,
     loading: false,
     error: null,
+    rateCache: new Map(),
   }),
 
   actions: {
@@ -50,6 +52,7 @@ export const useExchangeRateStore = defineStore("exchangeRate", {
       try {
         const created = await exchangeRateService.create(payload);
         this.exchangeRates.push(created);
+        this.rateCache.clear();
         return created;
       } catch (err: any) {
         this.error = err.message || "Failed to create exchange rate";
@@ -64,11 +67,12 @@ export const useExchangeRateStore = defineStore("exchangeRate", {
       try {
         const updated = await exchangeRateService.update(id, payload);
         this.exchangeRates = this.exchangeRates.map((r) =>
-          r.id === id ? updated : r
+          r.id === id ? updated : r,
         );
         if (this.currentExchangeRate?.id === id) {
           this.currentExchangeRate = updated;
         }
+        this.rateCache.clear();
         return updated;
       } catch (err: any) {
         this.error = err.message || "Failed to update exchange rate";
@@ -86,12 +90,62 @@ export const useExchangeRateStore = defineStore("exchangeRate", {
         if (this.currentExchangeRate?.id === id) {
           this.currentExchangeRate = null;
         }
+        this.rateCache.clear();
       } catch (err: any) {
         this.error = err.message || "Failed to delete exchange rate";
         throw err;
       } finally {
         this.loading = false;
       }
+    },
+
+    /**
+     * Find the best matching exchange rate for a currency pair within a scope.
+     * Caches results by a key composed of baseCurrencyId_targetCurrencyId_companyId_warehouseId.
+     *
+     * @param baseCurrencyId - Product's original currency ID
+     * @param targetCurrencyId - Sale currency ID
+     * @param companyId - Company ID (must be provided)
+     * @param warehouseId - Warehouse ID (optional, used for hierarchy)
+     * @returns ExchangeRateDetail
+     */
+    async fetchRateByCurrencies(
+      baseCurrencyId: number,
+      targetCurrencyId: number,
+      companyId: number,
+      warehouseId?: number,
+    ): Promise<ExchangeRateDetail> {
+      const cacheKey = `${baseCurrencyId}_${targetCurrencyId}_${companyId}_${
+        warehouseId ?? "null"
+      }`;
+      const cached = this.rateCache.get(cacheKey);
+      if (cached) {
+        return cached;
+      }
+
+      this.loading = true;
+      try {
+        const rate = await exchangeRateService.find({
+          baseCurrencyId,
+          targetCurrencyId,
+          companyId,
+          warehouseId,
+        });
+        this.rateCache.set(cacheKey, rate);
+        return rate;
+      } catch (err: any) {
+        this.error = err.message || "Failed to fetch exchange rate";
+        throw err;
+      } finally {
+        this.loading = false;
+      }
+    },
+
+    /**
+     * Clear the entire rate cache (useful after rate updates or logout)
+     */
+    clearRateCache() {
+      this.rateCache.clear();
     },
   },
 });

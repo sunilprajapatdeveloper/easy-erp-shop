@@ -7,6 +7,7 @@ import { SecuritySettings } from "./SecuritySettings";
 import { ShippingProviderSettings } from "./ShippingProviderSettings";
 import { SocialMediaSettings } from "./SocialMediaSettings";
 import { TaxSetting } from "./TaxSetting";
+import { ExchangeRateMode } from "@/enums/ExchangeRateMode";
 
 export interface CompanyListItem {
   id: number;
@@ -42,6 +43,8 @@ export interface CompanyDetail {
   isActive: boolean;
   isDeleted: boolean;
 
+  exchangeRateMode: ExchangeRateMode;
+
   // Nested Settings
   onlineOrderingSettings?: OnlineOrderingSettings;
   securitySettings?: SecuritySettings;
@@ -65,8 +68,6 @@ export interface CreateCompanyRequest {
   address?: string;
   postalCode?: string;
   timezone?: string;
-  enableOnlineOrdering?: boolean;
-  enableLoyaltyProgram?: boolean;
 }
 
 export interface UpdateCompanyRequest {
@@ -80,10 +81,9 @@ export interface UpdateCompanyRequest {
   address?: string;
   postalCode?: string;
   timezone?: string;
-  enableOnlineOrdering?: boolean;
-  enableLoyaltyProgram?: boolean;
   isActive?: boolean;
   isDeleted?: boolean;
+  exchangeRateMode?: ExchangeRateMode;
 }
 
 export type Company = CompanyDetail;

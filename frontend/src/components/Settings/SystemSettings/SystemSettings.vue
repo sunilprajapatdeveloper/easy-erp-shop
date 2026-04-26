@@ -10,8 +10,8 @@
             <div class="form-group mb-30">
               <label class="d-block fs-14 text-black mb-2">Company Name</label>
               <input v-model="form.companyName" type="text"
-                class="w-100 d-block shadow-none fs-14 bg_ash rounded-1 text-title" placeholder="EasyERPShop Corporation"
-                required />
+                class="w-100 d-block shadow-none fs-14 bg_ash rounded-1 text-title"
+                placeholder="EasyERPShop Corporation" required />
             </div>
           </div>
 
@@ -99,6 +99,20 @@
             </div>
           </div>
 
+          <!-- Exchange Rate Mode -->
+          <div class="col-lg-4">
+            <div class="form-group mb-30">
+              <label class="d-block fs-14 text-black mb-2">Exchange Rate Mode</label>
+              <select v-model="form.exchangeRateMode"
+                class="w-100 d-block shadow-none fs-14 bg_ash rounded-1 text-title">
+                <option v-for="(label, value) in ExchangeRateModeLabels" :key="value" :value="value">
+                  {{ label }}
+                </option>
+              </select>
+              <small class="text-muted">Determines how exchange rates are resolved during transactions.</small>
+            </div>
+          </div>
+
           <!-- Submit -->
           <div class="col-lg-6">
             <button type="submit" class="btn style-five" :disabled="loading">
@@ -117,6 +131,7 @@ import { reactive, onMounted, ref } from "vue";
 import { useCompanyStore } from "@/stores/companyStore";
 import { useUserStore } from "@/stores/userStore";
 import type { CompanyDetail, UpdateCompanyRequest } from "@/types/Company";
+import { ExchangeRateMode, ExchangeRateModeLabels } from "@/enums/ExchangeRateMode";
 
 const companyStore = useCompanyStore();
 const userStore = useUserStore();
@@ -133,7 +148,7 @@ const form = reactive<UpdateCompanyRequest>({
   address: "",
   postalCode: "",
   timezone: "",
-  updatedBy: userStore.currentUser?.id ?? 0,
+  exchangeRateMode: ExchangeRateMode.SYSTEM,
 });
 
 onMounted(async () => {
@@ -152,6 +167,7 @@ onMounted(async () => {
     form.address = company.address ?? "";
     form.postalCode = company.postalCode ?? "";
     form.timezone = company.timezone ?? "";
+    form.exchangeRateMode = company.exchangeRateMode ?? ExchangeRateMode.SYSTEM;
   }
 });
 
