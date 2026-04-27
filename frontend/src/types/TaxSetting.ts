@@ -1,14 +1,14 @@
-import { TaxType } from "@/enums/TaxType";
-import { TaxCalculationType } from "@/enums/TaxCalculationType";
-import { TaxInclusiveType } from "@/enums/TaxInclusiveType";
+import { TaxApplicationOrder } from "@/enums/TaxApplicationOrder";
+import { TaxCategory} from "@/enums/TaxCategory";
+import { TaxInclusionType } from "@/enums/TaxInclusionType";
 
 export interface TaxSetting {
   id?: number;
-  taxType: TaxType;
+  taxCategory: TaxCategory;
   name: string;
   rate: number;
-  calculationType: TaxCalculationType;
-  inclusiveType: TaxInclusiveType;
+  applicationOrder: TaxApplicationOrder;
+  inclusionType: TaxInclusionType;
   active: boolean;
   regionCode?: string;
   description?: string;
@@ -16,11 +16,11 @@ export interface TaxSetting {
 }
 
 export interface CreateTaxSettingRequest {
-  taxType: TaxType;
+  taxCategory: TaxCategory;
   name: string;
   rate: number;
-  calculationType: TaxCalculationType;
-  inclusiveType: TaxInclusiveType;
+  applicationOrder: TaxApplicationOrder;
+  inclusionType: TaxInclusionType;
   active?: boolean;
   regionCode?: string;
   description?: string;
@@ -28,11 +28,11 @@ export interface CreateTaxSettingRequest {
 }
 
 export interface UpdateTaxSettingRequest {
-  taxType?: TaxType;
+  taxCategory?: TaxCategory;
   name?: string;
   rate?: number;
-  calculationType?: TaxCalculationType;
-  inclusiveType?: TaxInclusiveType;
+  applicationOrder?: TaxApplicationOrder;
+  inclusionType?: TaxInclusionType;
   active?: boolean;
   regionCode?: string;
   description?: string;

@@ -8,8 +8,7 @@ import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
-
-import nextpos.app.nextpos.model.enums.TaxType;
+import nextpos.app.nextpos.model.enums.TaxCategory;
 
 import java.math.BigDecimal;
 
@@ -38,11 +37,11 @@ public class CreateProductTaxRequest {
     @Size(max = 100, message = "Tax name must not exceed 100 characters")
     private final String taxName;
 
-    /** Tax type: PERCENTAGE, FIXED, etc. */
-    @NotNull(message = "Tax type is required")
-    private final TaxType taxType;
+    /** Tax type: VAT, GST, etc. */
+    @NotNull(message = "Tax category is required")
+    private final TaxCategory taxCategory;
 
-    /** Tax rate (percentage or fixed value depending on taxType) */
+    /** Tax rate (percentage or fixed value depending on taxCategory) */
     @NotNull(message = "Tax rate is required")
     @DecimalMin(value = "0.000", inclusive = false, message = "Tax rate must be greater than zero")
     @Digits(integer = 2, fraction = 3, message = "Tax rate must have up to 2 digits and 3 decimals")

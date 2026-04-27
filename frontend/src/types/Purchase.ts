@@ -1,6 +1,6 @@
 import { ShipmentStatus } from "@/enums/shipmentStatus";
 import { PurchaseStatus } from "@/enums/purchaseStatus";
-import { TaxType } from "./TaxTypes";
+import { TaxInclusionType } from "@/enums/TaxInclusionType";
 
 // Response Purchase Product
 export interface PurchaseProduct {
@@ -46,7 +46,7 @@ export interface SelectedPurchaseProduct {
   discount: string;
   stock: number;
   tax: string;
-  taxType: TaxType | "EXCLUSIVE";
+  inclusionType: TaxInclusionType;
   subTotal: string;
   purchaseQty: number;
 }

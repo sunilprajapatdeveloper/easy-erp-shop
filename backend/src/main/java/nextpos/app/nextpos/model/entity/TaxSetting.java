@@ -16,9 +16,9 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import nextpos.app.nextpos.model.enums.TaxCalculationType;
-import nextpos.app.nextpos.model.enums.TaxInclusiveType;
-import nextpos.app.nextpos.model.enums.TaxType;
+import nextpos.app.nextpos.model.enums.TaxInclusionType;
+import nextpos.app.nextpos.model.enums.TaxCategory;
+import nextpos.app.nextpos.model.enums.TaxApplicationOrder;
 
 import java.math.BigDecimal;
 
@@ -54,8 +54,8 @@ public class TaxSetting {
      * Tax type (VAT, GST, TDS, CUSTOM, etc.).
      */
     @Enumerated(EnumType.STRING)
-    @Column(name = "tax_type", nullable = false, length = 50)
-    private TaxType taxType;
+    @Column(name = "tax_category", nullable = false, length = 50)
+    private TaxCategory taxCategory;
 
     /**
      * Human-readable name for the tax.
@@ -75,16 +75,16 @@ public class TaxSetting {
      * Whether the tax is applied before discount, after discount, etc.
      */
     @Enumerated(EnumType.STRING)
-    @Column(name = "calculation_type", nullable = false, length = 50)
-    private TaxCalculationType calculationType;
+    @Column(name = "application_order", nullable = false, length = 50)
+    private TaxApplicationOrder applicationOrder;
 
     /**
      * Whether the tax is included in the price (inclusive) or added on top
      * (exclusive).
      */
     @Enumerated(EnumType.STRING)
-    @Column(name = "inclusive_type", nullable = false, length = 50)
-    private TaxInclusiveType inclusiveType;
+    @Column(name = "inclusion_type", nullable = false, length = 50)
+    private TaxInclusionType inclusionType;
 
     /**
      * Is this tax currently active?

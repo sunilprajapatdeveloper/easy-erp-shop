@@ -21,7 +21,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
-import nextpos.app.nextpos.model.enums.TaxType;
+import nextpos.app.nextpos.model.enums.TaxCategory;
 
 import java.math.BigDecimal;
 
@@ -64,12 +64,12 @@ public class ProductTax extends BaseEntity {
     @Column(name = "tax_name", nullable = false, length = 100)
     private String taxName;
 
-    /** Tax type: PERCENTAGE, FIXED, etc. */
+    /** Tax type: VAT, GST, etc. */
     @Enumerated(EnumType.STRING)
-    @Column(name = "tax_type", nullable = false, length = 20)
-    private TaxType taxType;
+    @Column(name = "tax_category", nullable = false, length = 20)
+    private TaxCategory taxCategory;
 
-    /** Tax rate (percentage or fixed amount depending on taxType) */
+    /** Tax rate (percentage or fixed amount depending on taxCategory) */
     @Column(name = "tax_rate", nullable = false, precision = 5, scale = 3)
     private BigDecimal taxRate;
 

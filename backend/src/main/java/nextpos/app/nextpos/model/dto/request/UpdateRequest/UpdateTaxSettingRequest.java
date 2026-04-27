@@ -5,9 +5,9 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import nextpos.app.nextpos.model.enums.TaxCalculationType;
-import nextpos.app.nextpos.model.enums.TaxInclusiveType;
-import nextpos.app.nextpos.model.enums.TaxType;
+import nextpos.app.nextpos.model.enums.TaxApplicationOrder;
+import nextpos.app.nextpos.model.enums.TaxCategory;
+import nextpos.app.nextpos.model.enums.TaxInclusionType;
 
 import java.math.BigDecimal;
 
@@ -18,11 +18,11 @@ import java.math.BigDecimal;
 @Builder
 public class UpdateTaxSettingRequest {
 
-    private TaxType taxType;
+    private TaxCategory taxCategory;
     private String name;
     private BigDecimal rate;
-    private TaxCalculationType calculationType;
-    private TaxInclusiveType inclusiveType;
+    private TaxApplicationOrder applicationOrder;
+    private TaxInclusionType inclusionType;
     private Boolean active;
     private String regionCode;
     private String description;

@@ -53,11 +53,11 @@ public class TaxSettingServiceImpl implements TaxSettingService {
         TaxSetting taxSetting = TaxSetting.builder()
                 .company(company)
                 .warehouse(warehouse)
-                .taxType(request.getTaxType())
+                .taxCategory(request.getTaxCategory())
                 .name(request.getName())
                 .rate(request.getRate())
-                .calculationType(request.getCalculationType())
-                .inclusiveType(request.getInclusiveType())
+                .applicationOrder(request.getApplicationOrder())
+                .inclusionType(request.getInclusionType())
                 .active(request.isActive())
                 .regionCode(request.getRegionCode())
                 .description(request.getDescription())
@@ -101,16 +101,16 @@ public class TaxSettingServiceImpl implements TaxSettingService {
                 .orElseThrow(() -> new EntityNotFoundException(
                         "TaxSetting not found for id=" + id + " companyId=" + companyId));
 
-        if (request.getTaxType() != null)
-            taxSetting.setTaxType(request.getTaxType());
+        if (request.getTaxCategory() != null)
+            taxSetting.setTaxCategory(request.getTaxCategory());
         if (request.getName() != null)
             taxSetting.setName(request.getName());
         if (request.getRate() != null)
             taxSetting.setRate(request.getRate());
-        if (request.getCalculationType() != null)
-            taxSetting.setCalculationType(request.getCalculationType());
-        if (request.getInclusiveType() != null)
-            taxSetting.setInclusiveType(request.getInclusiveType());
+        if (request.getApplicationOrder() != null)
+            taxSetting.setApplicationOrder(request.getApplicationOrder());
+        if (request.getInclusionType() != null)
+            taxSetting.setInclusionType(request.getInclusionType());
         if (request.getActive() != null)
             taxSetting.setActive(request.getActive());
         if (request.getRegionCode() != null)
@@ -142,11 +142,11 @@ public class TaxSettingServiceImpl implements TaxSettingService {
 
     private TaxSettingResponse mapToResponse(TaxSetting taxSetting) {
         return TaxSettingResponse.builder()
-                .taxType(taxSetting.getTaxType())
+                .taxCategory(taxSetting.getTaxCategory())
                 .name(taxSetting.getName())
                 .rate(taxSetting.getRate())
-                .calculationType(taxSetting.getCalculationType())
-                .inclusiveType(taxSetting.getInclusiveType())
+                .applicationOrder(taxSetting.getApplicationOrder())
+                .inclusionType(taxSetting.getInclusionType())
                 .active(taxSetting.isActive())
                 .regionCode(taxSetting.getRegionCode())
                 .description(taxSetting.getDescription())

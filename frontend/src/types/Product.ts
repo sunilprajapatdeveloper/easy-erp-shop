@@ -3,7 +3,6 @@ import { ProductType } from "@/enums/productType";
 import { ProductStatus } from "@/enums/productStatus";
 import { ProductPriceResponse } from "./ProductPrice";
 import { ProductStockResponse } from "./ProductStock";
-import { TaxType } from "./TaxTypes";
 import { MediaResponse } from "./Media";
 import { ProductTaxResponse } from "./ProductTax";
 

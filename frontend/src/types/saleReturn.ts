@@ -1,6 +1,5 @@
 import { ShipmentStatus } from "@/enums/shipmentStatus";
 import { SaleStatus } from "@/enums/saleStatus";
-import { TaxType } from "./TaxTypes";
 
 /**
  * Full Sale Return Response (matches SaleReturnResponse DTO)

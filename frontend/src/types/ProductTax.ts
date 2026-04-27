@@ -1,4 +1,4 @@
-import { TaxType } from "@/enums/TaxType";
+import { TaxCategory } from "@/enums/TaxCategory";
 
 export interface ProductTaxResponse {
   id: number;
@@ -6,7 +6,7 @@ export interface ProductTaxResponse {
   warehouseId?: number;
   taxCode: string;
   taxName: string;
-  taxType: TaxType;
+  taxCategory: TaxCategory;
   taxRate: number;
   isInclusive: boolean;
   isCompound: boolean;
@@ -18,7 +18,7 @@ export interface CreateProductTaxRequest {
   warehouseId?: number;
   taxCode: string;
   taxName: string;
-  taxType: TaxType;
+  taxCategory: TaxCategory;
   taxRate: number;
   isInclusive?: boolean;
   isCompound?: boolean;
@@ -30,7 +30,7 @@ export interface UpdateProductTaxRequest {
   warehouseId?: number;
   taxCode?: string;
   taxName?: string;
-  taxType?: TaxType;
+  taxCategory?: TaxCategory;
   taxRate?: number;
   isInclusive?: boolean;
   isCompound?: boolean;

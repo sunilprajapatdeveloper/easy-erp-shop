@@ -68,7 +68,7 @@ public class ProductTaxServiceImpl implements ProductTaxService {
                 .warehouse(warehouse)
                 .taxCode(request.getTaxCode())
                 .taxName(request.getTaxName())
-                .taxType(request.getTaxType())
+                .taxCategory(request.getTaxCategory())
                 .taxRate(request.getTaxRate())
                 .isInclusive(request.getIsInclusive())
                 .isCompound(request.getIsCompound())
@@ -115,8 +115,8 @@ public class ProductTaxServiceImpl implements ProductTaxService {
             existing.setTaxCode(request.getTaxCode());
         if (request.getTaxName() != null)
             existing.setTaxName(request.getTaxName());
-        if (request.getTaxType() != null)
-            existing.setTaxType(request.getTaxType());
+        if (request.getTaxCategory() != null)
+            existing.setTaxCategory(request.getTaxCategory());
         if (request.getTaxRate() != null)
             existing.setTaxRate(request.getTaxRate());
         if (request.getIsInclusive() != null)

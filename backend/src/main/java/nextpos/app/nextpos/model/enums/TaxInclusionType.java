@@ -1,6 +1,6 @@
 package nextpos.app.nextpos.model.enums;
 
-public enum TaxInclusiveType {
+public enum TaxInclusionType {
     INCLUSIVE,
     EXCLUSIVE
 }

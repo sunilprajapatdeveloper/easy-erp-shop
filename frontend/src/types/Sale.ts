@@ -1,5 +1,5 @@
 import { ShipmentStatus } from "@/enums/shipmentStatus";
-import { TaxType } from "./TaxTypes";
+import { TaxInclusionType } from "@/enums/TaxInclusionType";
 import { SaleStatus } from "@/enums/saleStatus";
 import { Payment, CreatePaymentRequest } from "@/types/Payment";
 
@@ -65,7 +65,7 @@ export interface SelectedSaleProduct {
   discount: string;
   stock: number;
   tax: string;
-  taxType: TaxType | "EXCLUSIVE";
+  inclusionType: TaxInclusionType;
   subTotal: string;
   saleQty: number;
 }
@@ -90,6 +90,9 @@ export interface CreateSaleRequest {
     saleQty: number;
     productDiscount: string;
     productTax: string;
+    originalCurrencyCode: string;
+    originalUnitPrice: string;
+    originalToSaleExchangeRate: string;
   }[];
   payments?: CreatePaymentRequest[];
   currencyId: number;

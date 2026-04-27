@@ -1,6 +1,6 @@
 package nextpos.app.nextpos.model.enums;
 
-public enum TaxType {
+public enum TaxCategory {
     VAT,
     GST,
     TDS,

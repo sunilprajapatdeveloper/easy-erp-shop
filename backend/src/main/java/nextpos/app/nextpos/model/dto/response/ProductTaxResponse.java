@@ -5,7 +5,7 @@ import lombok.Builder;
 import lombok.Getter;
 
 import nextpos.app.nextpos.model.entity.ProductTax;
-import nextpos.app.nextpos.model.enums.TaxType;
+import nextpos.app.nextpos.model.enums.TaxCategory;
 
 import java.math.BigDecimal;
 
@@ -23,7 +23,7 @@ public class ProductTaxResponse {
     private final Long warehouseId;
     private final String taxCode;
     private final String taxName;
-    private final TaxType taxType;
+    private final TaxCategory taxCategory;
     private final BigDecimal taxRate;
     private final Boolean isInclusive;
     private final Boolean isCompound;
@@ -42,7 +42,7 @@ public class ProductTaxResponse {
                 .warehouseId(tax.getWarehouse() != null ? tax.getWarehouse().getId() : null)
                 .taxCode(tax.getTaxCode())
                 .taxName(tax.getTaxName())
-                .taxType(tax.getTaxType())
+                .taxCategory(tax.getTaxCategory())
                 .taxRate(tax.getTaxRate())
                 .isInclusive(tax.getIsInclusive())
                 .isCompound(tax.getIsCompound())

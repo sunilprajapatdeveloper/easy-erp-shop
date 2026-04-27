@@ -75,12 +75,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, defineProps, defineEmits, onMounted } from "vue";
+import { ref, computed, onMounted } from "vue";
 import type { Warehouse } from "@/types/Warehouse";
 import type { Supplier } from "@/types/Supplier";
 import type { Product } from "@/types/Product";
 import type { SelectedPurchaseProduct } from "@/types/Purchase";
 import { useProductStore } from "@/stores/productStore";
+import { TaxInclusionType } from "@/enums/TaxInclusionType";
 
 const props = defineProps<{
     warehouses: Warehouse[];
@@ -142,17 +143,17 @@ const updateFilteredProducts = () => {
 const selectProduct = (product: Product) => {
     if (typeof product.id !== "number") return;
 
-    const costStr = product.cost?.toString() ?? "0"; // use cost instead of price
+    const costStr = product.price?.cost?.toString() ?? "0"; // use cost instead of price
 
     const selectedProduct: SelectedPurchaseProduct = {
         productId: product.id,
         productName: product.name,
         code: product.code,
-        stock: product.quantity ?? 0,
+        stock: product.stock?.quantity ?? 0,
         cost: costStr,
         discount: "0",
         tax: "0",
-        taxType: product.taxType ?? "EXCLUSIVE",
+        inclusionType: product.tax?.isInclusive ? TaxInclusionType.INCLUSIVE : TaxInclusionType.EXCLUSIVE,
         subTotal: costStr,
         purchaseQty: 1,
     };

@@ -25,11 +25,11 @@
             <div class="col-md-6">
                 <div class="form-group">
                     <label class="d-block fs-14 text-black mb-2">Tax Type</label>
-                    <select v-model="form.taxType" class="bg-white border-0 rounded-1 fs-14 text-optional w-100"
+                    <select v-model="form.taxCategory" class="bg-white border-0 rounded-1 fs-14 text-optional w-100"
                         required>
                         <option disabled value="">Select Tax Type</option>
-                        <option v-for="type in Object.values(TaxType)" :key="type" :value="type">
-                            {{ TaxTypeLabels[type] }}
+                        <option v-for="type in Object.values(TaxCategory)" :key="type" :value="type">
+                            {{ TaxCategoryLabels[type] }}
                         </option>
                     </select>
                 </div>
@@ -44,11 +44,11 @@
                         placeholder="Enter Tax Rate" required />
                     <small class="text-muted">
                         {{
-                            form.taxType === TaxType.VAT
+                            form.taxCategory === TaxCategory.VAT
                                 ? "Percentage (%)"
-                                : form.taxType === TaxType.GST
+                                : form.taxCategory === TaxCategory.GST
                                     ? "Percentage (%)"
-                                    : form.taxType === TaxType.TDS
+                                    : form.taxCategory === TaxCategory.TDS
                                         ? "Percentage (%)"
                                         : "Fixed Amount (if applicable)"
                         }}
@@ -88,7 +88,7 @@ import type {
     CreateProductTaxRequest,
     UpdateProductTaxRequest,
 } from "@/types/ProductTax";
-import { TaxType, TaxTypeLabels } from "@/enums/TaxType";
+import { TaxCategory, TaxCategoryLabels } from "@/enums/TaxCategory";
 import BaseCheckbox from "@/components/ui/BaseCheckbox.vue";
 
 const props = defineProps<{
@@ -107,7 +107,7 @@ type FormData = {
     warehouseId: number | null;
     taxCode: string;
     taxName: string;
-    taxType: TaxType | "";
+    taxCategory: TaxCategory | "";
     taxRate: number;
     isInclusive: boolean;
     isCompound: boolean;
@@ -119,7 +119,7 @@ const defaultForm = (): FormData => ({
     warehouseId: props.warehouseId,
     taxCode: "",
     taxName: "",
-    taxType: "",
+    taxCategory: "",
     taxRate: 0,
     isInclusive: false,
     isCompound: false,
@@ -137,7 +137,7 @@ watch(
                 warehouseId: data.warehouseId ?? null,
                 taxCode: data.taxCode,
                 taxName: data.taxName,
-                taxType: data.taxType,
+                taxCategory: data.taxCategory,
                 taxRate: data.taxRate,
                 isInclusive: data.isInclusive,
                 isCompound: data.isCompound,
@@ -168,7 +168,7 @@ function submit() {
         warehouseId: form.value.warehouseId ?? undefined,
         taxCode: form.value.taxCode,
         taxName: form.value.taxName,
-        taxType: form.value.taxType as TaxType,
+        taxCategory: form.value.taxCategory as TaxCategory,
         taxRate: form.value.taxRate,
         isInclusive: form.value.isInclusive,
         isCompound: form.value.isCompound,

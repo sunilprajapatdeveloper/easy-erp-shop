@@ -1,6 +1,6 @@
 import { ShipmentStatus } from "@/enums/shipmentStatus";
 import { PaymentStatus } from "@/enums/paymentStatus";
-import { TaxType } from "@/types/TaxTypes";
+import { TaxCategory } from "@/enums/TaxCategory";
 import { PaymentSourceType } from "@/enums/paymentSourceType";
 
 export interface Pos {
@@ -46,7 +46,7 @@ export interface SelectedPosProduct {
   price: number;
   discount: number;
   tax: number;
-  taxType: TaxType;
+  taxCategory: TaxCategory;
   subTotal: number;
   saleQty: number;
 }

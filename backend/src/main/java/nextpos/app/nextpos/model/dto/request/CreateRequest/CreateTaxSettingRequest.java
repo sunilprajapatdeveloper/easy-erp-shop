@@ -8,9 +8,9 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import nextpos.app.nextpos.model.enums.TaxCalculationType;
-import nextpos.app.nextpos.model.enums.TaxInclusiveType;
-import nextpos.app.nextpos.model.enums.TaxType;
+import nextpos.app.nextpos.model.enums.TaxApplicationOrder;
+import nextpos.app.nextpos.model.enums.TaxCategory;
+import nextpos.app.nextpos.model.enums.TaxInclusionType;
 
 import java.math.BigDecimal;
 
@@ -21,8 +21,8 @@ import java.math.BigDecimal;
 @Builder
 public class CreateTaxSettingRequest {
 
-    @NotNull(message = "Tax type is required")
-    private TaxType taxType;
+    @NotNull(message = "Tax category is required")
+    private TaxCategory taxCategory;
 
     @NotBlank(message = "Tax name is required")
     private String name;
@@ -31,11 +31,11 @@ public class CreateTaxSettingRequest {
     @DecimalMin(value = "0.0", inclusive = false, message = "Tax rate must be greater than 0")
     private BigDecimal rate;
 
-    @NotNull(message = "Calculation type is required")
-    private TaxCalculationType calculationType;
+    @NotNull(message = "Tax application order is required")
+    private TaxApplicationOrder applicationOrder;
 
-    @NotNull(message = "Inclusive type is required")
-    private TaxInclusiveType inclusiveType;
+    @NotNull(message = "Inclusion type is required")
+    private TaxInclusionType inclusionType;
 
     private boolean active;
 

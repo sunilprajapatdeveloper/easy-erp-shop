@@ -1,6 +1,6 @@
 package nextpos.app.nextpos.model.enums;
 
-public enum TaxCalculationType {
+public enum TaxApplicationOrder {
     BEFORE_DISCOUNT,
     AFTER_DISCOUNT
 }

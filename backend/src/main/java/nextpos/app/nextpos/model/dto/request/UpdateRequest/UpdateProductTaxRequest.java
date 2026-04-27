@@ -6,8 +6,7 @@ import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
-
-import nextpos.app.nextpos.model.enums.TaxType;
+import nextpos.app.nextpos.model.enums.TaxCategory;
 
 import java.math.BigDecimal;
 
@@ -34,8 +33,8 @@ public class UpdateProductTaxRequest {
     @Size(max = 100, message = "Tax name must not exceed 100 characters")
     private final String taxName;
 
-    /** Optional: tax type */
-    private final TaxType taxType;
+    /** Optional: tax category */
+    private final TaxCategory taxCategory;
 
     /** Optional: tax rate */
     @DecimalMin(value = "0.000", inclusive = false, message = "Tax rate must be greater than zero")

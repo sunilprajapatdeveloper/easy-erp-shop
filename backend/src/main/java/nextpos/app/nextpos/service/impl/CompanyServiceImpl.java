@@ -348,11 +348,11 @@ public class CompanyServiceImpl implements CompanyService {
         TaxSettingResponse taxResp = null;
         if (tax != null) {
             taxResp = TaxSettingResponse.builder()
-                    .taxType(tax.getTaxType())
+                    .taxCategory(tax.getTaxCategory())
                     .name(tax.getName())
                     .rate(tax.getRate())
-                    .calculationType(tax.getCalculationType())
-                    .inclusiveType(tax.getInclusiveType())
+                    .applicationOrder(tax.getApplicationOrder())
+                    .inclusionType(tax.getInclusionType())
                     .active(tax.isActive())
                     .regionCode(tax.getRegionCode())
                     .description(tax.getDescription())
