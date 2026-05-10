@@ -35,7 +35,7 @@ public class PromotionEngineServiceImpl implements PromotionEngineService {
     private final CompanyCurrencyRepository companyCurrencyRepository;
 
     @Override
-    @Cacheable(value = "promotionValidation", key = "#request.couponCode + '_' + #request.customerId + '_' + #request.warehouseId")
+    @Cacheable(value = "promotionValidation", key = "#request.couponCode + '_' + #request.customerId + '_' + #request.warehouseId", cacheManager = "promotionCacheManager")
     public CouponValidationResponse validateCoupon(CouponValidationRequest request) {
         Promotion promotion = promotionRepository.findByCompanyIdAndCodeAndIsActiveTrue(
                 request.getCompanyId(), request.getCouponCode()).orElse(null);

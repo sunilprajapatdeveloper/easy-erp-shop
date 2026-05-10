@@ -11,6 +11,9 @@ import nextpos.app.nextpos.model.enums.CustomerGroup;
 import nextpos.app.nextpos.pagination.dto.PaginationResponse;
 import nextpos.app.nextpos.repository.*;
 import nextpos.app.nextpos.service.interf.PromotionAdminService;
+
+import java.time.LocalDateTime;
+
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -31,7 +34,7 @@ public class PromotionAdminServiceImpl implements PromotionAdminService {
 
     @Override
     @Transactional
-    @CacheEvict(value = "activePromotions", allEntries = true)
+    @CacheEvict(value = "activePromotions", allEntries = true, cacheManager = "promotionCacheManager")
     public PromotionResponse createPromotion(CreatePromotionRequest request, Long companyId, Long userId) {
         Promotion promotion = Promotion.builder()
                 .name(request.getName())
@@ -61,6 +64,8 @@ public class PromotionAdminServiceImpl implements PromotionAdminService {
                 .warehouseId(request.getWarehouseId())
                 .companyId(companyId)
                 .createdBy(userId)
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
                 .build();
         promotion = promotionRepository.save(promotion);
 
@@ -102,7 +107,7 @@ public class PromotionAdminServiceImpl implements PromotionAdminService {
 
     @Override
     @Transactional
-    @CacheEvict(value = "activePromotions", allEntries = true)
+    @CacheEvict(value = "activePromotions", allEntries = true, cacheManager = "promotionCacheManager")
     public PromotionResponse updatePromotion(Long id, UpdatePromotionRequest request, Long companyId, Long userId) {
         Promotion promotion = promotionRepository.findById(id)
                 .filter(p -> p.getCompanyId().equals(companyId))
@@ -133,7 +138,7 @@ public class PromotionAdminServiceImpl implements PromotionAdminService {
             promotion.setGetProduct(productJpaRepository.getReferenceById(request.getGetProductId()));
         promotion.setWarehouseId(request.getWarehouseId());
         promotion.setUpdatedBy(userId);
-
+        promotion.setUpdatedAt(LocalDateTime.now());
         promotion = promotionRepository.save(promotion);
 
         // Update mappings
@@ -177,7 +182,7 @@ public class PromotionAdminServiceImpl implements PromotionAdminService {
 
     @Override
     @Transactional
-    @CacheEvict(value = "activePromotions", allEntries = true)
+    @CacheEvict(value = "activePromotions", allEntries = true, cacheManager = "promotionCacheManager")
     public void deletePromotion(Long id, Long companyId) {
         Promotion promotion = promotionRepository.findById(id)
                 .filter(p -> p.getCompanyId().equals(companyId))
@@ -187,7 +192,7 @@ public class PromotionAdminServiceImpl implements PromotionAdminService {
 
     @Override
     @Transactional
-    @CacheEvict(value = "activePromotions", allEntries = true)
+    @CacheEvict(value = "activePromotions", allEntries = true, cacheManager = "promotionCacheManager")
     public void toggleActive(Long id, Long companyId) {
         Promotion promotion = promotionRepository.findById(id)
                 .filter(p -> p.getCompanyId().equals(companyId))
