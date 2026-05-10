@@ -19,6 +19,9 @@ public interface ProductUnitRepository extends JpaRepository<ProductUnit, Long> 
     @NonNull
     List<ProductUnit> findAllByCreatedBy(@NonNull Long createdBy);
 
+    @NonNull
+    List<ProductUnit> findByCompanyId(@NonNull Long companyId);
+
     // Optionally, find by name if needed
     Optional<ProductUnit> findByName(@NonNull String name);
 

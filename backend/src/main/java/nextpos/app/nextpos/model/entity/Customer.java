@@ -1,6 +1,8 @@
 package nextpos.app.nextpos.model.entity;
 
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.Table;
 import jakarta.persistence.Id;
 import jakarta.persistence.GeneratedValue;
@@ -11,6 +13,7 @@ import java.time.LocalDateTime;
 
 import lombok.Getter;
 import lombok.Setter;
+import nextpos.app.nextpos.model.enums.CustomerGroup;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -44,6 +47,11 @@ public class Customer {
 
     @Column(nullable = false)
     private String city;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "customer_group", nullable = false)
+    @Builder.Default
+    private CustomerGroup customerGroup = CustomerGroup.RETAIL;
 
     @Column(name = "created_by")
     private Long createdBy;

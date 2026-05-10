@@ -1,14 +1,9 @@
 package nextpos.app.nextpos.model.dto.response;
 
-import lombok.Getter;
-import lombok.Builder;
-import lombok.AllArgsConstructor;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import nextpos.app.nextpos.model.entity.Sale;
 import nextpos.app.nextpos.model.entity.SaleProduct;
-import nextpos.app.nextpos.model.enums.SaleSource;
-import nextpos.app.nextpos.model.enums.SaleStatus;
-import nextpos.app.nextpos.model.enums.ShipmentStatus;
+import nextpos.app.nextpos.model.enums.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -34,29 +29,37 @@ public class SaleResponse {
     private List<ProductDetail> products;
 
     private BigDecimal orderTax;
-    private BigDecimal discount;
+    private BigDecimal orderDiscount;
+    private DiscountType orderDiscountType;
     private BigDecimal shippingCost;
+    private BigDecimal roundingAmount;
 
     private BigDecimal totalAmountTxnCurrency;
+    private BigDecimal paidAmountTxnCurrency;
     private BigDecimal dueAmountTxnCurrency;
+    private BigDecimal grandTotalTxnCurrency;
 
     private BigDecimal exchangeRate;
-    private BigDecimal totalAmountBaseCurrency;
-    private BigDecimal dueAmountBaseCurrency;
-
     private Long currencyId;
     private String currencyCode;
+    private BigDecimal totalAmountBaseCurrency;
+    private BigDecimal paidAmountBaseCurrency;
+    private BigDecimal dueAmountBaseCurrency;
+
+    private Long appliedPromotionId;
+    private String appliedPromotionName;
+    private BigDecimal promotionDiscountAmount;
+    private DiscountType promotionDiscountType;
+    private String promotionCouponCode;
 
     private ShipmentStatus shipmentStatus;
     private SaleStatus saleStatus;
     private String note;
     private SaleSource source;
-    private boolean isRefund;
 
     private String posTerminalId;
     private Long cashierId;
-
-    private List<PaymentResponse> payments;
+    private LocalDate dueDate;
 
     private Long createdBy;
     private LocalDateTime createdAt;
@@ -64,47 +67,54 @@ public class SaleResponse {
     private LocalDateTime updatedAt;
     private Long companyId;
 
-    public SaleResponse(Sale sale, List<PaymentResponse> payments) {
-        this.id = sale.getId();
-        this.referenceNumber = sale.getReferenceNumber();
-        this.invoiceNumber = sale.getInvoiceNumber();
-        this.receiptNumber = sale.getReceiptNumber();
-        this.date = sale.getDate();
+    public static SaleResponse fromEntity(Sale sale) {
+        SaleResponseBuilder builder = SaleResponse.builder()
+                .id(sale.getId())
+                .referenceNumber(sale.getReferenceNumber())
+                .invoiceNumber(sale.getInvoiceNumber())
+                .receiptNumber(sale.getReceiptNumber())
+                .date(sale.getDate())
+                .customerId(sale.getCustomer() != null ? sale.getCustomer().getId() : null)
+                .warehouseId(sale.getWarehouse() != null ? sale.getWarehouse().getId() : null)
+                .companyId(sale.getCompanyId())
+                .orderTax(sale.getOrderTax())
+                .orderDiscount(sale.getOrderDiscount())
+                .orderDiscountType(sale.getOrderDiscountType())
+                .shippingCost(sale.getShippingCost())
+                .roundingAmount(sale.getRoundingAmount())
+                .totalAmountTxnCurrency(sale.getTotalAmountTxnCurrency())
+                .paidAmountTxnCurrency(sale.getPaidAmountTxnCurrency())
+                .dueAmountTxnCurrency(sale.getDueAmountTxnCurrency())
+                .grandTotalTxnCurrency(sale.getGrandTotalTxnCurrency())
+                .exchangeRate(sale.getExchangeRate())
+                .currencyId(sale.getCurrency() != null ? sale.getCurrency().getId() : null)
+                .currencyCode(sale.getCurrency() != null ? sale.getCurrency().getCode() : null)
+                .totalAmountBaseCurrency(sale.getTotalAmountBaseCurrency())
+                .paidAmountBaseCurrency(sale.getPaidAmountBaseCurrency())
+                .dueAmountBaseCurrency(sale.getDueAmountBaseCurrency())
+                .appliedPromotionId(sale.getAppliedPromotion() != null ? sale.getAppliedPromotion().getId() : null)
+                .appliedPromotionName(sale.getAppliedPromotion() != null ? sale.getAppliedPromotion().getName() : null)
+                .promotionDiscountAmount(sale.getPromotionDiscountAmount())
+                .promotionDiscountType(sale.getPromotionDiscountType())
+                .promotionCouponCode(sale.getPromotionCouponCode())
+                .shipmentStatus(sale.getShipmentStatus())
+                .saleStatus(sale.getSaleStatus())
+                .note(sale.getNote())
+                .source(sale.getSource())
+                .posTerminalId(sale.getPosTerminalId())
+                .cashierId(sale.getCashierId())
+                .dueDate(sale.getDueDate())
+                .createdBy(sale.getCreatedBy())
+                .createdAt(sale.getCreatedAt())
+                .updatedBy(sale.getUpdatedBy())
+                .updatedAt(sale.getUpdatedAt());
 
-        this.customerId = sale.getCustomer() != null ? sale.getCustomer().getId() : null;
-        this.warehouseId = sale.getWarehouse() != null ? sale.getWarehouse().getId() : null;
-        this.companyId = sale.getCompanyId();
-
-        this.orderTax = sale.getOrderTax();
-        this.discount = sale.getDiscount();
-        this.shippingCost = sale.getShippingCost();
-
-        this.totalAmountTxnCurrency = sale.getTotalAmountTxnCurrency();
-        this.dueAmountTxnCurrency = sale.getDueAmountTxnCurrency();
-
-        this.exchangeRate = sale.getExchangeRate();
-        this.totalAmountBaseCurrency = sale.getTotalAmountBaseCurrency();
-        this.dueAmountBaseCurrency = sale.getDueAmountBaseCurrency();
-
-        this.currencyId = sale.getCurrency() != null ? sale.getCurrency().getId() : null;
-        this.currencyCode = sale.getCurrency() != null ? sale.getCurrency().getCode() : null;
-
-        this.shipmentStatus = sale.getShipmentStatus();
-        this.saleStatus = sale.getSaleStatus();
-        this.note = sale.getNote();
-        this.source = sale.getSource();
-        this.isRefund = sale.isRefund();
-        this.posTerminalId = sale.getPosTerminalId();
-        this.cashierId = sale.getCashierId();
-
-        this.products = sale.getProducts() == null ? List.of()
-                : sale.getProducts().stream().map(ProductDetail::new).collect(Collectors.toList());
-
-        this.payments = payments;
-        this.createdBy = sale.getCreatedBy();
-        this.createdAt = sale.getCreatedAt();
-        this.updatedBy = sale.getUpdatedBy();
-        this.updatedAt = sale.getUpdatedAt();
+        if (sale.getProducts() != null) {
+            builder.products(sale.getProducts().stream()
+                    .map(ProductDetail::new)
+                    .collect(Collectors.toList()));
+        }
+        return builder.build();
     }
 
     @Getter
@@ -113,27 +123,33 @@ public class SaleResponse {
         private final String productName;
         private final String productCode;
         private final BigDecimal productUnitPrice;
-        private final Integer saleQty;
-        private final BigDecimal productDiscount;
-        private final BigDecimal productTax;
-
-        // Computed convenience field
+        private final Integer quantity;
+        private final BigDecimal discount;
+        private final BigDecimal subTotal;
+        private final String taxName;
+        private final TaxCategory taxCategory;
+        private final BigDecimal taxRate;
+        private final TaxInclusionType taxInclusionType;
+        private final TaxApplicationOrder taxApplicationOrder;
+        private final BigDecimal taxAmount;
         private final BigDecimal lineTotalTxnCurrency;
 
-        public ProductDetail(SaleProduct saleProduct) {
-            this.productId = saleProduct.getProduct() != null ? saleProduct.getProduct().getId() : null;
-            this.productName = saleProduct.getProduct() != null ? saleProduct.getProduct().getName() : null;
-            this.productCode = saleProduct.getProduct() != null ? saleProduct.getProduct().getCode() : null;
-            this.productUnitPrice = saleProduct.getProductUnitPrice();
-            this.saleQty = saleProduct.getSaleQty();
-            this.productDiscount = saleProduct.getProductDiscount();
-            this.productTax = saleProduct.getProductTax();
-
-            // Simple computation for client convenience
-            BigDecimal base = this.productUnitPrice.multiply(BigDecimal.valueOf(this.saleQty));
-            BigDecimal afterDiscount = base
-                    .subtract(this.productDiscount != null ? this.productDiscount : BigDecimal.ZERO);
-            this.lineTotalTxnCurrency = afterDiscount.add(this.productTax != null ? this.productTax : BigDecimal.ZERO);
+        public ProductDetail(SaleProduct sp) {
+            this.productId = sp.getProduct() != null ? sp.getProduct().getId() : null;
+            this.productName = sp.getProduct() != null ? sp.getProduct().getName() : null;
+            this.productCode = sp.getProduct() != null ? sp.getProduct().getCode() : null;
+            this.productUnitPrice = sp.getProductUnitPrice();
+            this.quantity = sp.getQuantity();
+            this.discount = sp.getDiscount();
+            this.subTotal = sp.getSubTotal();
+            this.taxName = sp.getTaxName();
+            this.taxCategory = sp.getTaxCategory();
+            this.taxRate = sp.getTaxRate();
+            this.taxInclusionType = sp.getTaxInclusionType();
+            this.taxApplicationOrder = sp.getTaxApplicationOrder();
+            this.taxAmount = sp.getTaxAmount();
+            this.lineTotalTxnCurrency = (subTotal != null ? subTotal : BigDecimal.ZERO)
+                    .add(taxAmount != null ? taxAmount : BigDecimal.ZERO);
         }
     }
 }

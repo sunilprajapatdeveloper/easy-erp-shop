@@ -25,7 +25,6 @@ import nextpos.app.nextpos.model.entity.Category;
 import nextpos.app.nextpos.model.entity.Product;
 import nextpos.app.nextpos.model.entity.ProductStatus;
 import nextpos.app.nextpos.model.entity.ProductUnit;
-import nextpos.app.nextpos.model.entity.User;
 import nextpos.app.nextpos.pagination.dto.PaginationRequest;
 import nextpos.app.nextpos.pagination.dto.PaginationResponse;
 import nextpos.app.nextpos.repository.BrandRepository;
@@ -35,7 +34,6 @@ import nextpos.app.nextpos.repository.ProductRepository;
 import nextpos.app.nextpos.repository.ProductStockRepository;
 import nextpos.app.nextpos.repository.ProductTaxRepository;
 import nextpos.app.nextpos.repository.ProductUnitRepository;
-import nextpos.app.nextpos.repository.UserRepository;
 import nextpos.app.nextpos.security.context.UserContext;
 import nextpos.app.nextpos.service.helper.BarcodeHelper;
 import nextpos.app.nextpos.service.interf.MediaService;
@@ -46,7 +44,6 @@ import nextpos.app.nextpos.service.interf.ProductService;
 public class ProductServiceImpl implements ProductService {
 
     private final ProductRepository productRepository;
-    private final UserRepository userRepository;
     private final CategoryRepository categoryRepository;
     private final BrandRepository brandRepository;
     private final ProductUnitRepository productUnitRepository;
@@ -59,9 +56,8 @@ public class ProductServiceImpl implements ProductService {
     @Override
     @Transactional
     public ProductResponse createProduct(CreateProductRequest request) {
-        User user = UserContext.getAuthenticatedUser(userRepository);
-        Long companyId = user.getCompanyId();
-        Long currentUserId = user.getId();
+        Long companyId = UserContext.getCurrentCompanyId();
+        Long currentUserId = UserContext.getCurrentUserId();
 
         // Generate code and barcode if not provided
         String codeToUse = (request.getCode() != null && !request.getCode().isBlank())
@@ -157,7 +153,7 @@ public class ProductServiceImpl implements ProductService {
             product.setIsDeleted(request.getIsDeleted());
 
         // Get full media response
-        List<MediaResponse> mediaResponse = getProductImagesFromMedia(product.getId(), user.getCompanyId());
+        List<MediaResponse> mediaResponse = getProductImagesFromMedia(product.getId(), companyId);
 
         // Save and return response
         return ProductResponse.fromEntity(productRepository.save(product), mediaResponse);
@@ -268,8 +264,7 @@ public class ProductServiceImpl implements ProductService {
     @Override
     @Transactional(readOnly = true)
     public ProductResponse getProductById(Long id) {
-        User user = UserContext.getAuthenticatedUser(userRepository);
-        Long companyId = user.getCompanyId();
+        Long companyId = UserContext.getCurrentCompanyId();
         return getProductById(id, null, false, false, false, companyId);
     }
 
@@ -277,8 +272,7 @@ public class ProductServiceImpl implements ProductService {
     @Transactional(readOnly = true)
     public ProductResponse getProductById(Long id, Long warehouseId, boolean includePrice, boolean includeStock,
             boolean includeTax) {
-        User user = UserContext.getAuthenticatedUser(userRepository);
-        Long companyId = user.getCompanyId();
+        Long companyId = UserContext.getCurrentCompanyId();
         return getProductById(id, warehouseId, includePrice, includeStock, includeTax, companyId);
     }
 
@@ -313,8 +307,7 @@ public class ProductServiceImpl implements ProductService {
     @Override
     @Transactional(readOnly = true)
     public ProductResponse getProductByCode(String code) {
-        User user = UserContext.getAuthenticatedUser(userRepository);
-        Long companyId = user.getCompanyId();
+        Long companyId = UserContext.getCurrentCompanyId();
 
         Product product = productRepository
                 .findByCodeAndCompanyIdAndIsDeletedFalse(code, companyId)
@@ -329,8 +322,7 @@ public class ProductServiceImpl implements ProductService {
     @Override
     @Transactional(readOnly = true)
     public ProductResponse getProductByBarcode(String barcode) {
-        User user = UserContext.getAuthenticatedUser(userRepository);
-        Long companyId = user.getCompanyId();
+        Long companyId = UserContext.getCurrentCompanyId();
 
         Product product = productRepository
                 .findByBarcodeAndCompanyIdAndIsDeletedFalse(barcode, companyId)
@@ -345,8 +337,7 @@ public class ProductServiceImpl implements ProductService {
     @Override
     @Transactional(readOnly = true)
     public List<ProductResponse> getAllProducts() {
-        User user = UserContext.getAuthenticatedUser(userRepository);
-        Long companyId = user.getCompanyId();
+        Long companyId = UserContext.getCurrentCompanyId();
 
         List<Product> products = productRepository
                 .findAllByCompanyIdAndIsDeletedFalse(companyId);
@@ -371,8 +362,9 @@ public class ProductServiceImpl implements ProductService {
     @Override
     @Transactional
     public ProductResponse updateProduct(Long id, UpdateProductRequest request) {
-        User user = UserContext.getAuthenticatedUser(userRepository);
-        return updateProduct(id, request, user.getId(), user.getCompanyId());
+        Long userId = UserContext.getCurrentUserId();
+        Long companyId = UserContext.getCurrentCompanyId();
+        return updateProduct(id, request, userId, companyId);
     }
 
     @Override
@@ -476,9 +468,8 @@ public class ProductServiceImpl implements ProductService {
     @Override
     @Transactional
     public void deleteProduct(Long id) {
-        User user = UserContext.getAuthenticatedUser(userRepository);
-        Long companyId = user.getCompanyId();
-        Long currentUserId = user.getId();
+        Long companyId = UserContext.getCurrentCompanyId();
+        Long currentUserId = UserContext.getCurrentUserId();
 
         Product product = productRepository.findByIdAndCompanyIdAndIsDeletedFalse(id, companyId)
                 .orElseThrow(() -> new IllegalArgumentException("Product not found with id: " + id));
@@ -504,8 +495,7 @@ public class ProductServiceImpl implements ProductService {
             boolean includeStock,
             boolean includeTax,
             boolean onlyComplete) {
-        User user = UserContext.getAuthenticatedUser(userRepository);
-        Long companyId = user.getCompanyId();
+        Long companyId = UserContext.getCurrentCompanyId();
 
         // 1. Fetch all products for company in one query
         List<Product> products = productRepository.findAllByCompanyIdAndIsDeletedFalse(companyId);
@@ -611,8 +601,7 @@ public class ProductServiceImpl implements ProductService {
     @Override
     @Transactional(readOnly = true)
     public List<ProductResponse> searchProducts(String query, int limit) {
-        User user = UserContext.getAuthenticatedUser(userRepository);
-        Long companyId = user.getCompanyId();
+        Long companyId = UserContext.getCurrentCompanyId();
 
         List<Product> products = productRepository
                 .findByNameContainingIgnoreCaseOrCodeContainingIgnoreCaseOrSkuContainingIgnoreCase(query, query, query)
@@ -629,8 +618,7 @@ public class ProductServiceImpl implements ProductService {
     @Override
     @Transactional(readOnly = true)
     public List<ProductResponse> searchProducts(String query, int page, int size) {
-        User user = UserContext.getAuthenticatedUser(userRepository);
-        Long companyId = user.getCompanyId();
+        Long companyId = UserContext.getCurrentCompanyId();
         int offset = page * size;
 
         String tsQuery = Arrays.stream(query.trim().toLowerCase().split("\\s+"))
@@ -652,8 +640,7 @@ public class ProductServiceImpl implements ProductService {
     @Override
     @Transactional(readOnly = true)
     public PaginationResponse<ProductResponse> getProducts(PaginationRequest request) {
-        User user = UserContext.getAuthenticatedUser(userRepository);
-        Long companyId = user.getCompanyId();
+        Long companyId = UserContext.getCurrentCompanyId();
         Long warehouseId = request.getWarehouseId();
         boolean includePrice = request.isIncludePrice();
         boolean includeStock = request.isIncludeStock();
@@ -739,9 +726,8 @@ public class ProductServiceImpl implements ProductService {
     @Override
     @Transactional
     public void bulkDelete(List<Long> ids) {
-        User user = UserContext.getAuthenticatedUser(userRepository);
-        Long companyId = user.getCompanyId();
-        Long currentUserId = user.getId();
+        Long companyId = UserContext.getCurrentCompanyId();
+        Long currentUserId = UserContext.getCurrentUserId();
 
         List<Product> products = productRepository.findAllById(ids);
         for (Product product : products) {
@@ -759,9 +745,8 @@ public class ProductServiceImpl implements ProductService {
     @Override
     @Transactional
     public void bulkUpdateStatus(List<Long> ids, ProductStatus status) {
-        User user = UserContext.getAuthenticatedUser(userRepository);
-        Long companyId = user.getCompanyId();
-        Long currentUserId = user.getId();
+        Long companyId = UserContext.getCurrentCompanyId();
+        Long currentUserId = UserContext.getCurrentUserId();
 
         List<Product> products = productRepository.findAllById(ids);
         for (Product product : products) {

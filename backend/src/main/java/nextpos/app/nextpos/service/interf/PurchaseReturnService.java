@@ -12,9 +12,11 @@ public interface PurchaseReturnService {
 
     PurchaseReturnResponse getPurchaseReturnById(Long id);
 
+    List<PurchaseReturnResponse> getMyPurchaseReturns();
+
+    List<PurchaseReturnResponse> getAllPurchaseReturns();
+
     PurchaseReturnResponse updatePurchaseReturn(Long id, UpdatePurchaseReturnRequest request);
 
     void deletePurchaseReturn(Long id);
-
-    List<PurchaseReturnResponse> getAllPurchaseReturns(Long supplierId, Long warehouseId);
 }

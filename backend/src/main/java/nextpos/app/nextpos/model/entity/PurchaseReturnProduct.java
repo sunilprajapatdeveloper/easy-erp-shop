@@ -2,6 +2,7 @@ package nextpos.app.nextpos.model.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import nextpos.app.nextpos.model.enums.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -27,17 +28,35 @@ public class PurchaseReturnProduct {
     @JoinColumn(name = "product_id", nullable = false)
     private Product product;
 
-    @Column(name = "return_qty", nullable = false)
-    private Integer returnQty;
-
-    @Column(name = "product_unit_cost", nullable = false, precision = 10, scale = 2)
+    @Column(name = "product_unit_cost", nullable = false, precision = 15, scale = 2)
     private BigDecimal productUnitCost;
 
-    @Column(name = "product_tax", nullable = false, precision = 10, scale = 2)
-    private BigDecimal productTax;
+    @Column(name = "quantity", nullable = false)
+    private Integer quantity;
 
-    @Column(name = "product_discount", nullable = false, precision = 10, scale = 2)
-    private BigDecimal productDiscount;
+    @Column(name = "discount", nullable = false, precision = 15, scale = 2)
+    private BigDecimal discount;
+
+    @Column(name = "tax_name", nullable = false, length = 100)
+    private String taxName;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "tax_category", nullable = false, length = 50)
+    private TaxCategory taxCategory;
+
+    @Column(name = "tax_rate", nullable = false, precision = 5, scale = 3)
+    private BigDecimal taxRate;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "tax_inclusion_type", nullable = false, length = 50)
+    private TaxInclusionType taxInclusionType;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "tax_application_order", nullable = false, length = 50)
+    private TaxApplicationOrder taxApplicationOrder;
+
+    @Column(name = "tax_amount", nullable = false, precision = 15, scale = 2)
+    private BigDecimal taxAmount;
 
     @Column(name = "sub_total", nullable = false, precision = 15, scale = 2)
     private BigDecimal subTotal;

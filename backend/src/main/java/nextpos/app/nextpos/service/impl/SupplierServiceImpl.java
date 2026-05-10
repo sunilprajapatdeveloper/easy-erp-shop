@@ -5,9 +5,7 @@ import nextpos.app.nextpos.model.dto.request.CreateRequest.CreateSupplierRequest
 import nextpos.app.nextpos.model.dto.request.UpdateRequest.UpdateSupplierRequest;
 import nextpos.app.nextpos.model.dto.response.SupplierResponse;
 import nextpos.app.nextpos.model.entity.Supplier;
-import nextpos.app.nextpos.model.entity.User;
 import nextpos.app.nextpos.repository.SupplierRepository;
-import nextpos.app.nextpos.repository.UserRepository;
 import nextpos.app.nextpos.security.context.UserContext;
 import nextpos.app.nextpos.service.interf.SupplierService;
 
@@ -22,12 +20,12 @@ import org.springframework.transaction.annotation.Transactional;
 public class SupplierServiceImpl implements SupplierService {
 
         private final SupplierRepository supplierRepository;
-        private final UserRepository userRepository;
 
         @Override
         @Transactional
         public SupplierResponse createSupplier(CreateSupplierRequest request) {
-                User user = UserContext.getAuthenticatedUser(userRepository);
+                Long currentUserId = UserContext.getCurrentUserId();
+                Long currentCompanyId = UserContext.getCurrentCompanyId();
 
                 Supplier supplier = Supplier.builder()
                                 .name(request.getName())
@@ -37,9 +35,9 @@ public class SupplierServiceImpl implements SupplierService {
                                 .city(request.getCity())
                                 .address(request.getAddress())
                                 .taxNumber(request.getTaxNumber())
-                                .createdBy(user.getId())
+                                .createdBy(currentUserId)
                                 .createdAt(LocalDateTime.now())
-                                .companyId(user.getCompanyId())
+                                .companyId(currentCompanyId)
                                 .build();
 
                 Supplier saved = supplierRepository.save(supplier);
@@ -48,14 +46,13 @@ public class SupplierServiceImpl implements SupplierService {
 
         @Override
         public SupplierResponse getSupplierById(Long id) {
-                User user = UserContext.getAuthenticatedUser(userRepository);
-                Long companyId = user.getCompanyId();
+                Long currentCompanyId = UserContext.getCurrentCompanyId();
 
                 Supplier supplier = supplierRepository.findById(id)
                                 .orElseThrow(() -> new RuntimeException("Supplier not found with id: " + id));
 
                 // Ensure supplier belongs to the user's company
-                if (!supplier.getCompanyId().equals(companyId)) {
+                if (!supplier.getCompanyId().equals(currentCompanyId)) {
                         throw new RuntimeException("Access denied to supplier with id: " + id);
                 }
 
@@ -65,9 +62,9 @@ public class SupplierServiceImpl implements SupplierService {
         @Override
         @Transactional(readOnly = true)
         public List<SupplierResponse> getMySuppliers() {
-                User user = UserContext.getAuthenticatedUser(userRepository);
+                Long currentUserId = UserContext.getCurrentUserId();
 
-                List<Supplier> suppliers = supplierRepository.findByCreatedBy(user.getId());
+                List<Supplier> suppliers = supplierRepository.findByCreatedBy(currentUserId);
 
                 return suppliers.stream()
                                 .map(SupplierResponse::new)
@@ -77,9 +74,9 @@ public class SupplierServiceImpl implements SupplierService {
         @Override
         @Transactional(readOnly = true)
         public List<SupplierResponse> getAllSuppliers() {
-                User user = UserContext.getAuthenticatedUser(userRepository);
+                Long currentCompanyId = UserContext.getCurrentCompanyId();
 
-                List<Supplier> suppliers = supplierRepository.findByCompanyId(user.getCompanyId());
+                List<Supplier> suppliers = supplierRepository.findByCompanyId(currentCompanyId);
 
                 return suppliers.stream()
                                 .map(SupplierResponse::new)
@@ -89,14 +86,14 @@ public class SupplierServiceImpl implements SupplierService {
         @Override
         @Transactional
         public SupplierResponse updateSupplier(Long id, UpdateSupplierRequest request) {
-                User user = UserContext.getAuthenticatedUser(userRepository);
-                Long companyId = user.getCompanyId();
+                Long currentUserId = UserContext.getCurrentUserId();
+                Long currentCompanyId = UserContext.getCurrentCompanyId();
 
                 Supplier supplier = supplierRepository.findById(id)
                                 .orElseThrow(() -> new RuntimeException("Supplier not found with id: " + id));
 
                 // Ensure supplier belongs to the user's company
-                if (!supplier.getCompanyId().equals(companyId)) {
+                if (!supplier.getCompanyId().equals(currentCompanyId)) {
                         throw new RuntimeException("Access denied to supplier with id: " + id);
                 }
 
@@ -116,9 +113,9 @@ public class SupplierServiceImpl implements SupplierService {
                 if (request.getTaxNumber() != null)
                         supplier.setTaxNumber(request.getTaxNumber());
 
-                supplier.setUpdatedBy(user.getId());
+                supplier.setUpdatedBy(currentUserId);
                 supplier.setUpdatedAt(LocalDateTime.now());
-                supplier.setCompanyId(companyId);
+                supplier.setCompanyId(currentCompanyId);
 
                 Supplier updated = supplierRepository.save(supplier);
                 return new SupplierResponse(updated);
@@ -127,14 +124,13 @@ public class SupplierServiceImpl implements SupplierService {
         @Override
         @Transactional
         public void deleteSupplier(Long id) {
-                User user = UserContext.getAuthenticatedUser(userRepository);
-                Long companyId = user.getCompanyId();
+                Long currentCompanyId = UserContext.getCurrentCompanyId();
 
                 Supplier supplier = supplierRepository.findById(id)
                                 .orElseThrow(() -> new RuntimeException("Supplier not found with id: " + id));
 
                 // Ensure supplier belongs to the user's company
-                if (!supplier.getCompanyId().equals(companyId)) {
+                if (!supplier.getCompanyId().equals(currentCompanyId)) {
                         throw new RuntimeException("Access denied to supplier with id: " + id);
                 }
 

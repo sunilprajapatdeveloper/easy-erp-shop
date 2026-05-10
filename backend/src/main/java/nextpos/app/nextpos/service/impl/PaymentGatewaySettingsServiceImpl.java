@@ -11,7 +11,6 @@ import nextpos.app.nextpos.model.entity.PaymentGatewaySettings;
 import nextpos.app.nextpos.model.enums.PaymentGatewayProvider;
 import nextpos.app.nextpos.repository.CompanyRepository;
 import nextpos.app.nextpos.repository.PaymentGatewaySettingsRepository;
-import nextpos.app.nextpos.repository.UserRepository;
 import nextpos.app.nextpos.security.context.UserContext;
 import nextpos.app.nextpos.service.interf.PaymentGatewaySettingsService;
 import nextpos.app.nextpos.util.EncryptionUtil;
@@ -35,7 +34,6 @@ public class PaymentGatewaySettingsServiceImpl implements PaymentGatewaySettings
 
     private final PaymentGatewaySettingsRepository repository;
     private final CompanyRepository companyRepository;
-    private final UserRepository userRepository;
     private final EncryptionUtil encryptionUtil;
 
     // ---------- Company-level ----------
@@ -43,8 +41,7 @@ public class PaymentGatewaySettingsServiceImpl implements PaymentGatewaySettings
     @Override
     @PreAuthorize("hasRole('COMPANY_ADMIN')")
     public PaymentGatewaySettingsResponse createForCurrentCompany(CreatePaymentGatewaySettingRequest request) {
-        Long companyId = UserContext.getCurrentUserCompanyId(userRepository)
-                .orElseThrow(() -> new IllegalStateException("No company associated with current user"));
+        Long companyId = UserContext.getCurrentCompanyId();
 
         if (repository.existsByCompanyIdAndGatewayType(companyId, request.getGatewayType())) {
             throw new IllegalArgumentException(
@@ -65,8 +62,7 @@ public class PaymentGatewaySettingsServiceImpl implements PaymentGatewaySettings
     @PreAuthorize("hasRole('COMPANY_ADMIN')")
     @CacheEvict(value = "gatewaySettings", key = "#request.id")
     public PaymentGatewaySettingsResponse updateForCurrentCompany(UpdatePaymentGatewaySettingRequest request) {
-        Long companyId = UserContext.getCurrentUserCompanyId(userRepository)
-                .orElseThrow(() -> new IllegalStateException("No company associated"));
+        Long companyId = UserContext.getCurrentCompanyId();
 
         PaymentGatewaySettings entity = repository.findById(request.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("PaymentGatewaySettings not found"));
@@ -95,8 +91,7 @@ public class PaymentGatewaySettingsServiceImpl implements PaymentGatewaySettings
     @PreAuthorize("hasRole('COMPANY_ADMIN')")
     @CacheEvict(value = "gatewaySettings", key = "#id")
     public void deleteForCurrentCompany(Long id) {
-        Long companyId = UserContext.getCurrentUserCompanyId(userRepository)
-                .orElseThrow(() -> new IllegalStateException("No company associated"));
+        Long companyId = UserContext.getCurrentCompanyId();
 
         PaymentGatewaySettings entity = repository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("PaymentGatewaySettings not found"));
@@ -112,8 +107,7 @@ public class PaymentGatewaySettingsServiceImpl implements PaymentGatewaySettings
     @Override
     @PreAuthorize("hasRole('COMPANY_ADMIN')")
     public PaymentGatewaySettingsResponse getForCurrentCompany(Long id) {
-        Long companyId = UserContext.getCurrentUserCompanyId(userRepository)
-                .orElseThrow(() -> new IllegalStateException("No company associated"));
+        Long companyId = UserContext.getCurrentCompanyId();
 
         PaymentGatewaySettings entity = repository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("PaymentGatewaySettings not found"));
@@ -128,8 +122,7 @@ public class PaymentGatewaySettingsServiceImpl implements PaymentGatewaySettings
     @Override
     @PreAuthorize("hasRole('COMPANY_ADMIN')")
     public List<PaymentGatewaySettingsResponse> getAllForCurrentCompany() {
-        Long companyId = UserContext.getCurrentUserCompanyId(userRepository)
-                .orElseThrow(() -> new IllegalStateException("No company associated"));
+        Long companyId = UserContext.getCurrentCompanyId();
 
         return repository.findByCompanyId(companyId).stream()
                 .map(PaymentGatewaySettingsResponse::fromEntity)
@@ -139,8 +132,7 @@ public class PaymentGatewaySettingsServiceImpl implements PaymentGatewaySettings
     @Override
     @PreAuthorize("hasRole('COMPANY_ADMIN')")
     public Page<PaymentGatewaySettingsResponse> getForCurrentCompanyPaginated(Pageable pageable) {
-        Long companyId = UserContext.getCurrentUserCompanyId(userRepository)
-                .orElseThrow(() -> new IllegalStateException("No company associated"));
+        Long companyId = UserContext.getCurrentCompanyId();
 
         Page<PaymentGatewaySettings> page = repository.findByCompanyId(companyId, pageable);
         List<PaymentGatewaySettingsResponse> responses = page.getContent().stream()
@@ -224,7 +216,6 @@ public class PaymentGatewaySettingsServiceImpl implements PaymentGatewaySettings
     }
 
     // ---------- Internal methods for payment processing (decrypted) ----------
-    // (unchanged – they do not use user context)
     @Override
     @Cacheable(value = "gatewaySettings", key = "#companyId + '-' + #gatewayType")
     public PaymentGatewaySettings getDecryptedEntityForCompany(Long companyId, PaymentGatewayProvider gatewayType) {
@@ -246,7 +237,6 @@ public class PaymentGatewaySettingsServiceImpl implements PaymentGatewaySettings
     }
 
     // ---------- Private helpers ----------
-    // (buildEntity, updateEntity, encrypt, decryptSensitiveFields – unchanged)
     private PaymentGatewaySettings buildEntity(CreatePaymentGatewaySettingRequest request, Company company) {
         return PaymentGatewaySettings.builder()
                 .company(company)

@@ -7,11 +7,9 @@ import nextpos.app.nextpos.model.dto.request.UpdateRequest.UpdateShippingProvide
 import nextpos.app.nextpos.model.dto.response.ShippingProviderSettingsResponse;
 import nextpos.app.nextpos.model.entity.Company;
 import nextpos.app.nextpos.model.entity.ShippingProviderSettings;
-import nextpos.app.nextpos.model.entity.User;
 import nextpos.app.nextpos.model.entity.Warehouse;
 import nextpos.app.nextpos.repository.CompanyRepository;
 import nextpos.app.nextpos.repository.ShippingProviderSettingsRepository;
-import nextpos.app.nextpos.repository.UserRepository;
 import nextpos.app.nextpos.repository.WarehouseRepository;
 import nextpos.app.nextpos.security.context.UserContext;
 import nextpos.app.nextpos.service.interf.ShippingProviderSettingsService;
@@ -30,15 +28,13 @@ public class ShippingProviderSettingsServiceImpl implements ShippingProviderSett
     private final ShippingProviderSettingsRepository shippingProviderSettingsRepository;
     private final CompanyRepository companyRepository;
     private final WarehouseRepository warehouseRepository;
-    private final UserRepository userRepository;   // for UserContext
 
     @Override
     @Transactional
     public ShippingProviderSettingsResponse createShippingProviderSettings(
             CreateShippingProviderSettingsRequest request) {
-        User user = UserContext.getAuthenticatedUser(userRepository);
-        Long companyId = user.getCompanyId();
-        Long currentUserId = user.getId();
+        Long companyId = UserContext.getCurrentCompanyId();
+        Long currentUserId = UserContext.getCurrentUserId();
 
         Company company = companyRepository.findById(companyId)
                 .orElseThrow(() -> new IllegalArgumentException("Company not found: " + companyId));
@@ -74,9 +70,8 @@ public class ShippingProviderSettingsServiceImpl implements ShippingProviderSett
     @Transactional
     public ShippingProviderSettingsResponse updateShippingProviderSettings(Long id, Long warehouseId,
             UpdateShippingProviderSettingsRequest request) {
-        User user = UserContext.getAuthenticatedUser(userRepository);
-        Long companyId = user.getCompanyId();
-        Long currentUserId = user.getId();
+        Long companyId = UserContext.getCurrentCompanyId();
+        Long currentUserId = UserContext.getCurrentUserId();
 
         ShippingProviderSettings settings = shippingProviderSettingsRepository
                 .findByCompanyIdAndWarehouseIdAndId(companyId, warehouseId, id)
@@ -108,8 +103,7 @@ public class ShippingProviderSettingsServiceImpl implements ShippingProviderSett
 
     @Override
     public ShippingProviderSettingsResponse getShippingProviderSettings(Long id, Long warehouseId) {
-        User user = UserContext.getAuthenticatedUser(userRepository);
-        Long companyId = user.getCompanyId();
+        Long companyId = UserContext.getCurrentCompanyId();
 
         ShippingProviderSettings settings = shippingProviderSettingsRepository
                 .findByCompanyIdAndWarehouseIdAndId(companyId, warehouseId, id)
@@ -120,8 +114,7 @@ public class ShippingProviderSettingsServiceImpl implements ShippingProviderSett
 
     @Override
     public List<ShippingProviderSettingsResponse> listShippingProviderSettingsByCompany() {
-        User user = UserContext.getAuthenticatedUser(userRepository);
-        Long companyId = user.getCompanyId();
+        Long companyId = UserContext.getCurrentCompanyId();
 
         return shippingProviderSettingsRepository.findByCompanyId(companyId)
                 .stream()
@@ -131,8 +124,7 @@ public class ShippingProviderSettingsServiceImpl implements ShippingProviderSett
 
     @Override
     public List<ShippingProviderSettingsResponse> listShippingProviderSettingsByWarehouse(Long warehouseId) {
-        User user = UserContext.getAuthenticatedUser(userRepository);
-        Long companyId = user.getCompanyId();
+        Long companyId = UserContext.getCurrentCompanyId();
 
         return shippingProviderSettingsRepository.findByCompanyIdAndWarehouseId(companyId, warehouseId)
                 .stream()

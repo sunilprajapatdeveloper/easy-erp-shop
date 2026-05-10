@@ -10,12 +10,10 @@ import nextpos.app.nextpos.model.dto.request.UpdatePaymentRequest;
 import nextpos.app.nextpos.model.dto.response.PaymentResponse;
 import nextpos.app.nextpos.model.entity.Payment;
 import nextpos.app.nextpos.model.entity.Sale;
-import nextpos.app.nextpos.model.entity.User;
 import nextpos.app.nextpos.model.enums.PaymentMethod;
 import nextpos.app.nextpos.model.enums.PaymentSourceType;
 import nextpos.app.nextpos.repository.PaymentRepository;
 import nextpos.app.nextpos.repository.SaleRepository;
-import nextpos.app.nextpos.repository.UserRepository;
 import nextpos.app.nextpos.security.context.UserContext;
 import nextpos.app.nextpos.service.interf.PaymentService;
 import nextpos.app.nextpos.strategy.PaymentStrategy;
@@ -37,20 +35,19 @@ public class PaymentServiceImpl implements PaymentService {
     private final PaymentRepository paymentRepository;
     private final SaleRepository saleRepository;
     private final PaymentStrategyFactory strategyFactory;
-    private final UserRepository userRepository;
 
     @Override
     @Transactional
     public PaymentResponse createPayment(CreatePaymentRequest request) {
-        User user = UserContext.getAuthenticatedUser(userRepository);
+        Long companyId = UserContext.getCurrentCompanyId();
 
         // Check idempotency
         if (request.getIdempotencyKey() != null && !request.getIdempotencyKey().isBlank()) {
             Optional<Payment> existing = paymentRepository.findByIdempotencyKeyAndCompanyId(
-                    request.getIdempotencyKey(), user.getCompanyId());
+                    request.getIdempotencyKey(), companyId);
             if (existing.isPresent()) {
                 log.info("Idempotent createPayment hit for key={} companyId={}",
-                        request.getIdempotencyKey(), user.getCompanyId());
+                        request.getIdempotencyKey(), companyId);
                 return toResponse(existing.get());
             }
         }
@@ -84,17 +81,22 @@ public class PaymentServiceImpl implements PaymentService {
                 .referenceId(sale.getId())
                 .referenceNumber(sale.getReferenceNumber())
                 .paymentType(request.getPaymentType())
-                .amount(request.getAmount())
+                .amountTxnCurrency(request.getAmountTxnCurrency())
                 .currencyCode(request.getCurrencyCode())
                 .exchangeRate(request.getExchangeRate())
-                .baseCurrencyAmount(request.getBaseCurrencyAmount())
+                .amountBaseCurrency(request.getAmountBaseCurrency())
                 .paymentMethod(request.getPaymentMethod())
-                .paymentData(request.getPaymentData())
+                .paymentMetadata(request.getPaymentMetadata())
                 .paymentDate(request.getPaymentDate())
                 .note(request.getNote())
                 .transactionReference(request.getTransactionReference())
                 .idempotencyKey(request.getIdempotencyKey())
                 .status(request.getStatus())
+                .referenceCurrencyCode(sale.getCurrency() != null ? sale.getCurrency().getCode() : null)
+                .referenceAmount(sale.getTotalAmountTxnCurrency())
+                .warehouseId(sale.getWarehouse() != null ? sale.getWarehouse().getId() : null)
+                .posTerminalId(sale.getPosTerminalId())
+                .exchangeRateSource(request.getExchangeRateSource())
                 .build();
 
         return createPayment(enrichedRequest);
@@ -103,15 +105,15 @@ public class PaymentServiceImpl implements PaymentService {
     @Override
     @Transactional
     public PaymentResponse updatePayment(Long id, UpdatePaymentRequest request) {
-        User user = UserContext.getAuthenticatedUser(userRepository);
+        Long userId = UserContext.getCurrentUserId();
 
         Payment payment = paymentRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Payment not found"));
 
         boolean recalcBase = false;
 
-        if (request.getAmount() != null) {
-            payment.setAmountTxnCurrency(scale4(request.getAmount()));
+        if (request.getAmountTxnCurrency() != null) {
+            payment.setAmountTxnCurrency(scale4(request.getAmountTxnCurrency()));
             recalcBase = true;
         }
 
@@ -124,8 +126,8 @@ public class PaymentServiceImpl implements PaymentService {
             recalcBase = true;
         }
 
-        if (request.getBaseCurrencyAmount() != null) {
-            payment.setAmountBaseCurrency(scale4(request.getBaseCurrencyAmount()));
+        if (request.getAmountBaseCurrency() != null) {
+            payment.setAmountBaseCurrency(scale4(request.getAmountBaseCurrency()));
             recalcBase = false; // explicit value overrides recompute
         }
 
@@ -156,12 +158,23 @@ public class PaymentServiceImpl implements PaymentService {
             payment.setIdempotencyKey(request.getIdempotencyKey().trim());
         }
 
-        // Note is only in DTOs, not entity — you included it in response, but not in
-        // entity.
-        // If you intended to persist note, add a `note` column in Payment. For now we
-        // ignore request.getNote().
+        if (request.getReferenceCurrencyCode() != null) {
+            payment.setReferenceCurrencyCode(request.getReferenceCurrencyCode());
+        }
+        if (request.getReferenceAmount() != null) {
+            payment.setReferenceAmount(scale4(request.getReferenceAmount()));
+        }
+        if (request.getWarehouseId() != null) {
+            payment.setWarehouseId(request.getWarehouseId());
+        }
+        if (request.getPosTerminalId() != null) {
+            payment.setPosTerminalId(request.getPosTerminalId());
+        }
+        if (request.getExchangeRateSource() != null) {
+            payment.setExchangeRateSource(request.getExchangeRateSource());
+        }
 
-        payment.setUpdatedBy(user.getId());
+        payment.setUpdatedBy(userId);
         payment.setUpdatedAt(LocalDateTime.now());
 
         Payment saved = paymentRepository.save(payment);
@@ -199,10 +212,10 @@ public class PaymentServiceImpl implements PaymentService {
                 .referenceType(payment.getReferenceType())
                 .referenceId(payment.getReferenceId())
                 .paymentType(payment.getPaymentType())
-                .amount(payment.getAmountTxnCurrency())
+                .amountTxnCurrency(payment.getAmountTxnCurrency())
                 .currencyCode(payment.getCurrencyCode())
                 .exchangeRate(payment.getExchangeRate())
-                .baseCurrencyAmount(payment.getAmountBaseCurrency())
+                .amountBaseCurrency(payment.getAmountBaseCurrency())
                 .paymentMethod(payment.getPaymentMethod())
                 .gatewayProvider(payment.getGatewayProvider())
                 .paymentDate(payment.getPaymentDate())
@@ -214,14 +227,18 @@ public class PaymentServiceImpl implements PaymentService {
                 .createdAt(payment.getCreatedAt())
                 .updatedBy(payment.getUpdatedBy())
                 .updatedAt(payment.getUpdatedAt())
-                .message("Payment processed successfully");
+                .message("Payment processed successfully")
+                .referenceCurrencyCode(payment.getReferenceCurrencyCode())
+                .referenceAmount(payment.getReferenceAmount())
+                .warehouseId(payment.getWarehouseId())
+                .posTerminalId(payment.getPosTerminalId())
+                .exchangeRateSource(payment.getExchangeRateSource());
 
         if (payment.getPaymentMetadata() != null) {
             try {
                 JSONObject meta = new JSONObject(payment.getPaymentMetadata());
                 builder.paymentMetadata(meta.toMap());
             } catch (Exception e) {
-                // Non-JSON metadata — omit map but keep system stable
                 log.debug("Non-JSON paymentMetadata stored for payment {}", payment.getId());
             }
         }
@@ -238,7 +255,6 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     private BigDecimal multiplyToBase(BigDecimal amount, BigDecimal rate) {
-        // entity uses (18,4) for base amount → scale 4
         return amount.multiply(rate).setScale(4, RoundingMode.HALF_UP);
     }
 }

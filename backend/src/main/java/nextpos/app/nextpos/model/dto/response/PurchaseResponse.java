@@ -1,133 +1,157 @@
 package nextpos.app.nextpos.model.dto.response;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
+import lombok.*;
 import nextpos.app.nextpos.model.entity.Purchase;
 import nextpos.app.nextpos.model.entity.PurchaseProduct;
-import nextpos.app.nextpos.model.enums.PurchaseStatus;
-import nextpos.app.nextpos.model.enums.ShipmentStatus;
-import nextpos.app.nextpos.service.interf.ProductStockService;
+import nextpos.app.nextpos.model.enums.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Getter
 @AllArgsConstructor
+@NoArgsConstructor
 @Builder
 public class PurchaseResponse {
 
-    private final Long id;
-    private final String referenceNumber;
-    private final LocalDate date;
+    private Long id;
+    private String referenceNumber;
+    private String invoiceNumber;
+    private String receiptNumber;
+    private String supplierInvoiceNumber;
 
-    private final Long supplierId;
-    private final String supplierName;
+    private LocalDate date;
 
-    private final Long warehouseId;
-    private final String warehouseName;
+    private Long supplierId;
+    private String supplierName;
 
-    private final List<ProductDetail> products;
+    private Long warehouseId;
+    private String warehouseName;
 
-    private final BigDecimal orderTax;
-    private final BigDecimal discount;
-    private final BigDecimal shippingCost;
+    private List<ProductDetail> products;
 
-    private final BigDecimal totalAmountTxnCurrency;
-    private final BigDecimal totalAmountBaseCurrency;
-    private final BigDecimal exchangeRate;
+    private BigDecimal orderTax;
+    private BigDecimal orderDiscount;
+    private DiscountType orderDiscountType;
+    private BigDecimal shippingCost;
+    private BigDecimal roundingAmount;
 
-    private final ShipmentStatus shippingStatus;
-    private final PurchaseStatus purchaseStatus;
+    private BigDecimal totalAmountTxnCurrency;
+    private BigDecimal grandTotalTxnCurrency;
+    private BigDecimal paidAmountTxnCurrency;
+    private BigDecimal dueAmountTxnCurrency;
 
-    private final String note;
-    private final LocalDate expectedDeliveryDate;
+    private BigDecimal exchangeRate;
+    private Long currencyId;
+    private String currencyCode;
+    private BigDecimal totalAmountBaseCurrency;
+    private BigDecimal paidAmountBaseCurrency;
+    private BigDecimal dueAmountBaseCurrency;
 
-    private final Long createdBy;
-    private final LocalDateTime createdAt;
-    private final Long updatedBy;
-    private final LocalDateTime updatedAt;
+    private ShipmentStatus shippingStatus;
+    private PurchaseStatus purchaseStatus;
+    private PaymentStatus paymentStatus;
 
-    private final Long companyId;
+    private PurchaseSource source;
+    private String note;
+    private LocalDate expectedDeliveryDate;
 
-    private final List<PaymentResponse> payments;
+    private String posTerminalId;
+    private Long cashierId;
 
-    public PurchaseResponse(Purchase purchase, List<PaymentResponse> paymentResponses,
-            ProductStockService productStockService) {
-        this.id = purchase.getId();
-        this.referenceNumber = purchase.getReferenceNumber();
-        this.date = purchase.getDate();
+    private Long createdBy;
+    private LocalDateTime createdAt;
+    private Long updatedBy;
+    private LocalDateTime updatedAt;
+    private Long companyId;
 
-        this.supplierId = purchase.getSupplier() != null ? purchase.getSupplier().getId() : null;
-        this.supplierName = purchase.getSupplier() != null ? purchase.getSupplier().getName() : null;
+    public static PurchaseResponse fromEntity(Purchase purchase) {
+        PurchaseResponseBuilder builder = PurchaseResponse.builder()
+                .id(purchase.getId())
+                .referenceNumber(purchase.getReferenceNumber())
+                .invoiceNumber(purchase.getInvoiceNumber())
+                .receiptNumber(purchase.getReceiptNumber())
+                .supplierInvoiceNumber(purchase.getSupplierInvoiceNumber())
+                .date(purchase.getDate())
+                .supplierId(purchase.getSupplier() != null ? purchase.getSupplier().getId() : null)
+                .supplierName(purchase.getSupplier() != null ? purchase.getSupplier().getName() : null)
+                .warehouseId(purchase.getWarehouse() != null ? purchase.getWarehouse().getId() : null)
+                .warehouseName(purchase.getWarehouse() != null ? purchase.getWarehouse().getName() : null)
+                .orderTax(purchase.getOrderTax())
+                .orderDiscount(purchase.getOrderDiscount())
+                .orderDiscountType(purchase.getOrderDiscountType())
+                .shippingCost(purchase.getShippingCost())
+                .roundingAmount(purchase.getRoundingAmount())
+                .totalAmountTxnCurrency(purchase.getTotalAmountTxnCurrency())
+                .grandTotalTxnCurrency(purchase.getGrandTotalTxnCurrency())
+                .paidAmountTxnCurrency(purchase.getPaidAmountTxnCurrency())
+                .dueAmountTxnCurrency(purchase.getDueAmountTxnCurrency())
+                .exchangeRate(purchase.getExchangeRate())
+                .currencyId(purchase.getCurrency() != null ? purchase.getCurrency().getId() : null)
+                .currencyCode(purchase.getCurrency() != null ? purchase.getCurrency().getCode() : null)
+                .totalAmountBaseCurrency(purchase.getTotalAmountBaseCurrency())
+                .paidAmountBaseCurrency(purchase.getPaidAmountBaseCurrency())
+                .dueAmountBaseCurrency(purchase.getDueAmountBaseCurrency())
+                .shippingStatus(purchase.getShippingStatus())
+                .purchaseStatus(purchase.getPurchaseStatus())
+                .paymentStatus(purchase.getPaymentStatus())
+                .source(purchase.getSource())
+                .note(purchase.getNote())
+                .expectedDeliveryDate(purchase.getExpectedDeliveryDate())
+                .posTerminalId(purchase.getPosTerminalId())
+                .cashierId(purchase.getCashierId())
+                .createdBy(purchase.getCreatedBy())
+                .createdAt(purchase.getCreatedAt())
+                .updatedBy(purchase.getUpdatedBy())
+                .updatedAt(purchase.getUpdatedAt())
+                .companyId(purchase.getCompanyId());
 
-        this.warehouseId = purchase.getWarehouse() != null ? purchase.getWarehouse().getId() : null;
-        this.warehouseName = purchase.getWarehouse() != null ? purchase.getWarehouse().getName() : null;
-
-        this.products = purchase.getProducts().stream()
-                .map(p -> new ProductDetail(p, productStockService))
-                .collect(Collectors.toList());
-
-        this.orderTax = purchase.getOrderTax();
-        this.discount = purchase.getDiscount();
-        this.shippingCost = purchase.getShippingCost();
-
-        this.totalAmountTxnCurrency = purchase.getTotalAmountTxnCurrency();
-        this.totalAmountBaseCurrency = purchase.getTotalAmountBaseCurrency();
-        this.exchangeRate = purchase.getExchangeRate();
-
-        this.shippingStatus = purchase.getShippingStatus();
-        this.purchaseStatus = purchase.getPurchaseStatus();
-
-        this.note = purchase.getNote();
-        this.expectedDeliveryDate = purchase.getExpectedDeliveryDate();
-
-        this.createdBy = purchase.getCreatedBy();
-        this.createdAt = purchase.getCreatedAt();
-        this.updatedBy = purchase.getUpdatedBy();
-        this.updatedAt = purchase.getUpdatedAt();
-
-        this.companyId = purchase.getCompanyId();
-        this.payments = paymentResponses;
+        if (purchase.getProducts() != null) {
+            builder.products(purchase.getProducts().stream()
+                    .map(ProductDetail::new)
+                    .collect(Collectors.toList()));
+        }
+        return builder.build();
     }
 
     @Getter
-    @AllArgsConstructor
-    @Builder
     public static class ProductDetail {
         private final Long productId;
         private final String productName;
         private final String productCode;
         private final BigDecimal productUnitCost;
-        private final Integer productStock;
-        private final Integer purchaseQty;
-        private final BigDecimal productDiscount;
-        private final BigDecimal productTax;
+        private final Integer quantity;
+        private final BigDecimal discount;
+        private final BigDecimal subTotal;
+
+        private final String taxName;
+        private final TaxCategory taxCategory;
+        private final BigDecimal taxRate;
+        private final TaxInclusionType taxInclusionType;
+        private final TaxApplicationOrder taxApplicationOrder;
+        private final BigDecimal taxAmount;
+
         private final BigDecimal lineTotalTxnCurrency;
 
-        public ProductDetail(PurchaseProduct purchaseProduct, ProductStockService productStockService) {
-            this.productId = purchaseProduct.getProduct().getId();
-            this.productName = purchaseProduct.getProduct().getName();
-            this.productCode = purchaseProduct.getProduct().getCode();
-            this.productUnitCost = purchaseProduct.getProductUnitCost();
-
-            // Fetch current stock from ProductStockService
-            this.productStock = productStockService.getStock(
-                    purchaseProduct.getProduct().getId(),
-                    purchaseProduct.getPurchase().getWarehouse().getId());
-
-            this.purchaseQty = purchaseProduct.getPurchaseQty();
-            this.productDiscount = purchaseProduct.getProductDiscount();
-            this.productTax = purchaseProduct.getProductTax();
-
-            // Compute line total (unitCost × qty – discount + tax)
-            BigDecimal base = this.productUnitCost.multiply(BigDecimal.valueOf(this.purchaseQty));
-            BigDecimal afterDiscount = base.subtract(Optional.ofNullable(this.productDiscount).orElse(BigDecimal.ZERO));
-            this.lineTotalTxnCurrency = afterDiscount.add(Optional.ofNullable(this.productTax).orElse(BigDecimal.ZERO));
+        public ProductDetail(PurchaseProduct pp) {
+            this.productId = pp.getProduct() != null ? pp.getProduct().getId() : null;
+            this.productName = pp.getProduct() != null ? pp.getProduct().getName() : null;
+            this.productCode = pp.getProduct() != null ? pp.getProduct().getCode() : null;
+            this.productUnitCost = pp.getProductUnitCost();
+            this.quantity = pp.getQuantity();
+            this.discount = pp.getDiscount();
+            this.subTotal = pp.getSubTotal();
+            this.taxName = pp.getTaxName();
+            this.taxCategory = pp.getTaxCategory();
+            this.taxRate = pp.getTaxRate();
+            this.taxInclusionType = pp.getTaxInclusionType();
+            this.taxApplicationOrder = pp.getTaxApplicationOrder();
+            this.taxAmount = pp.getTaxAmount();
+            this.lineTotalTxnCurrency = (subTotal != null ? subTotal : BigDecimal.ZERO)
+                    .add(taxAmount != null ? taxAmount : BigDecimal.ZERO);
         }
     }
 }

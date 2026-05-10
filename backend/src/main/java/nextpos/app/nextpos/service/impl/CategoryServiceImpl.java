@@ -4,9 +4,7 @@ import lombok.RequiredArgsConstructor;
 import nextpos.app.nextpos.model.dto.request.CreateCategoryRequest;
 import nextpos.app.nextpos.model.dto.response.CategoryResponse;
 import nextpos.app.nextpos.model.entity.Category;
-import nextpos.app.nextpos.model.entity.User;
 import nextpos.app.nextpos.repository.CategoryRepository;
-import nextpos.app.nextpos.repository.UserRepository;
 import nextpos.app.nextpos.security.context.UserContext;
 import nextpos.app.nextpos.service.interf.CategoryService;
 import org.springframework.stereotype.Service;
@@ -20,19 +18,15 @@ import java.util.stream.Collectors;
 public class CategoryServiceImpl implements CategoryService {
 
     private final CategoryRepository categoryRepository;
-    private final UserRepository userRepository;
 
     @Override
     public CategoryResponse createCategory(CreateCategoryRequest request) {
-        // Get authenticated user using helper
-        User createdBy = UserContext.getAuthenticatedUser(userRepository);
-
         Category category = new Category();
         category.setName(request.getName());
         category.setCode(request.getCode());
-        category.setCreatedBy(createdBy.getId());
+        category.setCreatedBy(UserContext.getCurrentUserId());
         category.setCreatedAt(LocalDateTime.now());
-        category.setCompanyId(createdBy.getCompanyId());
+        category.setCompanyId(UserContext.getCurrentCompanyId());
 
         return new CategoryResponse(categoryRepository.save(category));
     }
@@ -46,8 +40,8 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Override
     public List<CategoryResponse> findAllByCreatedBy() {
-        User user = UserContext.getAuthenticatedUser(userRepository);
-        return categoryRepository.findAllByCreatedBy(user.getId()).stream()
+        Long userId = UserContext.getCurrentUserId();
+        return categoryRepository.findAllByCreatedBy(userId).stream()
                 .map(CategoryResponse::new)
                 .collect(Collectors.toList());
     }
@@ -64,12 +58,9 @@ public class CategoryServiceImpl implements CategoryService {
         Category category = categoryRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Category not found"));
 
-        // Get authenticated user using helper
-        User updatedBy = UserContext.getAuthenticatedUser(userRepository);
-
         category.setName(request.getName());
         category.setCode(request.getCode());
-        category.setUpdatedBy(updatedBy.getId());
+        category.setUpdatedBy(UserContext.getCurrentUserId());
         category.setUpdatedAt(LocalDateTime.now());
 
         return new CategoryResponse(categoryRepository.save(category));

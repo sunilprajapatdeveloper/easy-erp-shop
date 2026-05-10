@@ -9,7 +9,6 @@ import nextpos.app.nextpos.model.enums.ShipmentStatus;
 import nextpos.app.nextpos.repository.*;
 import nextpos.app.nextpos.security.context.UserContext;
 import nextpos.app.nextpos.service.interf.QuotationService;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,7 +22,6 @@ import java.util.stream.Collectors;
 public class QuotationServiceImpl implements QuotationService {
 
         private final QuotationRepository quotationRepository;
-        private final UserRepository userRepository;
         private final CustomerRepository customerRepository;
         private final WarehouseRepository warehouseRepository;
         private final ProductRepository productRepository;
@@ -31,7 +29,7 @@ public class QuotationServiceImpl implements QuotationService {
         @Override
         @Transactional
         public QuotationResponse createQuotation(CreateQuotationRequest request) {
-                User user = UserContext.getAuthenticatedUser(userRepository);
+                Long currentUserId = UserContext.getCurrentUserId();
 
                 Customer customer = customerRepository.findById(request.getCustomerId())
                                 .orElseThrow(() -> new RuntimeException("Customer not found"));
@@ -49,7 +47,7 @@ public class QuotationServiceImpl implements QuotationService {
                 quotation.setDiscount(Optional.ofNullable(request.getDiscount()).orElse(BigDecimal.ZERO));
                 quotation.setShippingCost(Optional.ofNullable(request.getShippingCost()).orElse(BigDecimal.ZERO));
                 quotation.setStatus(status);
-                quotation.setCreatedBy(user.getId());
+                quotation.setCreatedBy(currentUserId);
 
                 List<QuotationProduct> products = request.getProducts().stream().map(p -> {
                         QuotationProduct qp = new QuotationProduct();
@@ -140,9 +138,8 @@ public class QuotationServiceImpl implements QuotationService {
                         quotation.setWarehouseId(warehouse.getId());
                 }
 
-                User user = UserContext.getAuthenticatedUser(userRepository);
-
-                quotation.setUpdatedBy(user.getId());
+                Long currentUserId = UserContext.getCurrentUserId();
+                quotation.setUpdatedBy(currentUserId);
 
                 Quotation saved = quotationRepository.save(quotation);
 

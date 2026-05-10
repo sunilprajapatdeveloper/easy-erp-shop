@@ -7,11 +7,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import nextpos.app.nextpos.model.enums.PaymentGatewayProvider;
-import nextpos.app.nextpos.model.enums.PaymentMethod;
-import nextpos.app.nextpos.model.enums.PaymentSourceType;
-import nextpos.app.nextpos.model.enums.PaymentType;
-import nextpos.app.nextpos.model.enums.PaymentStatus;
+import nextpos.app.nextpos.model.enums.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -23,46 +19,59 @@ import java.time.LocalDate;
 public class CreatePaymentRequest {
 
     @NotNull
-    private PaymentSourceType referenceType; // SALE, SALE_RETURN, PURCHASE, PURCHASE_RETURN, etc.
+    private PaymentSourceType referenceType;
 
+    @NotNull
     private Long referenceId;
 
-    private String referenceNumber; // Human-readable reference (e.g., sale ref, purchase ref)
+    private String referenceNumber;
 
     @NotNull
-    private PaymentType paymentType; // INCOMING (customer) / OUTGOING (vendor)
+    private PaymentType paymentType;
 
     @NotNull
     @DecimalMin(value = "0.0", inclusive = false)
-    private BigDecimal amount; // Transaction currency amount
+    private BigDecimal amountTxnCurrency;
 
     @NotNull
-    private PaymentMethod paymentMethod; // CASH, CARD, UPI, BANK_TRANSFER, etc.
+    private PaymentMethod paymentMethod;
 
-    private PaymentGatewayProvider gatewayProvider; // Optional (STRIPE, RAZORPAY, etc.)
+    private PaymentGatewayProvider gatewayProvider;
 
-    private String paymentData; // JSON metadata or extra info (card_last4, upi_id, etc.)
-
-    @NotNull
-    private PaymentStatus status; // PENDING, SUCCESS, FAILED, PAID, REFUNDED, etc.
+    private String paymentMetadata;
 
     @NotNull
-    private LocalDate paymentDate; // When payment was made
+    private PaymentStatus status;
 
-    private String note; // Optional human note
+    @NotNull
+    private LocalDate paymentDate;
 
-    private String transactionReference; // External txn ID (bank, POS slip, etc.)
+    private String note;
 
+    private String transactionReference;
+
+    @NotNull
     @Size(max = 100)
-    private String idempotencyKey; // To prevent duplicate processing
+    private String idempotencyKey;
 
     @NotNull
-    private String currencyCode; // ISO 4217 currency code (USD, INR, EUR)
+    private String currencyCode;
 
     @NotNull
     @DecimalMin(value = "0.0", inclusive = false)
-    private BigDecimal exchangeRate; // Rate relative to company base currency
+    private BigDecimal exchangeRate;
 
     @DecimalMin(value = "0.0", inclusive = false)
-    private BigDecimal baseCurrencyAmount; // Optional: amount in company base currency
+    private BigDecimal amountBaseCurrency;
+
+    private String referenceCurrencyCode;
+
+    @DecimalMin(value = "0.0", inclusive = false)
+    private BigDecimal referenceAmount;
+
+    private Long warehouseId;
+
+    private String posTerminalId;
+
+    private ExchangeRateSource exchangeRateSource;
 }

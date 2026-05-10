@@ -6,7 +6,6 @@ import org.springframework.stereotype.Service;
 import nextpos.app.nextpos.service.interf.GroupService;
 import nextpos.app.nextpos.repository.PermissionRepository;
 import nextpos.app.nextpos.repository.RoleRepository;
-import nextpos.app.nextpos.repository.UserRepository;
 import nextpos.app.nextpos.security.context.UserContext;
 import nextpos.app.nextpos.model.dto.request.CreateRoleRequest;
 import nextpos.app.nextpos.model.dto.response.RoleResponse;
@@ -15,7 +14,6 @@ import nextpos.app.nextpos.model.entity.Permission;
 import java.util.Set;
 import java.util.List;
 import java.util.stream.Collectors;
-import nextpos.app.nextpos.model.entity.User;
 
 @Service
 @RequiredArgsConstructor
@@ -23,15 +21,11 @@ public class GroupServiceImpl implements GroupService {
 
     private final RoleRepository roleRepository;
     private final PermissionRepository permissionRepository;
-    private final UserRepository userRepository;
 
     private static final String PROTECTED_ROLE = "COMPANY_OWNER";
 
     @Override
     public RoleResponse createRole(CreateRoleRequest request) {
-        // Get authenticated user using helper
-        User createdBy = UserContext.getAuthenticatedUser(userRepository);
-
         if (roleRepository.findByName(request.getName()).isPresent()) {
             throw new RuntimeException("Role already in use: " + request.getName());
         }
@@ -46,8 +40,8 @@ public class GroupServiceImpl implements GroupService {
                 .name(request.getName())
                 .description(request.getDescription())
                 .permissions(permissions)
-                .createdBy(createdBy.getId())
-                .companyId(createdBy.getCompanyId())
+                .createdBy(UserContext.getCurrentUserId())
+                .companyId(UserContext.getCurrentCompanyId())
                 .createdAt(java.time.LocalDateTime.now())
                 .build();
 

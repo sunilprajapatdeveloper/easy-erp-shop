@@ -22,7 +22,8 @@ public class RazorpayServiceImpl {
     private final RazorpayConfig razorpayConfig;
 
     /**
-     * Initiates a UPI payment order using Razorpay and returns payment instructions (UPI deep link or QR).
+     * Initiates a UPI payment order using Razorpay and returns payment instructions
+     * (UPI deep link or QR).
      *
      * @param request The incoming payment request
      * @return A UPI payment initiation response with Razorpay orderId and UPI link
@@ -32,7 +33,9 @@ public class RazorpayServiceImpl {
             RazorpayClient client = new RazorpayClient(razorpayConfig.getKey(), razorpayConfig.getSecret());
 
             JSONObject options = new JSONObject();
-            options.put("amount", request.getAmount().multiply(BigDecimal.valueOf(100)).intValue()); // Convert to paise
+            options.put("amount", request.getAmountTxnCurrency().multiply(BigDecimal.valueOf(100)).intValue()); // Convert
+                                                                                                                // to
+                                                                                                                // paise
             options.put("currency", request.getCurrencyCode());
             options.put("receipt", request.getReferenceNumber());
             options.put("payment_capture", 1);
@@ -42,7 +45,7 @@ public class RazorpayServiceImpl {
 
             // UPI link format: https://razorpay.com/payment-link/<orderId> OR custom
             String upiLink = "upi://pay?pa=razorpay@icici&pn=NextPOS&tr=" + order.get("id") +
-                    "&am=" + request.getAmount() + "&cu=" + request.getCurrencyCode();
+                    "&am=" + request.getAmountTxnCurrency() + "&cu=" + request.getCurrencyCode();
 
             return UpiPaymentInitiateResponse.builder()
                     .orderId(order.get("id"))
@@ -63,7 +66,8 @@ public class RazorpayServiceImpl {
     }
 
     /**
-     * Generates a base64 placeholder for the UPI QR code (you can replace this with actual QR generation).
+     * Generates a base64 placeholder for the UPI QR code (you can replace this with
+     * actual QR generation).
      */
     private String generateDummyQrBase64(String upiLink) {
         // This is just a placeholder – use ZXing or similar lib in real use case

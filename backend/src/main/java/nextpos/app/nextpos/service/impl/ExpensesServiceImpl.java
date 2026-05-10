@@ -6,11 +6,9 @@ import nextpos.app.nextpos.model.dto.request.UpdateRequest.UpdateExpensesRequest
 import nextpos.app.nextpos.model.dto.response.ExpensesResponse;
 import nextpos.app.nextpos.model.entity.Category;
 import nextpos.app.nextpos.model.entity.Expenses;
-import nextpos.app.nextpos.model.entity.User;
 import nextpos.app.nextpos.model.entity.Warehouse;
 import nextpos.app.nextpos.repository.CategoryRepository;
 import nextpos.app.nextpos.repository.ExpensesRepository;
-import nextpos.app.nextpos.repository.UserRepository;
 import nextpos.app.nextpos.repository.WarehouseRepository;
 import nextpos.app.nextpos.security.context.UserContext;
 import nextpos.app.nextpos.service.interf.ExpensesService;
@@ -26,13 +24,10 @@ public class ExpensesServiceImpl implements ExpensesService {
         private final ExpensesRepository expensesRepository;
         private final WarehouseRepository warehouseRepository;
         private final CategoryRepository categoryRepository;
-        private final UserRepository userRepository;
 
         @Override
         @Transactional
         public ExpensesResponse createExpenses(CreateExpensesRequest request) {
-                User user = UserContext.getAuthenticatedUser(userRepository);
-
                 Warehouse warehouse = warehouseRepository.findById(request.getWarehouseId())
                                 .orElseThrow(() -> new RuntimeException(
                                                 "Warehouse not found with ID: " + request.getWarehouseId()));
@@ -47,9 +42,9 @@ public class ExpensesServiceImpl implements ExpensesService {
                                 .date(request.getDate())
                                 .amount(request.getAmount())
                                 .details(request.getDetails())
-                                .createdBy(user.getId())
+                                .createdBy(UserContext.getCurrentUserId())
                                 .createdAt(LocalDateTime.now())
-                                .companyId(user.getCompanyId())
+                                .companyId(UserContext.getCurrentCompanyId())
                                 .build();
 
                 return new ExpensesResponse(expensesRepository.save(expenses));
@@ -65,8 +60,6 @@ public class ExpensesServiceImpl implements ExpensesService {
         @Override
         @Transactional
         public ExpensesResponse updateExpenses(Long id, UpdateExpensesRequest request) {
-                User user = UserContext.getAuthenticatedUser(userRepository);
-
                 Expenses expenses = expensesRepository.findById(id)
                                 .orElseThrow(() -> new RuntimeException("Expenses not found with ID: " + id));
 
@@ -93,7 +86,7 @@ public class ExpensesServiceImpl implements ExpensesService {
                 }
 
                 expenses.setDetails(request.getDetails());
-                expenses.setUpdatedBy(user.getId());
+                expenses.setUpdatedBy(UserContext.getCurrentUserId());
                 expenses.setUpdatedAt(LocalDateTime.now());
 
                 return new ExpensesResponse(expensesRepository.save(expenses));
@@ -102,13 +95,11 @@ public class ExpensesServiceImpl implements ExpensesService {
         @Override
         @Transactional
         public void deleteExpenses(Long id) {
-                User user = UserContext.getAuthenticatedUser(userRepository);
-
                 Expenses expenses = expensesRepository.findById(id)
                                 .orElseThrow(() -> new RuntimeException("Expenses not found with ID: " + id));
 
                 // Ensure the expense belongs to the user's company
-                if (!expenses.getCompanyId().equals(user.getCompanyId())) {
+                if (!expenses.getCompanyId().equals(UserContext.getCurrentCompanyId())) {
                         throw new SecurityException("You cannot delete expenses from another company");
                 }
 

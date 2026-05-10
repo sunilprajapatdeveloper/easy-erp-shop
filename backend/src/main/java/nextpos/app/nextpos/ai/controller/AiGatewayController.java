@@ -5,8 +5,6 @@ import lombok.extern.slf4j.Slf4j;
 import nextpos.app.nextpos.ai.dto.AiRequest;
 import nextpos.app.nextpos.ai.dto.AiResponse;
 import nextpos.app.nextpos.ai.orchestrator.AiOrchestrator;
-import nextpos.app.nextpos.model.entity.User;
-import nextpos.app.nextpos.repository.UserRepository;
 import nextpos.app.nextpos.security.context.UserContext;
 import reactor.core.publisher.Flux;
 
@@ -21,15 +19,12 @@ import jakarta.validation.Valid;
 @RequiredArgsConstructor
 public class AiGatewayController {
     private final AiOrchestrator orchestrator;
-    private final UserRepository userRepository;
 
     @PostMapping("/chat")
     public ResponseEntity<AiResponse<?>> chat(@Valid @RequestBody AiRequest request) {
-        // Assuming UserContext has methods getCompanyId() and getUserId()
-        User user = UserContext.getAuthenticatedUser(userRepository);
-        Long companyId = user.getCompanyId();
+        Long companyId = UserContext.getCurrentCompanyId();
         String tenantId = String.valueOf(companyId);
-        String userId = String.valueOf(user.getId());
+        String userId = String.valueOf(UserContext.getCurrentUserId());
 
         AiResponse<?> response = orchestrator.orchestrate(tenantId, userId, request);
         return ResponseEntity.ok(response);

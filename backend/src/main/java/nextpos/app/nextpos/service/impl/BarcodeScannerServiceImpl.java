@@ -45,16 +45,14 @@ public class BarcodeScannerServiceImpl implements BarcodeScannerService {
     @Override
     @Transactional
     public ScannerRegistrationResponse registerScanner(ScannerRegistrationRequest request) {
-        User user = UserContext.getAuthenticatedUser(userRepository);
-        Long companyId = user.getCompanyId();
+        Long companyId = UserContext.getCurrentCompanyId();
 
         // Validate warehouse belongs to company
         Warehouse warehouse = warehouseRepository.findByIdAndCompanyIdAndIsDeletedFalse(
                 request.getWarehouseId(), companyId)
                 .orElseThrow(() -> new RuntimeException("Warehouse not found or unauthorized"));
 
-        // Validate user exists (remove company check for user since it might not have
-        // companyId field)
+        // Validate user exists
         User assignedUser = userRepository.findById(request.getAssignedUserId())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
@@ -90,8 +88,7 @@ public class BarcodeScannerServiceImpl implements BarcodeScannerService {
     @Override
     @Transactional
     public BarcodeScanResponse processBarcodeScan(BarcodeScanRequest request) {
-        User user = UserContext.getAuthenticatedUser(userRepository);
-        Long companyId = user.getCompanyId();
+        Long companyId = UserContext.getCurrentCompanyId();
 
         BarcodeScanner scanner = validateScanner(request.getScannerId(), companyId);
         Long warehouseId = scanner.getWarehouse().getId();
@@ -167,8 +164,7 @@ public class BarcodeScannerServiceImpl implements BarcodeScannerService {
     @Transactional
     public BarcodeScanResponse validateAndProcessScan(String scannerId, String barcode) {
         try {
-            User user = UserContext.getAuthenticatedUser(userRepository);
-            Long companyId = user.getCompanyId();
+            Long companyId = UserContext.getCurrentCompanyId();
 
             String scannerCacheKey = SCANNER_CACHE_PREFIX + scannerId + ":" + companyId;
             Boolean scannerActive = (Boolean) redisTemplate.opsForValue().get(scannerCacheKey);
@@ -220,8 +216,7 @@ public class BarcodeScannerServiceImpl implements BarcodeScannerService {
 
     @Override
     public void updateScannerStatus(String scannerId, String status) {
-        User user = UserContext.getAuthenticatedUser(userRepository);
-        Long companyId = user.getCompanyId();
+        Long companyId = UserContext.getCurrentCompanyId();
 
         scannerRepository.findByScannerIdAndCompanyId(scannerId, companyId)
                 .ifPresent(scanner -> {
@@ -234,8 +229,7 @@ public class BarcodeScannerServiceImpl implements BarcodeScannerService {
 
     @Override
     public List<BarcodeScanner> getScannersByWarehouse(Long warehouseId) {
-        User user = UserContext.getAuthenticatedUser(userRepository);
-        Long companyId = user.getCompanyId();
+        Long companyId = UserContext.getCurrentCompanyId();
 
         return scannerRepository.findByWarehouseIdAndCompanyId(warehouseId, companyId);
     }
@@ -243,8 +237,7 @@ public class BarcodeScannerServiceImpl implements BarcodeScannerService {
     @Override
     public void disconnectScanner(String scannerId) {
         updateScannerStatus(scannerId, "INACTIVE");
-        User user = UserContext.getAuthenticatedUser(userRepository);
-        Long companyId = user.getCompanyId();
+        Long companyId = UserContext.getCurrentCompanyId();
 
         String cacheKey = SCANNER_CACHE_PREFIX + scannerId + ":" + companyId;
         redisTemplate.delete(cacheKey);

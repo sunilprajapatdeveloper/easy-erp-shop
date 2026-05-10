@@ -320,7 +320,6 @@ public class UserServiceImpl implements UserService {
 
         // Get all user IDs
         List<Long> userIds = users.stream().map(User::getId).collect(Collectors.toList());
-        Long companyId = currentUser.getCompanyId();
 
         // Get profile images for all users in batch
         Map<Long, List<MediaResponse>> mediaMap = mediaService.getMediaForEntities("USER", userIds);
@@ -521,9 +520,8 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public void deleteUser(final Long userId) {
         // Get user to get companyId before deleting
-        User user = userRepository.findById(userId)
+        userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
-        Long companyId = user.getCompanyId();
 
         // Delete user's media
         try {
@@ -600,10 +598,6 @@ public class UserServiceImpl implements UserService {
 
     private boolean isBlank(final String s) {
         return s == null || s.trim().isEmpty();
-    }
-
-    private String nv(final String s) {
-        return s == null ? "" : s;
     }
 
     private MediaResponse getProfileImageFromMedia(Long userId) {

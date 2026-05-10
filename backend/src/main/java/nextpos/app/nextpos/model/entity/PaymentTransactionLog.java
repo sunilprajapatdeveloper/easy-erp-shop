@@ -22,13 +22,16 @@ import lombok.Setter;
 
 import java.time.LocalDateTime;
 
+import nextpos.app.nextpos.model.enums.PaymentAttemptType;
 import nextpos.app.nextpos.model.enums.PaymentGatewayProvider;
+import nextpos.app.nextpos.model.enums.PaymentStatus;
 
 @Entity
 @Table(name = "payment_transaction_logs", indexes = {
         @Index(name = "idx_payment_log_payment", columnList = "payment_id"),
         @Index(name = "idx_payment_log_company", columnList = "company_id"),
-        @Index(name = "idx_payment_log_success", columnList = "success")
+        @Index(name = "idx_payment_log_status", columnList = "status"),
+        @Index(name = "idx_payment_log_trace", columnList = "trace_id")
 })
 @Getter
 @Setter
@@ -48,37 +51,45 @@ public class PaymentTransactionLog {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "gateway_provider", length = 50)
-    private PaymentGatewayProvider gatewayProvider; // STRIPE, RAZORPAY, etc.
+    private PaymentGatewayProvider gatewayProvider;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false, length = 30)
+    private PaymentStatus status;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "attempt_type", length = 30)
+    private PaymentAttemptType attemptType;
+
+    @Column(name = "attempt_number")
+    private Integer attemptNumber;
 
     @Column(name = "request_payload", columnDefinition = "TEXT")
-    private String requestPayload; // JSON request (masked if sensitive)
+    private String requestPayload;
 
     @Column(name = "response_payload", columnDefinition = "TEXT")
-    private String responsePayload; // JSON response (masked if sensitive)
-
-    @Column(name = "success", nullable = false)
-    private boolean success;
+    private String responsePayload;
 
     @Column(name = "error_message", length = 1000)
-    private String errorMessage; // Optional debug info
-
-    @Column(name = "attempt_type", length = 50)
-    private String attemptType; // INITIATED, CALLBACK, RETRY, etc.
+    private String errorMessage;
 
     @Column(name = "trace_id", length = 100)
-    private String traceId; // Optional correlation ID
+    private String traceId;
+
+    @Column(name = "latency_ms")
+    private Long latencyMs;
 
     @Column(name = "executed_by")
-    private Long executedBy; // User ID performing the action
+    private Long executedBy;
 
     @Column(name = "company_id", nullable = false)
-    private Long companyId; // Same as Payment.companyId
+    private Long companyId;
 
-    @Column(name = "timestamp", nullable = false)
-    private LocalDateTime timestamp;
+    @Column(name = "created_at", nullable = false)
+    private LocalDateTime createdAt;
 
     @PrePersist
     protected void onCreate() {
-        this.timestamp = LocalDateTime.now();
+        this.createdAt = LocalDateTime.now();
     }
 }

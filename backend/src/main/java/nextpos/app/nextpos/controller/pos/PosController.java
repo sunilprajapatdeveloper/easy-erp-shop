@@ -2,14 +2,13 @@ package nextpos.app.nextpos.controller.pos;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import nextpos.app.nextpos.model.dto.request.CreatePaymentRequest;
 import nextpos.app.nextpos.model.dto.request.CreateRequest.CreateSaleRequest;
 import nextpos.app.nextpos.model.dto.request.UpdateRequest.UpdateSaleRequest;
-import nextpos.app.nextpos.model.dto.request.CreatePaymentRequest;
+import nextpos.app.nextpos.model.dto.response.PaymentResponse;
 import nextpos.app.nextpos.model.dto.response.SaleResponse;
 import nextpos.app.nextpos.model.enums.SaleSource;
-import nextpos.app.nextpos.model.dto.response.PaymentResponse;
 import nextpos.app.nextpos.service.interf.PosService;
-import nextpos.app.nextpos.service.interf.PaymentService;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -22,7 +21,6 @@ import org.springframework.web.bind.annotation.*;
 public class PosController {
 
     private final PosService posService;
-    private final PaymentService paymentService;
 
     /**
      * Create a new sale from the POS (products, discounts, taxes, customer, etc.)
@@ -30,26 +28,7 @@ public class PosController {
     @PostMapping("/sale")
     public ResponseEntity<SaleResponse> createSale(@RequestBody CreateSaleRequest saleRequest) {
         log.info("POS :: Creating sale for customerId = {}", saleRequest.getCustomerId());
-
-        // Create a new request based on the original, but with source = POS
-        CreateSaleRequest posSaleRequest = CreateSaleRequest.builder()
-                .date(saleRequest.getDate())
-                .customerId(saleRequest.getCustomerId())
-                .warehouseId(saleRequest.getWarehouseId())
-                .products(saleRequest.getProducts())
-                .orderTax(saleRequest.getOrderTax())
-                .discount(saleRequest.getDiscount())
-                .shippingCost(saleRequest.getShippingCost())
-                .shipmentStatus(saleRequest.getShipmentStatus())
-                .saleStatus(saleRequest.getSaleStatus())
-                .source(SaleSource.POS)
-                .note(saleRequest.getNote())
-                .payments(saleRequest.getPayments())
-                .currencyId(saleRequest.getCurrencyId())
-                .exchangeRate(saleRequest.getExchangeRate())
-                .build();
-
-        SaleResponse saleResponse = posService.createSale(posSaleRequest);
+        SaleResponse saleResponse = posService.createSale(saleRequest);
         return ResponseEntity.ok(saleResponse);
     }
 
@@ -61,7 +40,7 @@ public class PosController {
             @PathVariable Long saleId,
             @RequestBody CreatePaymentRequest paymentRequest) {
         log.info("POS :: Adding payment for saleId = {}, method = {}", saleId, paymentRequest.getPaymentMethod());
-        PaymentResponse paymentResponse = paymentService.processPayment(saleId, paymentRequest);
+        PaymentResponse paymentResponse = posService.addPaymentToSale(saleId, paymentRequest);
         return ResponseEntity.ok(paymentResponse);
     }
 
@@ -91,25 +70,14 @@ public class PosController {
 
     /**
      * Update an existing sale by sale ID.
-     * You can update products, discounts, taxes, customer, etc.
      */
     @PutMapping("/sale/{saleId}")
     public ResponseEntity<SaleResponse> updateSale(
             @PathVariable Long saleId,
             @RequestBody UpdateSaleRequest updateRequest) {
         log.info("POS :: Updating sale with ID = {}", saleId);
-
-        // Ensure the source is POS
         updateRequest.setSource(SaleSource.POS);
-
         SaleResponse updatedSale = posService.updateSale(saleId, updateRequest);
         return ResponseEntity.ok(updatedSale);
     }
-
-    // Future enhancements you may want to add here:
-    // @PostMapping("/terminal/shift/open")
-    // public ResponseEntity<...> openShift(...) { ... }
-
-    // @PostMapping("/sale/{saleId}/refund")
-    // public ResponseEntity<...> refundSale(...) { ... }
 }

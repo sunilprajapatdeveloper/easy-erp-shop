@@ -14,8 +14,6 @@ import nextpos.app.nextpos.pagination.dto.ApiResponse;
 import nextpos.app.nextpos.pagination.dto.PaginationRequest;
 import nextpos.app.nextpos.pagination.dto.PaginationResponse;
 import nextpos.app.nextpos.model.entity.ProductStatus;
-import nextpos.app.nextpos.model.entity.User;
-import nextpos.app.nextpos.repository.UserRepository;
 import nextpos.app.nextpos.security.context.UserContext;
 import nextpos.app.nextpos.service.interf.MediaService;
 import nextpos.app.nextpos.service.interf.ProductService;
@@ -35,7 +33,6 @@ public class ProductController {
 
     private final ProductService productService;
     private final MediaService mediaService;
-    private final UserRepository userRepository;
 
     /**
      * Create new product for a company
@@ -131,8 +128,7 @@ public class ProductController {
             @PathVariable Long productId,
             @RequestParam("files") List<MultipartFile> files) throws IOException {
 
-        User user = UserContext.getAuthenticatedUser(userRepository);
-        Long companyId = user.getCompanyId();
+        Long companyId = UserContext.getCurrentCompanyId();
 
         MediaUploadRequest request = MediaUploadRequest.builder()
                 .companyId(companyId)

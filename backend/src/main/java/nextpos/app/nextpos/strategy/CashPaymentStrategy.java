@@ -7,7 +7,6 @@ import nextpos.app.nextpos.model.dto.request.CreatePaymentRequest;
 import nextpos.app.nextpos.model.dto.response.PaymentResponse;
 import nextpos.app.nextpos.model.entity.Payment;
 import nextpos.app.nextpos.model.entity.PaymentTransactionLog;
-import nextpos.app.nextpos.model.entity.User;
 import nextpos.app.nextpos.model.enums.PaymentGatewayProvider;
 import nextpos.app.nextpos.model.enums.PaymentMethod;
 import nextpos.app.nextpos.model.enums.PaymentStatus;
@@ -31,7 +30,6 @@ public class CashPaymentStrategy implements PaymentStrategy {
 
     private final PaymentRepository paymentRepository;
     private final PaymentTransactionLogRepository transactionLogRepository;
-    private final UserRepository userRepository;
     private final ObjectMapper objectMapper;
 
     public CashPaymentStrategy(PaymentRepository paymentRepository,
@@ -40,7 +38,6 @@ public class CashPaymentStrategy implements PaymentStrategy {
             ObjectMapper objectMapper) {
         this.paymentRepository = paymentRepository;
         this.transactionLogRepository = transactionLogRepository;
-        this.userRepository = userRepository;
         this.objectMapper = objectMapper;
     }
 
@@ -52,25 +49,21 @@ public class CashPaymentStrategy implements PaymentStrategy {
     @Override
     @Transactional
     public PaymentResponse pay(CreatePaymentRequest request) {
-        // log.info("Processing cash payment for referenceType={} referenceId={}
-        // amount={}", request.getReferenceType(), request.getReferenceId(),
-        // request.getAmount());
-
-        User user = UserContext.getAuthenticatedUser(userRepository);
+        Long currentUserId = UserContext.getCurrentUserId();
+        Long currentCompanyId = UserContext.getCurrentCompanyId();
 
         try {
-            // Compute base currency amount if not provided
-            BigDecimal baseAmount = request.getBaseCurrencyAmount() != null
-                    ? request.getBaseCurrencyAmount().setScale(4, RoundingMode.HALF_UP)
-                    : request.getAmount().multiply(request.getExchangeRate()).setScale(4, RoundingMode.HALF_UP);
+            BigDecimal baseAmount = request.getAmountBaseCurrency() != null
+                    ? request.getAmountBaseCurrency().setScale(4, RoundingMode.HALF_UP)
+                    : request.getAmountTxnCurrency().multiply(request.getExchangeRate()).setScale(4,
+                            RoundingMode.HALF_UP);
 
-            // Build Payment entity
             Payment payment = Payment.builder()
                     .referenceType(request.getReferenceType())
                     .referenceId(request.getReferenceId())
                     .referenceNumber(request.getReferenceNumber())
                     .paymentType(request.getPaymentType())
-                    .amountTxnCurrency(request.getAmount().setScale(4, RoundingMode.HALF_UP))
+                    .amountTxnCurrency(request.getAmountTxnCurrency().setScale(4, RoundingMode.HALF_UP))
                     .amountBaseCurrency(baseAmount)
                     .currencyCode(request.getCurrencyCode())
                     .exchangeRate(request.getExchangeRate())
@@ -80,56 +73,84 @@ public class CashPaymentStrategy implements PaymentStrategy {
                     .transactionReference(
                             firstNonBlank(request.getTransactionReference(), request.getReferenceNumber()))
                     .idempotencyKey(request.getIdempotencyKey())
-                    // Serialize metadata Map to JSON string
-                    .paymentMetadata(objectMapper.writeValueAsString(normalizeMetadata(request.getPaymentData())))
-                    .createdBy(user.getId())
-                    .updatedBy(user.getId())
-                    .companyId(user.getCompanyId())
+                    .paymentMetadata(objectMapper.writeValueAsString(normalizeMetadata(request.getPaymentMetadata())))
+                    .createdBy(currentUserId)
+                    .updatedBy(currentUserId)
+                    .companyId(currentCompanyId)
+                    .referenceCurrencyCode(request.getReferenceCurrencyCode())
+                    .referenceAmount(request.getReferenceAmount() != null
+                            ? request.getReferenceAmount().setScale(4, RoundingMode.HALF_UP)
+                            : null)
+                    .warehouseId(request.getWarehouseId())
+                    .posTerminalId(request.getPosTerminalId())
+                    .exchangeRateSource(request.getExchangeRateSource())
                     .build();
 
             Payment saved = paymentRepository.save(payment);
 
-            // Log transaction
             PaymentTransactionLog logEntry = PaymentTransactionLog.builder()
                     .payment(saved)
-                    .executedBy(user.getId())
+                    .executedBy(currentUserId)
                     .companyId(saved.getCompanyId())
                     .gatewayProvider(PaymentGatewayProvider.STRIPE)
                     .requestPayload("Cash payment received")
                     .responsePayload("Payment saved successfully")
-                    .success(true)
-                    .timestamp(LocalDateTime.now())
+                    .status(PaymentStatus.PAID)
+                    .createdAt(LocalDateTime.now())
                     .build();
-
-            try {
-                transactionLogRepository.save(logEntry);
-            } catch (Exception ignore) {
-                log.error("Failed to save failed payment log", ignore);
-            }
+            transactionLogRepository.save(logEntry);
 
             return toPaymentResponse(saved);
 
         } catch (Exception ex) {
-            // log.error("Error while processing cash payment", ex);
-
+            Payment failedPayment = saveFailedPayment(request, currentUserId, currentCompanyId, ex);
             PaymentTransactionLog failedLog = PaymentTransactionLog.builder()
-                    .executedBy(user.getId())
-                    .companyId(user.getCompanyId())
+                    .payment(failedPayment)
+                    .executedBy(currentUserId)
+                    .companyId(currentCompanyId)
                     .gatewayProvider(PaymentGatewayProvider.STRIPE)
                     .requestPayload("Cash payment failed")
                     .responsePayload("Error: " + ex.getMessage())
-                    .success(false)
-                    .timestamp(LocalDateTime.now())
+                    .status(PaymentStatus.FAILED)
+                    .errorMessage(ex.getMessage())
+                    .createdAt(LocalDateTime.now())
                     .build();
-
             try {
                 transactionLogRepository.save(failedLog);
             } catch (Exception ignore) {
                 log.error("Failed to save failed payment log", ignore);
             }
-
             throw new RuntimeException("Cash payment failed: " + ex.getMessage(), ex);
         }
+    }
+
+    private Payment saveFailedPayment(CreatePaymentRequest request, Long userId, Long companyId, Exception ex) {
+        Payment failed = Payment.builder()
+                .referenceType(request.getReferenceType())
+                .referenceId(request.getReferenceId())
+                .referenceNumber(request.getReferenceNumber())
+                .paymentType(request.getPaymentType())
+                .amountTxnCurrency(request.getAmountTxnCurrency())
+                .currencyCode(request.getCurrencyCode())
+                .exchangeRate(request.getExchangeRate())
+                .amountBaseCurrency(request.getAmountBaseCurrency() != null
+                        ? request.getAmountBaseCurrency()
+                        : request.getAmountTxnCurrency().multiply(request.getExchangeRate()))
+                .paymentMethod(PaymentMethod.CASH)
+                .status(PaymentStatus.FAILED)
+                .paymentDate(request.getPaymentDate() != null ? request.getPaymentDate() : LocalDate.now())
+                .idempotencyKey(request.getIdempotencyKey())
+                .paymentMetadata("{\"error\":\"" + ex.getMessage().replace("\"", "\\\"") + "\"}")
+                .createdBy(userId)
+                .updatedBy(userId)
+                .companyId(companyId)
+                .referenceCurrencyCode(request.getReferenceCurrencyCode())
+                .referenceAmount(request.getReferenceAmount())
+                .warehouseId(request.getWarehouseId())
+                .posTerminalId(request.getPosTerminalId())
+                .exchangeRateSource(request.getExchangeRateSource())
+                .build();
+        return paymentRepository.save(failed);
     }
 
     private Map<String, Object> normalizeMetadata(String metadata) {
@@ -139,7 +160,6 @@ public class CashPaymentStrategy implements PaymentStrategy {
             return objectMapper.readValue(metadata, new TypeReference<Map<String, Object>>() {
             });
         } catch (Exception e) {
-            // log.warn("Failed to parse payment metadata, returning empty map", e);
             return Collections.emptyMap();
         }
     }
@@ -151,8 +171,8 @@ public class CashPaymentStrategy implements PaymentStrategy {
                 .referenceType(payment.getReferenceType())
                 .referenceId(payment.getReferenceId())
                 .paymentType(payment.getPaymentType())
-                .amount(payment.getAmountTxnCurrency())
-                .baseCurrencyAmount(payment.getAmountBaseCurrency())
+                .amountTxnCurrency(payment.getAmountTxnCurrency())
+                .amountBaseCurrency(payment.getAmountBaseCurrency())
                 .currencyCode(payment.getCurrencyCode())
                 .exchangeRate(payment.getExchangeRate())
                 .paymentMethod(payment.getPaymentMethod())
@@ -168,6 +188,11 @@ public class CashPaymentStrategy implements PaymentStrategy {
                 .updatedBy(payment.getUpdatedBy())
                 .updatedAt(payment.getUpdatedAt())
                 .message("Cash Payment Successful")
+                .referenceCurrencyCode(payment.getReferenceCurrencyCode())
+                .referenceAmount(payment.getReferenceAmount())
+                .warehouseId(payment.getWarehouseId())
+                .posTerminalId(payment.getPosTerminalId())
+                .exchangeRateSource(payment.getExchangeRateSource())
                 .build();
     }
 

@@ -10,13 +10,11 @@ import nextpos.app.nextpos.model.dto.response.SubscriptionPlanResponse;
 import nextpos.app.nextpos.model.entity.Company;
 import nextpos.app.nextpos.model.entity.CompanySubscription;
 import nextpos.app.nextpos.model.entity.SubscriptionPlan;
-import nextpos.app.nextpos.model.entity.User;
 import nextpos.app.nextpos.model.enums.BillingCycle;
 import nextpos.app.nextpos.model.enums.SubscriptionStatus;
 import nextpos.app.nextpos.repository.CompanyRepository;
 import nextpos.app.nextpos.repository.CompanySubscriptionRepository;
 import nextpos.app.nextpos.repository.SubscriptionPlanRepository;
-import nextpos.app.nextpos.repository.UserRepository;
 import nextpos.app.nextpos.security.context.UserContext;
 import nextpos.app.nextpos.service.interf.CompanySubscriptionService;
 import org.springframework.stereotype.Service;
@@ -42,16 +40,15 @@ public class CompanySubscriptionServiceImpl implements CompanySubscriptionServic
     private final CompanySubscriptionRepository companySubscriptionRepository;
     private final CompanyRepository companyRepository;
     private final SubscriptionPlanRepository subscriptionPlanRepository;
-    private final UserRepository userRepository;
 
     @Override
     public CompanySubscriptionResponse createCompanySubscription(CreateCompanySubscriptionRequest request) {
-        User user = UserContext.getAuthenticatedUser(userRepository);
-        Long currentUserId = user.getId();
+        Long currentUserId = UserContext.getCurrentUserId();
+        Long currentCompanyId = UserContext.getCurrentCompanyId();
 
         // Validate that the user belongs to the same company as the subscription
         // request
-        if (!user.getCompanyId().equals(request.getCompanyId())) {
+        if (!currentCompanyId.equals(request.getCompanyId())) {
             throw new SecurityException("You can only create subscriptions for your own company");
         }
 
@@ -155,8 +152,8 @@ public class CompanySubscriptionServiceImpl implements CompanySubscriptionServic
     @Override
     public CompanySubscriptionResponse updateCompanySubscription(Long subscriptionId,
             UpdateCompanySubscriptionRequest request) {
-        User user = UserContext.getAuthenticatedUser(userRepository);
-        Long currentUserId = user.getId();
+        Long currentUserId = UserContext.getCurrentUserId();
+        Long currentCompanyId = UserContext.getCurrentCompanyId();
 
         CompanySubscription subscription = companySubscriptionRepository.findById(subscriptionId)
                 .filter(sub -> !sub.isDeleted())
@@ -164,7 +161,7 @@ public class CompanySubscriptionServiceImpl implements CompanySubscriptionServic
                         () -> new EntityNotFoundException("CompanySubscription not found with id: " + subscriptionId));
 
         // Ensure the subscription belongs to the user's company
-        if (!user.getCompanyId().equals(subscription.getCompany().getId())) {
+        if (!currentCompanyId.equals(subscription.getCompany().getId())) {
             throw new SecurityException("You can only update subscriptions for your own company");
         }
 
@@ -251,8 +248,8 @@ public class CompanySubscriptionServiceImpl implements CompanySubscriptionServic
 
     @Override
     public void deleteCompanySubscription(Long subscriptionId) {
-        User user = UserContext.getAuthenticatedUser(userRepository);
-        Long currentUserId = user.getId();
+        Long currentUserId = UserContext.getCurrentUserId();
+        Long currentCompanyId = UserContext.getCurrentCompanyId();
 
         CompanySubscription subscription = companySubscriptionRepository.findById(subscriptionId)
                 .filter(sub -> !sub.isDeleted())
@@ -260,7 +257,7 @@ public class CompanySubscriptionServiceImpl implements CompanySubscriptionServic
                         () -> new EntityNotFoundException("CompanySubscription not found with id: " + subscriptionId));
 
         // Ensure the subscription belongs to the user's company
-        if (!user.getCompanyId().equals(subscription.getCompany().getId())) {
+        if (!currentCompanyId.equals(subscription.getCompany().getId())) {
             throw new SecurityException("You can only delete subscriptions for your own company");
         }
 

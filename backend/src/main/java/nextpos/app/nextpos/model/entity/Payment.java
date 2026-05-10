@@ -18,7 +18,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-
+import nextpos.app.nextpos.model.enums.ExchangeRateSource;
 import nextpos.app.nextpos.model.enums.PaymentGatewayProvider;
 import nextpos.app.nextpos.model.enums.PaymentMethod;
 import nextpos.app.nextpos.model.enums.PaymentSourceType;
@@ -34,7 +34,10 @@ import java.time.LocalDateTime;
         @Index(name = "idx_payment_reference", columnList = "reference_type, reference_id"),
         @Index(name = "idx_payment_company", columnList = "company_id"),
         @Index(name = "idx_payment_status", columnList = "status"),
-        @Index(name = "idx_payment_date", columnList = "payment_date")
+        @Index(name = "idx_payment_date", columnList = "payment_date"),
+        @Index(name = "idx_payments_warehouse", columnList = "warehouse_id"),
+        @Index(name = "idx_payments_pos_terminal", columnList = "pos_terminal_id"),
+        @Index(name = "idx_payments_ref_currency", columnList = "reference_currency_code")
 }, uniqueConstraints = {
         @UniqueConstraint(name = "uk_payment_idempotency", columnNames = { "idempotency_key", "company_id" })
 })
@@ -58,7 +61,7 @@ public class Payment {
     @Column(name = "reference_id", nullable = false)
     private Long referenceId;
 
-    // Human-readable reference (original sale reference, purchasee reference, etc)
+    // Human-readable reference (original sale reference, purchase reference, etc)
     @Column(name = "reference_number", length = 100)
     private String referenceNumber;
 
@@ -67,21 +70,42 @@ public class Payment {
     @Column(name = "payment_type", nullable = false, length = 20)
     private PaymentType paymentType;
 
-    // Amount in transaction currency
+    // Amount in transaction currency (what was actually paid)
     @Column(name = "amount_txn_currency", nullable = false, precision = 18, scale = 4)
     private BigDecimal amountTxnCurrency;
 
-    // Converted to company base currency
-    @Column(name = "amount_base_currency", nullable = false, precision = 18, scale = 4)
-    private BigDecimal amountBaseCurrency;
-
-    // Example: USD, INR, EUR
+    // Currency of the payment (e.g., USD, EUR)
     @Column(name = "currency_code", length = 10, nullable = false)
     private String currencyCode;
 
-    // Rate applied at transaction time
+    // Exchange rate used to convert amountTxnCurrency to company base currency
     @Column(name = "exchange_rate", precision = 18, scale = 8, nullable = false)
     private BigDecimal exchangeRate;
+
+    // Value in company's functional currency (for GL)
+    @Column(name = "amount_base_currency", nullable = false, precision = 18, scale = 4)
+    private BigDecimal amountBaseCurrency;
+
+    // Currency of the original document (e.g., sale currency, purchase currency)
+    @Column(name = "reference_currency_code", length = 10)
+    private String referenceCurrencyCode;
+
+    // Total amount in the document's currency
+    @Column(name = "reference_amount", precision = 18, scale = 4)
+    private BigDecimal referenceAmount;
+
+    // Warehouse where transaction occurred
+    @Column(name = "warehouse_id")
+    private Long warehouseId;
+
+    // POS terminal identifier (if applicable)
+    @Column(name = "pos_terminal_id", length = 100)
+    private String posTerminalId;
+
+    // Source of exchange rate (e.g., "OPENEXCHANGERATES", "MANUAL", "STRIPE")
+    @Enumerated(EnumType.STRING)
+    @Column(name = "exchange_rate_source", length = 50)
+    private ExchangeRateSource exchangeRateSource;
 
     // CASH, CARD, UPI, BANK_TRANSFER, etc.
     @Enumerated(EnumType.STRING)
@@ -106,7 +130,7 @@ public class Payment {
     private String transactionReference;
 
     // Unique reference to prevent duplicate payment processing
-    @Column(name = "idempotency_key", length = 100)
+    @Column(name = "idempotency_key", length = 100, nullable = false)
     private String idempotencyKey;
 
     // JSON: { "card_last4": "1234", "upi_id": "...", "ip": "..." }

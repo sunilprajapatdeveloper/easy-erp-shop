@@ -6,10 +6,8 @@ import nextpos.app.nextpos.model.dto.request.UpdateRequest.UpdateLoyaltySettings
 import nextpos.app.nextpos.model.dto.response.LoyaltySettingsResponse;
 import nextpos.app.nextpos.model.entity.Company;
 import nextpos.app.nextpos.model.entity.LoyaltySettings;
-import nextpos.app.nextpos.model.entity.User;
 import nextpos.app.nextpos.repository.LoyaltySettingsRepository;
 import nextpos.app.nextpos.repository.CompanyRepository;
-import nextpos.app.nextpos.repository.UserRepository;
 import nextpos.app.nextpos.security.context.UserContext;
 import nextpos.app.nextpos.service.interf.LoyaltySettingsService;
 import org.springframework.stereotype.Service;
@@ -26,13 +24,11 @@ public class LoyaltySettingsServiceImpl implements LoyaltySettingsService {
 
     private final LoyaltySettingsRepository repository;
     private final CompanyRepository companyRepository;
-    private final UserRepository userRepository;
 
     @Override
     public LoyaltySettingsResponse createLoyaltySettings(CreateLoyaltySettingsRequest request) {
-        User user = UserContext.getAuthenticatedUser(userRepository);
-        Long companyId = user.getCompanyId();
-        Long currentUserId = user.getId();
+        Long companyId = UserContext.getCurrentCompanyId();
+        Long currentUserId = UserContext.getCurrentUserId();
 
         Company company = companyRepository.findById(companyId)
                 .orElseThrow(() -> new IllegalArgumentException("Company not found with id: " + companyId));
@@ -62,9 +58,8 @@ public class LoyaltySettingsServiceImpl implements LoyaltySettingsService {
 
     @Override
     public LoyaltySettingsResponse updateLoyaltySettings(Long id, UpdateLoyaltySettingsRequest request) {
-        User user = UserContext.getAuthenticatedUser(userRepository);
-        Long companyId = user.getCompanyId();
-        Long currentUserId = user.getId();
+        Long companyId = UserContext.getCurrentCompanyId();
+        Long currentUserId = UserContext.getCurrentUserId();
 
         Company company = companyRepository.findById(companyId)
                 .orElseThrow(() -> new IllegalArgumentException("Company not found with id: " + companyId));
@@ -109,8 +104,7 @@ public class LoyaltySettingsServiceImpl implements LoyaltySettingsService {
 
     @Override
     public LoyaltySettingsResponse getLoyaltySettings(Long id) {
-        User user = UserContext.getAuthenticatedUser(userRepository);
-        Long companyId = user.getCompanyId();
+        Long companyId = UserContext.getCurrentCompanyId();
 
         Company company = companyRepository.findById(companyId)
                 .orElseThrow(() -> new IllegalArgumentException("Company not found with id: " + companyId));
@@ -124,8 +118,7 @@ public class LoyaltySettingsServiceImpl implements LoyaltySettingsService {
 
     @Override
     public List<LoyaltySettingsResponse> listLoyaltySettings() {
-        User user = UserContext.getAuthenticatedUser(userRepository);
-        Long companyId = user.getCompanyId();
+        Long companyId = UserContext.getCurrentCompanyId();
 
         Company company = companyRepository.findById(companyId)
                 .orElseThrow(() -> new IllegalArgumentException("Company not found with id: " + companyId));

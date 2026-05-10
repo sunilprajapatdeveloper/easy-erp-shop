@@ -1,29 +1,30 @@
 package nextpos.app.nextpos.repository;
 
 import nextpos.app.nextpos.model.entity.PurchaseReturn;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-import org.springframework.stereotype.Repository;
+import org.springframework.lang.NonNull;
 
 import java.util.List;
+import java.util.Optional;
 
-@Repository
 public interface PurchaseReturnRepository extends JpaRepository<PurchaseReturn, Long> {
 
-    // Optional: find all returns by supplier
-    List<PurchaseReturn> findBySupplierId(Long supplierId);
+        @EntityGraph(attributePaths = { "products", "supplier", "warehouse", "currency" })
+        @NonNull
+        Optional<PurchaseReturn> findById(@NonNull Long id);
 
-    // Optional: find all returns by purchase
-    List<PurchaseReturn> findByOriginalPurchaseId(Long purchaseId);
+        @EntityGraph(attributePaths = { "products" })
+        List<PurchaseReturn> findByCreatedBy(Long createdBy);
 
-    // Optional: find all returns by warehouse
-    List<PurchaseReturn> findByWarehouseId(Long warehouseId);
+        @EntityGraph(attributePaths = { "products" })
+        List<PurchaseReturn> findByCompanyId(Long companyId);
 
-    @Query("SELECT COALESCE(SUM(prp.returnQty), 0) " +
-            "FROM PurchaseReturnProduct prp " +
-            "WHERE prp.purchaseReturn.originalPurchase.id = :purchaseId " +
-            "AND prp.product.id = :productId")
-    Integer sumReturnedQtyByPurchaseAndProduct(@Param("purchaseId") Long purchaseId,
-            @Param("productId") Long productId);
+        @Query("SELECT COALESCE(SUM(prp.quantity), 0) " +
+                        "FROM PurchaseReturn pr JOIN pr.products prp " +
+                        "WHERE pr.originalPurchase.id = :purchaseId AND prp.product.id = :productId")
+        int sumReturnedQtyByPurchaseAndProduct(@Param("purchaseId") Long purchaseId,
+                        @Param("productId") Long productId);
 }

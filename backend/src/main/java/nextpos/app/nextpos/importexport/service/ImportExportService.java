@@ -17,9 +17,7 @@ import nextpos.app.nextpos.importexport.strategy.ImportExportStrategy;
 import nextpos.app.nextpos.importexport.strategy.ImportExportStrategyRegistry;
 import nextpos.app.nextpos.model.dto.request.MediaUploadRequest;
 import nextpos.app.nextpos.model.dto.response.MediaResponse;
-import nextpos.app.nextpos.model.entity.User;
 import nextpos.app.nextpos.model.enums.MediaType;
-import nextpos.app.nextpos.repository.UserRepository;
 import nextpos.app.nextpos.security.context.UserContext;
 import nextpos.app.nextpos.service.interf.MediaService;
 import nextpos.app.nextpos.importexport.producer.ImportJobProducer;
@@ -45,7 +43,6 @@ public class ImportExportService {
     private final ImportExportJobRepository jobRepository;
     private final ImportErrorRepository errorRepository;
     private final MediaService mediaService;
-    private final UserRepository userRepository;
     private final ImportJobProducer importJobProducer;
     private final ExportJobProducer exportJobProducer;
     private final ImportExportStrategyRegistry strategyRegistry;
@@ -55,9 +52,8 @@ public class ImportExportService {
 
     @Transactional
     public JobResponse startImport(ImportRequest request) {
-        User user = UserContext.getAuthenticatedUser(userRepository);
-        Long companyId = user.getCompanyId();
-        Long userId = user.getId();
+        Long companyId = UserContext.getCurrentCompanyId();
+        Long userId = UserContext.getCurrentUserId();
 
         // Validate module exists
         ImportExportStrategy strategy = strategyRegistry.getStrategy(request.getModule());
@@ -135,9 +131,8 @@ public class ImportExportService {
 
     @Transactional
     public JobResponse startExport(ExportRequest request) {
-        User user = UserContext.getAuthenticatedUser(userRepository);
-        Long companyId = user.getCompanyId();
-        Long userId = user.getId();
+        Long companyId = UserContext.getCurrentCompanyId();
+        Long userId = UserContext.getCurrentUserId();
 
         ImportExportStrategy strategy = strategyRegistry.getStrategy(request.getModule());
         if (strategy == null) {
@@ -186,8 +181,7 @@ public class ImportExportService {
     }
 
     public JobStatusResponse getJobStatus(Long jobId) {
-        User user = UserContext.getAuthenticatedUser(userRepository);
-        Long companyId = user.getCompanyId();
+        Long companyId = UserContext.getCurrentCompanyId();
 
         ImportExportJob job = jobRepository.findByIdAndCompanyId(jobId, companyId)
                 .orElseThrow(() -> new IllegalArgumentException("Job not found"));
@@ -215,8 +209,7 @@ public class ImportExportService {
     }
 
     public Page<ImportErrorResponse> getJobErrors(Long jobId, Pageable pageable) {
-        User user = UserContext.getAuthenticatedUser(userRepository);
-        Long companyId = user.getCompanyId();
+        Long companyId = UserContext.getCurrentCompanyId();
 
         // Ensure job belongs to company
         jobRepository.findByIdAndCompanyId(jobId, companyId)
@@ -227,8 +220,7 @@ public class ImportExportService {
     }
 
     public Page<JobResponse> getHistory(String module, String type, Pageable pageable) {
-        User user = UserContext.getAuthenticatedUser(userRepository);
-        Long companyId = user.getCompanyId();
+        Long companyId = UserContext.getCurrentCompanyId();
 
         if (module != null) {
             return jobRepository.findByCompanyIdAndModuleOrderByCreatedAtDesc(companyId, module, pageable)
@@ -245,8 +237,8 @@ public class ImportExportService {
 
     @Transactional
     public void cancelJob(Long jobId) {
-        User user = UserContext.getAuthenticatedUser(userRepository);
-        Long companyId = user.getCompanyId();
+        Long companyId = UserContext.getCurrentCompanyId();
+        Long userId = UserContext.getCurrentUserId();
 
         ImportExportJob job = jobRepository.findByIdAndCompanyId(jobId, companyId)
                 .orElseThrow(() -> new IllegalArgumentException("Job not found"));
@@ -257,7 +249,7 @@ public class ImportExportService {
 
         job.setStatus("CANCELLED");
         job.setCompletedAt(LocalDateTime.now());
-        job.setUpdatedBy(user.getId());
+        job.setUpdatedBy(userId);
         jobRepository.save(job);
     }
 

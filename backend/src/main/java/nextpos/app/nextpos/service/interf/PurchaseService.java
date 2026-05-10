@@ -1,7 +1,6 @@
 package nextpos.app.nextpos.service.interf;
 
 import java.util.List;
-
 import nextpos.app.nextpos.model.dto.request.CreatePurchaseRequest;
 import nextpos.app.nextpos.model.dto.request.UpdateRequest.UpdatePurchaseRequest;
 import nextpos.app.nextpos.model.dto.response.PurchaseResponse;

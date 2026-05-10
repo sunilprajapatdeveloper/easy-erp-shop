@@ -8,7 +8,6 @@ import nextpos.app.nextpos.model.dto.request.CreatePaymentRequest;
 import nextpos.app.nextpos.model.dto.response.PaymentResponse;
 import nextpos.app.nextpos.model.entity.Payment;
 import nextpos.app.nextpos.model.entity.PaymentTransactionLog;
-import nextpos.app.nextpos.model.entity.User;
 import nextpos.app.nextpos.model.enums.PaymentGatewayProvider;
 import nextpos.app.nextpos.model.enums.PaymentMethod;
 import nextpos.app.nextpos.model.enums.PaymentStatus;
@@ -33,7 +32,6 @@ public class UpiPaymentStrategy implements PaymentStrategy {
 
     private final PaymentRepository paymentRepository;
     private final PaymentTransactionLogRepository transactionLogRepository;
-    private final UserRepository userRepository;
     private final ObjectMapper objectMapper;
 
     public UpiPaymentStrategy(PaymentRepository paymentRepository,
@@ -42,7 +40,6 @@ public class UpiPaymentStrategy implements PaymentStrategy {
             ObjectMapper objectMapper) {
         this.paymentRepository = paymentRepository;
         this.transactionLogRepository = transactionLogRepository;
-        this.userRepository = userRepository;
         this.objectMapper = objectMapper;
     }
 
@@ -54,25 +51,24 @@ public class UpiPaymentStrategy implements PaymentStrategy {
     @Override
     @Transactional
     public PaymentResponse pay(CreatePaymentRequest request) {
-        log.info("Initiating UPI payment for referenceId={} amount={}",
-                request.getReferenceId(), request.getAmount());
-
-        User user = UserContext.getAuthenticatedUser(userRepository);
+        Long currentUserId = UserContext.getCurrentUserId();
+        Long currentCompanyId = UserContext.getCurrentCompanyId();
 
         try {
             PaymentGatewayProvider gateway = determineGateway(request);
             JSONObject metadata = generateUpiMetadata(request, gateway);
 
-            BigDecimal baseAmount = request.getBaseCurrencyAmount() != null
-                    ? request.getBaseCurrencyAmount().setScale(4, RoundingMode.HALF_UP)
-                    : request.getAmount().multiply(request.getExchangeRate()).setScale(4, RoundingMode.HALF_UP);
+            BigDecimal baseAmount = request.getAmountBaseCurrency() != null
+                    ? request.getAmountBaseCurrency().setScale(4, RoundingMode.HALF_UP)
+                    : request.getAmountTxnCurrency().multiply(request.getExchangeRate()).setScale(4,
+                            RoundingMode.HALF_UP);
 
             Payment payment = Payment.builder()
                     .referenceType(request.getReferenceType())
                     .referenceId(request.getReferenceId())
                     .referenceNumber(request.getReferenceNumber())
                     .paymentType(request.getPaymentType())
-                    .amountTxnCurrency(request.getAmount().setScale(4, RoundingMode.HALF_UP))
+                    .amountTxnCurrency(request.getAmountTxnCurrency().setScale(4, RoundingMode.HALF_UP))
                     .amountBaseCurrency(baseAmount)
                     .currencyCode(request.getCurrencyCode())
                     .exchangeRate(request.getExchangeRate())
@@ -83,67 +79,105 @@ public class UpiPaymentStrategy implements PaymentStrategy {
                     .transactionReference(metadata.optString("transactionId"))
                     .idempotencyKey(request.getIdempotencyKey())
                     .paymentMetadata(metadata.toString())
-                    .createdBy(user.getId())
-                    .updatedBy(user.getId())
+                    .createdBy(currentUserId)
+                    .updatedBy(currentUserId)
                     .createdAt(LocalDateTime.now())
                     .updatedAt(LocalDateTime.now())
-                    .companyId(user.getCompanyId())
+                    .companyId(currentCompanyId)
+                    .referenceCurrencyCode(request.getReferenceCurrencyCode())
+                    .referenceAmount(request.getReferenceAmount() != null
+                            ? request.getReferenceAmount().setScale(4, RoundingMode.HALF_UP)
+                            : null)
+                    .warehouseId(request.getWarehouseId())
+                    .posTerminalId(request.getPosTerminalId())
+                    .exchangeRateSource(request.getExchangeRateSource())
                     .build();
 
             Payment savedPayment = paymentRepository.save(payment);
 
-            // Log transaction
             PaymentTransactionLog logEntry = PaymentTransactionLog.builder()
                     .payment(savedPayment)
-                    .executedBy(user.getId())
+                    .executedBy(currentUserId)
                     .companyId(savedPayment.getCompanyId())
                     .gatewayProvider(gateway)
-                    .requestPayload(request.getPaymentData())
+                    .requestPayload(request.getPaymentMetadata())
                     .responsePayload(metadata.toString())
-                    .success(true)
-                    .timestamp(LocalDateTime.now())
+                    .status(PaymentStatus.PENDING)
+                    .createdAt(LocalDateTime.now())
                     .build();
             transactionLogRepository.save(logEntry);
 
-            return buildPaymentResponse(savedPayment, "UPI Payment initiated successfully via " + gateway.name());
+            return buildResponse(savedPayment, "UPI Payment initiated successfully via " + gateway.name());
 
         } catch (Exception ex) {
             log.error("Failed to initiate UPI payment", ex);
-
+            Payment failedPayment = saveFailedPayment(request, currentUserId, currentCompanyId, ex);
+            PaymentTransactionLog failedLog = PaymentTransactionLog.builder()
+                    .payment(failedPayment)
+                    .executedBy(currentUserId)
+                    .companyId(currentCompanyId)
+                    .gatewayProvider(PaymentGatewayProvider.UNKNOWN)
+                    .requestPayload(request.getPaymentMetadata())
+                    .responsePayload("Error: " + ex.getMessage())
+                    .status(PaymentStatus.FAILED)
+                    .errorMessage(ex.getMessage())
+                    .createdAt(LocalDateTime.now())
+                    .build();
             try {
-                PaymentTransactionLog failedLog = PaymentTransactionLog.builder()
-                        .executedBy(user.getId())
-                        .companyId(user.getCompanyId())
-                        .gatewayProvider(PaymentGatewayProvider.UNKNOWN)
-                        .requestPayload(request.getPaymentData())
-                        .responsePayload("Error: " + ex.getMessage())
-                        .success(false)
-                        .timestamp(LocalDateTime.now())
-                        .build();
                 transactionLogRepository.save(failedLog);
             } catch (Exception logEx) {
                 log.error("Failed to log UPI transaction error", logEx);
             }
-
             throw new PaymentProcessingException("Failed to initiate UPI payment: " + ex.getMessage(), ex);
         }
     }
 
+    private Payment saveFailedPayment(CreatePaymentRequest request, Long userId, Long companyId, Exception e) {
+        Payment failed = Payment.builder()
+                .referenceType(request.getReferenceType())
+                .referenceId(request.getReferenceId())
+                .referenceNumber(request.getReferenceNumber())
+                .paymentType(request.getPaymentType())
+                .amountTxnCurrency(request.getAmountTxnCurrency())
+                .currencyCode(request.getCurrencyCode())
+                .exchangeRate(request.getExchangeRate())
+                .amountBaseCurrency(request.getAmountBaseCurrency() != null
+                        ? request.getAmountBaseCurrency()
+                        : request.getAmountTxnCurrency().multiply(request.getExchangeRate()))
+                .paymentMethod(PaymentMethod.UPI)
+                .status(PaymentStatus.FAILED)
+                .paymentDate(request.getPaymentDate() != null ? request.getPaymentDate() : LocalDate.now())
+                .idempotencyKey(request.getIdempotencyKey())
+                .paymentMetadata(
+                        "{\"error\":\"" + e.getMessage().replace("\"", "\\\"") + "\"}")
+                .createdBy(userId)
+                .updatedBy(userId)
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
+                .companyId(companyId)
+                .referenceCurrencyCode(request.getReferenceCurrencyCode())
+                .referenceAmount(request.getReferenceAmount())
+                .warehouseId(request.getWarehouseId())
+                .posTerminalId(request.getPosTerminalId())
+                .exchangeRateSource(request.getExchangeRateSource())
+                .build();
+        return paymentRepository.save(failed);
+    }
+
     private PaymentGatewayProvider determineGateway(CreatePaymentRequest request) {
-        // Dynamic selection logic can be implemented here
         return PaymentGatewayProvider.RAZORPAY;
     }
 
     private JSONObject generateUpiMetadata(CreatePaymentRequest request, PaymentGatewayProvider gateway) {
         JSONObject metadata = new JSONObject();
         metadata.put("gateway", gateway.name());
-        metadata.put("amount", request.getAmount());
+        metadata.put("amount", request.getAmountTxnCurrency());
         metadata.put("currency", request.getCurrencyCode());
 
         String txnId = gateway.name() + "_TXN_" + System.currentTimeMillis();
         metadata.put("transactionId", txnId);
         metadata.put("upiLink", "upi://pay?pa=" + gateway.name().toLowerCase() + "@upi&pn=NextPOS&tr="
-                + txnId + "&am=" + request.getAmount() + "&cu=" + request.getCurrencyCode());
+                + txnId + "&am=" + request.getAmountTxnCurrency() + "&cu=" + request.getCurrencyCode());
 
         return metadata;
     }
@@ -160,15 +194,15 @@ public class UpiPaymentStrategy implements PaymentStrategy {
         }
     }
 
-    private PaymentResponse buildPaymentResponse(Payment payment, String message) {
+    private PaymentResponse buildResponse(Payment payment, String message) {
         return PaymentResponse.builder()
                 .id(payment.getId())
                 .referenceNumber(payment.getReferenceNumber())
                 .referenceType(payment.getReferenceType())
                 .referenceId(payment.getReferenceId())
                 .paymentType(payment.getPaymentType())
-                .amount(payment.getAmountTxnCurrency())
-                .baseCurrencyAmount(payment.getAmountBaseCurrency())
+                .amountTxnCurrency(payment.getAmountTxnCurrency())
+                .amountBaseCurrency(payment.getAmountBaseCurrency())
                 .currencyCode(payment.getCurrencyCode())
                 .exchangeRate(payment.getExchangeRate())
                 .paymentMethod(payment.getPaymentMethod())
@@ -183,6 +217,11 @@ public class UpiPaymentStrategy implements PaymentStrategy {
                 .updatedBy(payment.getUpdatedBy())
                 .updatedAt(payment.getUpdatedAt())
                 .message(message)
+                .referenceCurrencyCode(payment.getReferenceCurrencyCode())
+                .referenceAmount(payment.getReferenceAmount())
+                .warehouseId(payment.getWarehouseId())
+                .posTerminalId(payment.getPosTerminalId())
+                .exchangeRateSource(payment.getExchangeRateSource())
                 .build();
     }
 }

@@ -1,17 +1,11 @@
 package nextpos.app.nextpos.model.dto.request.CreateRequest;
 
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.DecimalMin;
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
-import nextpos.app.nextpos.model.dto.request.CreatePaymentRequest;
-import nextpos.app.nextpos.model.enums.SaleSource;
-import nextpos.app.nextpos.model.enums.SaleStatus;
-import nextpos.app.nextpos.model.enums.ShipmentStatus;
+import nextpos.app.nextpos.model.enums.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -35,12 +29,18 @@ public class CreateSaleRequest {
     @Valid
     private final List<SaleProductRequest> products;
 
+    @NotNull
     @DecimalMin(value = "0.0", inclusive = true)
     private final BigDecimal orderTax;
 
+    @NotNull
     @DecimalMin(value = "0.0", inclusive = true)
-    private final BigDecimal discount;
+    private final BigDecimal orderDiscount;
 
+    @NotNull
+    private final DiscountType orderDiscountType;
+
+    @NotNull
     @DecimalMin(value = "0.0", inclusive = true)
     private final BigDecimal shippingCost;
 
@@ -55,22 +55,16 @@ public class CreateSaleRequest {
 
     private final String note;
 
-    @Valid
-    private final List<CreatePaymentRequest> payments;
-
-    /**
-     * Currency id must always be passed (system enforces valid currency reference)
-     */
     @NotNull
     private final Long currencyId;
 
-    /**
-     * Exchange rate between txn currency and company base currency.
-     * Mandatory since all amounts in entity are persisted in both currencies.
-     */
     @NotNull
     @DecimalMin(value = "0.00000001", inclusive = true)
     private final BigDecimal exchangeRate;
+
+    private final String couponCode;
+
+    private final String currencyCode;
 
     @Getter
     @AllArgsConstructor
@@ -86,12 +80,36 @@ public class CreateSaleRequest {
 
         @NotNull
         @Min(1)
-        private final Integer saleQty;
+        private final Integer quantity;
 
+        @NotNull
         @DecimalMin(value = "0.0", inclusive = true)
-        private final BigDecimal productDiscount;
+        private final BigDecimal discount;
 
+        @NotNull
         @DecimalMin(value = "0.0", inclusive = true)
-        private final BigDecimal productTax;
+        private final BigDecimal subTotal;
+
+        @NotBlank
+        @Size(max = 100)
+        private final String taxName;
+
+        @NotNull
+        private final TaxCategory taxCategory;
+
+        @NotNull
+        @DecimalMin(value = "0.000", inclusive = true)
+        @Digits(integer = 5, fraction = 3)
+        private final BigDecimal taxRate;
+
+        @NotNull
+        private final TaxInclusionType taxInclusionType;
+
+        @NotNull
+        private final TaxApplicationOrder taxApplicationOrder;
+
+        @NotNull
+        @DecimalMin(value = "0.0", inclusive = true)
+        private final BigDecimal taxAmount;
     }
 }

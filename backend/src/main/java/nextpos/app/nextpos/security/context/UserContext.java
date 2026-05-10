@@ -4,56 +4,85 @@ import nextpos.app.nextpos.model.entity.User;
 import nextpos.app.nextpos.repository.UserRepository;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Component;
 
-import java.util.Optional;
+import jakarta.annotation.PostConstruct;
+import lombok.extern.slf4j.Slf4j;
 
-public final class UserContext {
+/**
+ * Thread-safe holder for current authenticated user details.
+ * Static methods accessible from anywhere after Spring initialisation.
+ */
+@Component
+@Slf4j
+public class UserContext {
 
-    private UserContext() {
+    private static UserRepository userRepository;
+    private final UserRepository instanceUserRepository;
+
+    public UserContext(UserRepository userRepository) {
+        this.instanceUserRepository = userRepository;
+    }
+
+    @PostConstruct
+    public void init() {
+        userRepository = this.instanceUserRepository;
+        log.info("UserContext initialised with UserRepository");
     }
 
     /**
      * Retrieves the currently authenticated User entity.
-     * 
-     * @param userRepository the UserRepository to look up the user
-     * @return the User object
-     * @throws RuntimeException if no authenticated user is found
      */
-    public static User getAuthenticatedUser(UserRepository userRepository) {
+    public static User getAuthenticatedUser() {
+        if (userRepository == null) {
+            throw new IllegalStateException("UserContext not initialised - UserRepository missing");
+        }
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-
         if (authentication == null || !authentication.isAuthenticated()
                 || "anonymousUser".equals(authentication.getPrincipal())) {
-            throw new RuntimeException("Unauthorized: Cannot perform operation without authentication");
+            throw new SecurityException("Unauthorized: No authenticated user found");
         }
-
         String identifier = authentication.getName();
-
-        // Try email first, then phone
-        Optional<User> optionalUser = userRepository.findByEmail(identifier);
-
-        if (optionalUser.isEmpty())
-            optionalUser = userRepository.findByPhone(identifier);
-
-        return optionalUser.orElseThrow(() -> new RuntimeException("Authenticated user not found"));
+        return userRepository.findByEmail(identifier)
+                .orElseGet(() -> userRepository.findByPhone(identifier)
+                        .orElseThrow(() -> new SecurityException("Authenticated user not found in database")));
     }
 
     /**
-     * Returns the company ID of the currently authenticated user, if any.
-     * 
-     * @param userRepository the UserRepository to look up the user
-     * @return Optional containing the company ID, or empty if user has no company
-     *         or is not authenticated
+     * Returns the company ID of the currently authenticated user.
      */
-    public static Optional<Long> getCurrentUserCompanyId(UserRepository userRepository) {
-        try {
-            User user = getAuthenticatedUser(userRepository);
-            if (user.getCompanyId() != null) {
-                return Optional.of(user.getCompanyId());
-            }
-        } catch (RuntimeException e) {
-            // User not authenticated or not found – return empty
+    public static Long getCurrentCompanyId() {
+        User user = getAuthenticatedUser();
+        if (user.getCompanyId() == null) {
+            throw new IllegalStateException("Authenticated user does not belong to any company");
         }
-        return Optional.empty();
+        return user.getCompanyId();
+    }
+
+    /**
+     * Returns the ID of the currently authenticated user.
+     */
+    public static Long getCurrentUserId() {
+        return getAuthenticatedUser().getId();
+    }
+
+    /**
+     * Returns the default warehouse ID of the current user (may be null).
+     */
+    public static Long getCurrentDefaultWarehouseId() {
+        User user = getAuthenticatedUser();
+        return user.getDefaultWarehouse() != null ? user.getDefaultWarehouse().getId() : null;
+    }
+
+    /**
+     * Safe version – returns Optional of company ID (empty if not authenticated or
+     * no company).
+     */
+    public static java.util.Optional<Long> getCurrentCompanyIdSafe() {
+        try {
+            return java.util.Optional.of(getCurrentCompanyId());
+        } catch (Exception e) {
+            return java.util.Optional.empty();
+        }
     }
 }

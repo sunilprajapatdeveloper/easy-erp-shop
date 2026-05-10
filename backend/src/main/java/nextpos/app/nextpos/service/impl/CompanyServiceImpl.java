@@ -30,7 +30,6 @@ import nextpos.app.nextpos.model.entity.ShippingProviderSettings;
 import nextpos.app.nextpos.model.entity.SocialMediaSettings;
 import nextpos.app.nextpos.model.entity.SubscriptionPlan;
 import nextpos.app.nextpos.model.entity.TaxSetting;
-import nextpos.app.nextpos.model.entity.User;
 import nextpos.app.nextpos.repository.BrandingSettingsRepository;
 import nextpos.app.nextpos.repository.CompanyCurrencyRepository;
 import nextpos.app.nextpos.repository.CompanyRepository;
@@ -41,7 +40,6 @@ import nextpos.app.nextpos.repository.SecuritySettingsRepository;
 import nextpos.app.nextpos.repository.ShippingProviderSettingsRepository;
 import nextpos.app.nextpos.repository.SocialMediaSettingsRepository;
 import nextpos.app.nextpos.repository.TaxSettingRepository;
-import nextpos.app.nextpos.repository.UserRepository;
 import nextpos.app.nextpos.security.context.UserContext;
 import nextpos.app.nextpos.service.interf.CompanyService;
 import org.springframework.stereotype.Service;
@@ -72,7 +70,6 @@ public class CompanyServiceImpl implements CompanyService {
     private final TaxSettingRepository taxSettingRepository;
     private final CompanyCurrencyRepository companyCurrencyRepository;
     private final CompanySubscriptionRepository companySubscriptionRepository;
-    private final UserRepository userRepository;
 
     @Override
     public CompanyResponse createCompany(CreateCompanyRequest request) {
@@ -113,8 +110,7 @@ public class CompanyServiceImpl implements CompanyService {
 
     @Override
     public CompanyResponse updateCompany(Long companyId, UpdateCompanyRequest request) {
-        User currentUser = UserContext.getAuthenticatedUser(userRepository);
-        Long updatedBy = currentUser.getId();
+        Long updatedBy = UserContext.getCurrentUserId();
         log.info("Updating company id={} by user {}", companyId, updatedBy);
 
         Company company = companyRepository.findById(companyId)
@@ -208,8 +204,7 @@ public class CompanyServiceImpl implements CompanyService {
 
     @Override
     public void deleteCompany(Long companyId) {
-        User currentUser = UserContext.getAuthenticatedUser(userRepository);
-        Long deletedBy = currentUser.getId();
+        Long deletedBy = UserContext.getCurrentUserId();
         log.info("Soft deleting company id={} by user {}", companyId, deletedBy);
 
         Company company = companyRepository.findById(companyId)

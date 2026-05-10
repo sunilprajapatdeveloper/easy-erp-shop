@@ -1,10 +1,9 @@
 package nextpos.app.nextpos.model.dto.response;
 
-import lombok.Getter;
+import lombok.*;
 import nextpos.app.nextpos.model.entity.SaleReturn;
 import nextpos.app.nextpos.model.entity.SaleReturnProduct;
-import nextpos.app.nextpos.model.enums.SaleStatus;
-import nextpos.app.nextpos.model.enums.ShipmentStatus;
+import nextpos.app.nextpos.model.enums.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -13,77 +12,114 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Getter
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
 public class SaleReturnResponse {
 
-    private final Long id;
-    private final String referenceNumber;
-    private final LocalDate date;
+    private Long id;
+    private String referenceNumber;
+    private String invoiceNumber;
+    private String receiptNumber;
 
-    private final Long originalSaleId;
-    private final Long customerId;
-    private final Long warehouseId;
+    private LocalDate date;
+    private Long originalSaleId;
+    private Long customerId;
+    private Long warehouseId;
 
-    private final List<ProductDetail> products;
+    private List<ProductDetail> products;
 
-    private final BigDecimal returnTax;
-    private final BigDecimal returnDiscount;
-    private final BigDecimal shippingCost;
+    private BigDecimal orderTax;
+    private BigDecimal orderDiscount;
+    private DiscountType orderDiscountType;
+    private BigDecimal shippingCost;
+    private BigDecimal roundingAmount;
 
-    private final BigDecimal refundAmountTxnCurrency;
-    private final BigDecimal refundAmountBaseCurrency;
-    private final BigDecimal exchangeRate;
+    private BigDecimal totalAmountTxnCurrency;
+    private BigDecimal paidAmountTxnCurrency;
+    private BigDecimal dueAmountTxnCurrency;
+    private BigDecimal grandTotalTxnCurrency;
 
-    private final Long currencyId;
-    private final String currencyCode;
+    private BigDecimal exchangeRate;
+    private Long currencyId;
+    private String currencyCode;
+    private BigDecimal totalAmountBaseCurrency;
+    private BigDecimal paidAmountBaseCurrency;
+    private BigDecimal dueAmountBaseCurrency;
 
-    private final ShipmentStatus shipmentStatus;
-    private final SaleStatus returnStatus;
+    private Long appliedPromotionId;
+    private String appliedPromotionName;
+    private BigDecimal promotionDiscountAmount;
+    private DiscountType promotionDiscountType;
+    private String promotionCouponCode;
 
-    private final String note;
+    private ShipmentStatus shipmentStatus;
+    private SaleStatus saleStatus;
+    private PaymentStatus paymentStatus;
+    private SaleSource source;
 
-    private final List<PaymentResponse> payments;
+    private String note;
+    private String returnReason;
 
-    private final Long createdBy;
-    private final LocalDateTime createdAt;
-    private final Long updatedBy;
-    private final LocalDateTime updatedAt;
+    private String posTerminalId;
+    private Long cashierId;
 
-    private final Long companyId;
+    private Long createdBy;
+    private LocalDateTime createdAt;
+    private Long updatedBy;
+    private LocalDateTime updatedAt;
+    private Long companyId;
 
-    public SaleReturnResponse(SaleReturn saleReturn, List<PaymentResponse> payments) {
-        this.id = saleReturn.getId();
-        this.referenceNumber = saleReturn.getReferenceNumber();
-        this.date = saleReturn.getDate();
+    public static SaleReturnResponse fromEntity(SaleReturn sr) {
+        SaleReturnResponseBuilder builder = SaleReturnResponse.builder()
+                .id(sr.getId())
+                .referenceNumber(sr.getReferenceNumber())
+                .invoiceNumber(sr.getInvoiceNumber())
+                .receiptNumber(sr.getReceiptNumber())
+                .date(sr.getDate())
+                .originalSaleId(sr.getOriginalSale() != null ? sr.getOriginalSale().getId() : null)
+                .customerId(sr.getCustomer() != null ? sr.getCustomer().getId() : null)
+                .warehouseId(sr.getWarehouse() != null ? sr.getWarehouse().getId() : null)
+                .companyId(sr.getCompanyId())
+                .orderTax(sr.getOrderTax())
+                .orderDiscount(sr.getOrderDiscount())
+                .orderDiscountType(sr.getOrderDiscountType())
+                .shippingCost(sr.getShippingCost())
+                .roundingAmount(sr.getRoundingAmount())
+                .totalAmountTxnCurrency(sr.getTotalAmountTxnCurrency())
+                .paidAmountTxnCurrency(sr.getPaidAmountTxnCurrency())
+                .dueAmountTxnCurrency(sr.getDueAmountTxnCurrency())
+                .grandTotalTxnCurrency(sr.getGrandTotalTxnCurrency())
+                .exchangeRate(sr.getExchangeRate())
+                .currencyId(sr.getCurrency() != null ? sr.getCurrency().getId() : null)
+                .currencyCode(sr.getCurrency() != null ? sr.getCurrency().getCode() : null)
+                .totalAmountBaseCurrency(sr.getTotalAmountBaseCurrency())
+                .paidAmountBaseCurrency(sr.getPaidAmountBaseCurrency())
+                .dueAmountBaseCurrency(sr.getDueAmountBaseCurrency())
+                .appliedPromotionId(sr.getAppliedPromotion() != null ? sr.getAppliedPromotion().getId() : null)
+                .appliedPromotionName(sr.getAppliedPromotion() != null ? sr.getAppliedPromotion().getName() : null)
+                .promotionDiscountAmount(sr.getPromotionDiscountAmount())
+                .promotionDiscountType(sr.getPromotionDiscountType())
+                .promotionCouponCode(sr.getPromotionCouponCode())
+                .shipmentStatus(sr.getShipmentStatus())
+                .saleStatus(sr.getSaleStatus())
+                .paymentStatus(sr.getPaymentStatus())
+                .source(sr.getSource())
+                .note(sr.getNote())
+                .returnReason(sr.getReturnReason())
+                .posTerminalId(sr.getPosTerminalId())
+                .cashierId(sr.getCashierId())
+                .createdBy(sr.getCreatedBy())
+                .createdAt(sr.getCreatedAt())
+                .updatedBy(sr.getUpdatedBy())
+                .updatedAt(sr.getUpdatedAt());
 
-        this.originalSaleId = saleReturn.getOriginalSale() != null ? saleReturn.getOriginalSale().getId() : null;
-        this.customerId = saleReturn.getCustomer() != null ? saleReturn.getCustomer().getId() : null;
-        this.warehouseId = saleReturn.getWarehouse() != null ? saleReturn.getWarehouse().getId() : null;
-
-        this.products = saleReturn.getProducts() == null ? List.of()
-                : saleReturn.getProducts().stream().map(ProductDetail::new).collect(Collectors.toList());
-
-        this.returnTax = saleReturn.getReturnTax();
-        this.returnDiscount = saleReturn.getReturnDiscount();
-        this.shippingCost = saleReturn.getShippingCost();
-
-        this.refundAmountTxnCurrency = saleReturn.getRefundAmountTxnCurrency();
-        this.refundAmountBaseCurrency = saleReturn.getRefundAmountBaseCurrency();
-        this.exchangeRate = saleReturn.getExchangeRate();
-
-        this.currencyId = saleReturn.getCurrency() != null ? saleReturn.getCurrency().getId() : null;
-        this.currencyCode = saleReturn.getCurrency() != null ? saleReturn.getCurrency().getCode() : null;
-
-        this.shipmentStatus = saleReturn.getShipmentStatus();
-        this.returnStatus = saleReturn.getReturnStatus();
-
-        this.note = saleReturn.getNote();
-        this.payments = payments;
-
-        this.createdBy = saleReturn.getCreatedBy();
-        this.createdAt = saleReturn.getCreatedAt();
-        this.updatedBy = saleReturn.getUpdatedBy();
-        this.updatedAt = saleReturn.getUpdatedAt();
-        this.companyId = saleReturn.getCompanyId();
+        if (sr.getProducts() != null) {
+            builder.products(sr.getProducts().stream()
+                    .map(ProductDetail::new)
+                    .collect(Collectors.toList()));
+        }
+        return builder.build();
     }
 
     @Getter
@@ -92,27 +128,35 @@ public class SaleReturnResponse {
         private final String productName;
         private final String productCode;
         private final BigDecimal productUnitPrice;
-        private final Integer returnQty;
-        private final BigDecimal returnDiscount;
-        private final BigDecimal returnTax;
+        private final Integer quantity;
+        private final BigDecimal discount;
+        private final BigDecimal subTotal;
+
+        private final String taxName;
+        private final TaxCategory taxCategory;
+        private final BigDecimal taxRate;
+        private final TaxInclusionType taxInclusionType;
+        private final TaxApplicationOrder taxApplicationOrder;
+        private final BigDecimal taxAmount;
+
         private final BigDecimal lineTotalTxnCurrency;
 
-        public ProductDetail(SaleReturnProduct product) {
-            this.productId = product.getProduct() != null ? product.getProduct().getId() : null;
-            this.productName = product.getProduct() != null ? product.getProduct().getName() : null;
-            this.productCode = product.getProduct() != null ? product.getProduct().getCode() : null;
-            this.productUnitPrice = product.getProductUnitPrice();
-            this.returnQty = product.getReturnQty();
-            this.returnDiscount = product.getReturnDiscount();
-            this.returnTax = product.getReturnTax();
-
-            // Simple line total calculation for client convenience
-            BigDecimal base = this.productUnitPrice != null && this.returnQty != null
-                    ? this.productUnitPrice.multiply(BigDecimal.valueOf(this.returnQty))
-                    : BigDecimal.ZERO;
-            BigDecimal afterDiscount = base
-                    .subtract(this.returnDiscount != null ? this.returnDiscount : BigDecimal.ZERO);
-            this.lineTotalTxnCurrency = afterDiscount.add(this.returnTax != null ? this.returnTax : BigDecimal.ZERO);
+        public ProductDetail(SaleReturnProduct sp) {
+            this.productId = sp.getProduct() != null ? sp.getProduct().getId() : null;
+            this.productName = sp.getProduct() != null ? sp.getProduct().getName() : null;
+            this.productCode = sp.getProduct() != null ? sp.getProduct().getCode() : null;
+            this.productUnitPrice = sp.getProductUnitPrice();
+            this.quantity = sp.getQuantity();
+            this.discount = sp.getDiscount();
+            this.subTotal = sp.getSubTotal();
+            this.taxName = sp.getTaxName();
+            this.taxCategory = sp.getTaxCategory();
+            this.taxRate = sp.getTaxRate();
+            this.taxInclusionType = sp.getTaxInclusionType();
+            this.taxApplicationOrder = sp.getTaxApplicationOrder();
+            this.taxAmount = sp.getTaxAmount();
+            this.lineTotalTxnCurrency = (subTotal != null ? subTotal : BigDecimal.ZERO)
+                    .add(taxAmount != null ? taxAmount : BigDecimal.ZERO);
         }
     }
 }

@@ -7,10 +7,8 @@ import nextpos.app.nextpos.model.dto.request.UpdateRequest.UpdateOnlineOrderingS
 import nextpos.app.nextpos.model.dto.response.OnlineOrderingSettingsResponse;
 import nextpos.app.nextpos.model.entity.Company;
 import nextpos.app.nextpos.model.entity.OnlineOrderingSettings;
-import nextpos.app.nextpos.model.entity.User;
 import nextpos.app.nextpos.repository.CompanyRepository;
 import nextpos.app.nextpos.repository.OnlineOrderingSettingsRepository;
-import nextpos.app.nextpos.repository.UserRepository;
 import nextpos.app.nextpos.security.context.UserContext;
 import nextpos.app.nextpos.service.interf.OnlineOrderingSettingsService;
 
@@ -27,14 +25,12 @@ public class OnlineOrderingSettingsServiceImpl implements OnlineOrderingSettings
 
         private final OnlineOrderingSettingsRepository settingsRepository;
         private final CompanyRepository companyRepository;
-        private final UserRepository userRepository; // added for UserContext
 
         @Override
         public OnlineOrderingSettingsResponse createOnlineOrderingSettings(
                         CreateOnlineOrderingSettingsRequest request) {
-                User user = UserContext.getAuthenticatedUser(userRepository);
-                Long companyId = user.getCompanyId();
-                Long currentUserId = user.getId();
+                Long companyId = UserContext.getCurrentCompanyId();
+                Long currentUserId = UserContext.getCurrentUserId();
 
                 Company company = companyRepository.findById(companyId)
                                 .orElseThrow(() -> new NoSuchElementException(
@@ -67,9 +63,8 @@ public class OnlineOrderingSettingsServiceImpl implements OnlineOrderingSettings
         @Override
         public OnlineOrderingSettingsResponse updateOnlineOrderingSettings(
                         UpdateOnlineOrderingSettingsRequest request) {
-                User user = UserContext.getAuthenticatedUser(userRepository);
-                Long companyId = user.getCompanyId();
-                Long currentUserId = user.getId();
+                Long companyId = UserContext.getCurrentCompanyId();
+                Long currentUserId = UserContext.getCurrentUserId();
 
                 Company company = companyRepository.findById(companyId)
                                 .orElseThrow(() -> new NoSuchElementException(
@@ -99,8 +94,7 @@ public class OnlineOrderingSettingsServiceImpl implements OnlineOrderingSettings
         @Override
         @Transactional(readOnly = true)
         public OnlineOrderingSettingsResponse getOnlineOrderingSettings() {
-                User user = UserContext.getAuthenticatedUser(userRepository);
-                Long companyId = user.getCompanyId();
+                Long companyId = UserContext.getCurrentCompanyId();
 
                 Company company = companyRepository.findById(companyId)
                                 .orElseThrow(() -> new NoSuchElementException(
@@ -115,9 +109,8 @@ public class OnlineOrderingSettingsServiceImpl implements OnlineOrderingSettings
 
         @Override
         public void deleteOnlineOrderingSettings() {
-                User user = UserContext.getAuthenticatedUser(userRepository);
-                Long companyId = user.getCompanyId();
-                Long currentUserId = user.getId();
+                Long companyId = UserContext.getCurrentCompanyId();
+                Long currentUserId = UserContext.getCurrentUserId();
 
                 Company company = companyRepository.findById(companyId)
                                 .orElseThrow(() -> new NoSuchElementException(

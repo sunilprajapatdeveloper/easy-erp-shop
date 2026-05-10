@@ -7,10 +7,8 @@ import nextpos.app.nextpos.model.dto.request.CreateRequest.CreateSubscriptionPla
 import nextpos.app.nextpos.model.dto.request.UpdateRequest.UpdateSubscriptionPlanRequest;
 import nextpos.app.nextpos.model.dto.response.SubscriptionPlanResponse;
 import nextpos.app.nextpos.model.entity.SubscriptionPlan;
-import nextpos.app.nextpos.model.entity.User;
 import nextpos.app.nextpos.model.enums.PlanStatus;
 import nextpos.app.nextpos.repository.SubscriptionPlanRepository;
-import nextpos.app.nextpos.repository.UserRepository;
 import nextpos.app.nextpos.security.context.UserContext;
 import nextpos.app.nextpos.service.interf.SubscriptionPlanService;
 import org.springframework.stereotype.Service;
@@ -26,12 +24,10 @@ import java.util.List;
 public class SubscriptionPlanServiceImpl implements SubscriptionPlanService {
 
     private final SubscriptionPlanRepository subscriptionPlanRepository;
-    private final UserRepository userRepository;
 
     @Override
     public SubscriptionPlanResponse createSubscriptionPlan(CreateSubscriptionPlanRequest request) {
-        User user = UserContext.getAuthenticatedUser(userRepository);
-        Long currentUserId = user.getId();
+        Long currentUserId = UserContext.getCurrentUserId();
 
         // Ensure unique plan name + billingCycle
         if (subscriptionPlanRepository.existsByNameAndBillingCycleAndIsDeletedFalse(
@@ -87,8 +83,7 @@ public class SubscriptionPlanServiceImpl implements SubscriptionPlanService {
 
     @Override
     public SubscriptionPlanResponse updateSubscriptionPlan(Long id, UpdateSubscriptionPlanRequest request) {
-        User user = UserContext.getAuthenticatedUser(userRepository);
-        Long currentUserId = user.getId();
+        Long currentUserId = UserContext.getCurrentUserId();
 
         SubscriptionPlan plan = subscriptionPlanRepository.findById(id)
                 .filter(p -> !p.isDeleted())
@@ -130,8 +125,7 @@ public class SubscriptionPlanServiceImpl implements SubscriptionPlanService {
 
     @Override
     public void deleteSubscriptionPlan(Long id) {
-        User user = UserContext.getAuthenticatedUser(userRepository);
-        Long currentUserId = user.getId();
+        Long currentUserId = UserContext.getCurrentUserId();
 
         SubscriptionPlan plan = subscriptionPlanRepository.findById(id)
                 .filter(p -> !p.isDeleted())

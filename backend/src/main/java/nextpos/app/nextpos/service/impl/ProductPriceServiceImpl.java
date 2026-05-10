@@ -8,12 +8,10 @@ import nextpos.app.nextpos.model.dto.response.ProductPriceResponse;
 import nextpos.app.nextpos.model.entity.Currency;
 import nextpos.app.nextpos.model.entity.Product;
 import nextpos.app.nextpos.model.entity.ProductPrice;
-import nextpos.app.nextpos.model.entity.User;
 import nextpos.app.nextpos.model.entity.Warehouse;
 import nextpos.app.nextpos.repository.CurrencyRepository;
 import nextpos.app.nextpos.repository.ProductPriceRepository;
 import nextpos.app.nextpos.repository.ProductRepository;
-import nextpos.app.nextpos.repository.UserRepository;
 import nextpos.app.nextpos.repository.WarehouseRepository;
 import nextpos.app.nextpos.security.context.UserContext;
 import nextpos.app.nextpos.service.interf.ProductPriceService;
@@ -34,13 +32,11 @@ public class ProductPriceServiceImpl implements ProductPriceService {
     private final ProductRepository productRepository;
     private final WarehouseRepository warehouseRepository;
     private final CurrencyRepository currencyRepository;
-    private final UserRepository userRepository; // used by UserContext
 
     @Override
     public ProductPriceResponse createProductPrice(CreateProductPriceRequest request) {
-        User user = UserContext.getAuthenticatedUser(userRepository);
-        Long companyId = user.getCompanyId();
-        Long currentUserId = user.getId();
+        Long companyId = UserContext.getCurrentCompanyId();
+        Long currentUserId = UserContext.getCurrentUserId();
 
         // validate product
         Product product = productRepository.findById(request.getProductId())
@@ -102,9 +98,8 @@ public class ProductPriceServiceImpl implements ProductPriceService {
 
     @Override
     public ProductPriceResponse updateProductPrice(Long priceId, UpdateProductPriceRequest request) {
-        User user = UserContext.getAuthenticatedUser(userRepository);
-        Long companyId = user.getCompanyId();
-        Long currentUserId = user.getId();
+        Long companyId = UserContext.getCurrentCompanyId();
+        Long currentUserId = UserContext.getCurrentUserId();
 
         ProductPrice existing = productPriceRepository.findByIdAndCompanyId(priceId, companyId)
                 .orElseThrow(() -> new EntityNotFoundException("ProductPrice not found with id: " + priceId));
@@ -186,8 +181,7 @@ public class ProductPriceServiceImpl implements ProductPriceService {
     @Override
     @Transactional(readOnly = true)
     public ProductPriceResponse getProductPriceById(Long priceId) {
-        User user = UserContext.getAuthenticatedUser(userRepository);
-        Long companyId = user.getCompanyId();
+        Long companyId = UserContext.getCurrentCompanyId();
 
         ProductPrice entity = productPriceRepository.findByIdAndCompanyId(priceId, companyId)
                 .orElseThrow(() -> new EntityNotFoundException("ProductPrice not found with id: " + priceId));
@@ -197,8 +191,7 @@ public class ProductPriceServiceImpl implements ProductPriceService {
     @Override
     @Transactional(readOnly = true)
     public Optional<ProductPriceResponse> findEffectivePrice(Long productId, Long warehouseId, String channel) {
-        User user = UserContext.getAuthenticatedUser(userRepository);
-        Long companyId = user.getCompanyId();
+        Long companyId = UserContext.getCurrentCompanyId();
 
         String ch = channel != null ? channel.trim() : null;
 
@@ -218,8 +211,7 @@ public class ProductPriceServiceImpl implements ProductPriceService {
     @Override
     @Transactional(readOnly = true)
     public ProductPriceResponse getByProductAndWarehouse(Long productId, Long warehouseId) {
-        User user = UserContext.getAuthenticatedUser(userRepository);
-        Long companyId = user.getCompanyId();
+        Long companyId = UserContext.getCurrentCompanyId();
 
         ProductPrice price = productPriceRepository
                 .findByProductIdAndWarehouseIdAndCompanyId(productId, warehouseId, companyId)
@@ -231,8 +223,7 @@ public class ProductPriceServiceImpl implements ProductPriceService {
     @Override
     @Transactional(readOnly = true)
     public List<ProductPriceResponse> listPricesByProduct(Long productId) {
-        User user = UserContext.getAuthenticatedUser(userRepository);
-        Long companyId = user.getCompanyId();
+        Long companyId = UserContext.getCurrentCompanyId();
 
         return productPriceRepository.findAllByProductIdAndCompanyId(productId, companyId)
                 .stream()
@@ -243,8 +234,7 @@ public class ProductPriceServiceImpl implements ProductPriceService {
     @Override
     @Transactional(readOnly = true)
     public List<ProductPriceResponse> listPricesByWarehouse(Long warehouseId) {
-        User user = UserContext.getAuthenticatedUser(userRepository);
-        Long companyId = user.getCompanyId();
+        Long companyId = UserContext.getCurrentCompanyId();
 
         return productPriceRepository.findAllByWarehouseIdAndCompanyId(warehouseId, companyId)
                 .stream()
@@ -255,8 +245,7 @@ public class ProductPriceServiceImpl implements ProductPriceService {
     @Override
     @Transactional(readOnly = true)
     public List<ProductPriceResponse> listAllPrices() {
-        User user = UserContext.getAuthenticatedUser(userRepository);
-        Long companyId = user.getCompanyId();
+        Long companyId = UserContext.getCurrentCompanyId();
 
         return productPriceRepository.findAllByCompanyId(companyId)
                 .stream()
@@ -266,9 +255,7 @@ public class ProductPriceServiceImpl implements ProductPriceService {
 
     @Override
     public void deleteProductPrice(Long priceId) {
-        User user = UserContext.getAuthenticatedUser(userRepository);
-        Long companyId = user.getCompanyId();
-        Long currentUserId = user.getId(); // if needed for auditing
+        Long companyId = UserContext.getCurrentCompanyId();
 
         ProductPrice existing = productPriceRepository.findByIdAndCompanyId(priceId, companyId)
                 .orElseThrow(() -> new EntityNotFoundException("ProductPrice not found with id: " + priceId));

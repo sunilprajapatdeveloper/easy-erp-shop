@@ -4,7 +4,6 @@ import lombok.RequiredArgsConstructor;
 import nextpos.app.nextpos.model.dto.request.CreateAdjustmentRequest;
 import nextpos.app.nextpos.model.dto.response.AdjustmentResponse;
 import nextpos.app.nextpos.model.entity.Warehouse;
-import nextpos.app.nextpos.model.entity.User;
 import nextpos.app.nextpos.model.entity.Product;
 import nextpos.app.nextpos.model.entity.Adjustment;
 import nextpos.app.nextpos.model.entity.AdjustmentProduct;
@@ -28,14 +27,11 @@ public class AdjustmentServiceImpl implements AdjustmentService {
         private final AdjustmentRepository adjustmentRepository;
         private final ProductRepository productRepository;
         private final WarehouseRepository warehouseRepository;
-        private final UserRepository userRepository;
         private final ProductStockService productStockService;
 
         @Override
         @Transactional
         public AdjustmentResponse createAdjustment(CreateAdjustmentRequest request) {
-                User user = UserContext.getAuthenticatedUser(userRepository);
-
                 Warehouse warehouse = warehouseRepository.findById(request.getWarehouseId())
                                 .orElseThrow(() -> new RuntimeException("Warehouse not found"));
 
@@ -43,9 +39,9 @@ public class AdjustmentServiceImpl implements AdjustmentService {
                                 .warehouse(warehouse)
                                 .date(request.getDate())
                                 .note(request.getNote())
-                                .createdBy(user.getId())
+                                .createdBy(UserContext.getCurrentUserId())
                                 .createdAt(LocalDateTime.now())
-                                .companyId(user.getCompanyId())
+                                .companyId(UserContext.getCurrentCompanyId())
                                 .build();
 
                 List<AdjustmentProduct> products = request.getProducts().stream()
@@ -78,9 +74,9 @@ public class AdjustmentServiceImpl implements AdjustmentService {
                                                         .currentQty(currentQty)
                                                         .adjustedQty(adjustedQty)
                                                         .stockEffect(stockEffect)
-                                                        .createdBy(user.getId())
+                                                        .createdBy(UserContext.getCurrentUserId())
                                                         .createdAt(LocalDateTime.now())
-                                                        .companyId(user.getCompanyId())
+                                                        .companyId(UserContext.getCurrentCompanyId())
                                                         .build();
                                 })
                                 .collect(Collectors.toList());
@@ -100,8 +96,7 @@ public class AdjustmentServiceImpl implements AdjustmentService {
 
         @Override
         public List<AdjustmentResponse> getMyAdjustments() {
-                User user = UserContext.getAuthenticatedUser(userRepository);
-                Long userId = user.getId();
+                Long userId = UserContext.getCurrentUserId();
 
                 List<Adjustment> adjustments = adjustmentRepository.findByCreatedBy(userId);
                 return adjustments.stream()
@@ -111,8 +106,7 @@ public class AdjustmentServiceImpl implements AdjustmentService {
 
         @Override
         public List<AdjustmentResponse> getAllAdjustments() {
-                User user = UserContext.getAuthenticatedUser(userRepository);
-                Long companyId = user.getCompanyId();
+                Long companyId = UserContext.getCurrentCompanyId();
 
                 List<Adjustment> adjustments = adjustmentRepository.findByCompanyId(companyId);
                 return adjustments.stream()
@@ -123,8 +117,6 @@ public class AdjustmentServiceImpl implements AdjustmentService {
         @Override
         @Transactional
         public AdjustmentResponse updateAdjustment(Long id, CreateAdjustmentRequest request) {
-                User user = UserContext.getAuthenticatedUser(userRepository);
-
                 Adjustment adjustment = adjustmentRepository.findById(id)
                                 .orElseThrow(() -> new RuntimeException("Adjustment not found"));
 
@@ -175,7 +167,7 @@ public class AdjustmentServiceImpl implements AdjustmentService {
                                                         .currentQty(currentQty)
                                                         .adjustedQty(adjustedQty)
                                                         .stockEffect(stockEffect)
-                                                        .updatedBy(user.getId())
+                                                        .updatedBy(UserContext.getCurrentUserId())
                                                         .updatedAt(LocalDateTime.now())
                                                         .build();
                                 })
@@ -191,7 +183,7 @@ public class AdjustmentServiceImpl implements AdjustmentService {
 
                 adjustment.setNote(request.getNote());
                 adjustment.setDate(request.getDate());
-                adjustment.setUpdatedBy(user.getId());
+                adjustment.setUpdatedBy(UserContext.getCurrentUserId());
                 adjustment.setUpdatedAt(LocalDateTime.now());
 
                 return buildAdjustmentResponse(adjustmentRepository.save(adjustment));

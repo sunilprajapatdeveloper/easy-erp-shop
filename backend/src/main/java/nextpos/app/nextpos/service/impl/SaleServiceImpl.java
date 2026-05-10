@@ -1,465 +1,425 @@
 package nextpos.app.nextpos.service.impl;
 
 import lombok.RequiredArgsConstructor;
-import nextpos.app.nextpos.model.dto.request.CreatePaymentRequest;
+import lombok.extern.slf4j.Slf4j;
+import nextpos.app.nextpos.exception.InvalidPromotionException;
+import nextpos.app.nextpos.model.dto.CartItemDto;
 import nextpos.app.nextpos.model.dto.request.CreateRequest.CreateSaleRequest;
+import nextpos.app.nextpos.model.dto.request.CouponValidationRequest;
 import nextpos.app.nextpos.model.dto.request.UpdateRequest.UpdateSaleRequest;
-import nextpos.app.nextpos.model.dto.response.PaymentResponse;
+import nextpos.app.nextpos.model.dto.response.CouponValidationResponse;
 import nextpos.app.nextpos.model.dto.response.ProductStockResponse;
 import nextpos.app.nextpos.model.dto.response.SaleResponse;
+import nextpos.app.nextpos.model.entity.*;
 import nextpos.app.nextpos.model.entity.Currency;
-import nextpos.app.nextpos.model.entity.Customer;
-import nextpos.app.nextpos.model.entity.Product;
-import nextpos.app.nextpos.model.entity.Sale;
-import nextpos.app.nextpos.model.entity.SaleProduct;
-import nextpos.app.nextpos.model.entity.User;
-import nextpos.app.nextpos.model.entity.Warehouse;
-import nextpos.app.nextpos.model.enums.PaymentSourceType;
-import nextpos.app.nextpos.model.enums.SaleSource;
-import nextpos.app.nextpos.model.enums.SaleStatus;
-import nextpos.app.nextpos.model.enums.ShipmentStatus;
-import nextpos.app.nextpos.repository.CurrencyRepository;
-import nextpos.app.nextpos.repository.CustomerRepository;
-import nextpos.app.nextpos.repository.ProductRepository;
-import nextpos.app.nextpos.repository.SaleRepository;
-import nextpos.app.nextpos.repository.UserRepository;
-import nextpos.app.nextpos.repository.WarehouseRepository;
+import nextpos.app.nextpos.model.enums.*;
+import nextpos.app.nextpos.repository.*;
 import nextpos.app.nextpos.security.context.UserContext;
-import nextpos.app.nextpos.service.interf.PaymentService;
 import nextpos.app.nextpos.service.interf.ProductStockService;
+import nextpos.app.nextpos.service.interf.PromotionEngineService;
 import nextpos.app.nextpos.service.interf.SaleService;
 import nextpos.app.nextpos.util.ReferenceNumberGenerator;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class SaleServiceImpl implements SaleService {
 
-        private final SaleRepository saleRepository;
-        private final UserRepository userRepository;
-        private final CustomerRepository customerRepository;
-        private final WarehouseRepository warehouseRepository;
-        private final ProductRepository productRepository;
-        private final CurrencyRepository currencyRepository;
-        private final PaymentService paymentService;
-        private final ProductStockService productStockService;
+    private final SaleRepository saleRepository;
+    private final CustomerRepository customerRepository;
+    private final WarehouseRepository warehouseRepository;
+    private final ProductRepository productRepository;
+    private final CurrencyRepository currencyRepository;
+    private final ProductStockService productStockService;
+    private final PromotionEngineService promotionEngineService;
+    private final PromotionRepository promotionRepository;
 
-        @Override
-        @Transactional
-        public SaleResponse createSale(CreateSaleRequest request) {
-                User user = UserContext.getAuthenticatedUser(userRepository);
+    @Override
+    @Transactional
+    public SaleResponse createSale(CreateSaleRequest request) {
+        Long currentUserId = UserContext.getCurrentUserId();
+        Long currentCompanyId = UserContext.getCurrentCompanyId();
 
-                Warehouse warehouse = warehouseRepository.findById(request.getWarehouseId())
-                                .orElseThrow(() -> new RuntimeException("Warehouse not found"));
+        // Validate core entities
+        Warehouse warehouse = warehouseRepository.findById(request.getWarehouseId())
+                .orElseThrow(() -> new RuntimeException("Warehouse not found"));
+        Customer customer = null;
+        if (request.getCustomerId() != null) {
+            customer = customerRepository.findById(request.getCustomerId())
+                    .orElseThrow(() -> new RuntimeException("Customer not found"));
+        }
+        Currency currency = currencyRepository.findById(request.getCurrencyId())
+                .orElseThrow(() -> new RuntimeException("Currency not found"));
+        BigDecimal exchangeRate = request.getExchangeRate();
+        if (exchangeRate == null || exchangeRate.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new RuntimeException("Valid exchange rate is required");
+        }
 
-                Customer customer = null;
-                if (request.getCustomerId() != null) {
-                        customer = customerRepository.findById(request.getCustomerId())
-                                        .orElseThrow(() -> new RuntimeException("Customer not found"));
+        // Build Sale skeleton
+        Sale sale = Sale.builder()
+                .referenceNumber(ReferenceNumberGenerator.generateReferenceNumber("SALE"))
+                .date(request.getDate() != null ? request.getDate() : LocalDate.now())
+                .warehouse(warehouse)
+                .customer(customer)
+                .currency(currency)
+                .exchangeRate(exchangeRate)
+                .companyId(currentCompanyId)
+                .createdBy(currentUserId)
+                .createdAt(LocalDateTime.now())
+                .shipmentStatus(Optional.ofNullable(request.getShipmentStatus()).orElse(ShipmentStatus.PENDING))
+                .saleStatus(Optional.ofNullable(request.getSaleStatus()).orElse(SaleStatus.PENDING))
+                .source(Optional.ofNullable(request.getSource()).orElse(SaleSource.WEB))
+                .note(request.getNote())
+                .orderTax(Optional.ofNullable(request.getOrderTax()).orElse(BigDecimal.ZERO))
+                .orderDiscount(Optional.ofNullable(request.getOrderDiscount()).orElse(BigDecimal.ZERO))
+                .orderDiscountType(request.getOrderDiscountType())
+                .shippingCost(Optional.ofNullable(request.getShippingCost()).orElse(BigDecimal.ZERO))
+                .roundingAmount(BigDecimal.ZERO)
+                .paymentStatus(PaymentStatus.PENDING)
+                .build();
+
+        // Process products and adjust stock
+        BigDecimal subtotalTxn = BigDecimal.ZERO;
+        List<SaleProduct> saleProducts = new ArrayList<>();
+
+        for (CreateSaleRequest.SaleProductRequest p : request.getProducts()) {
+            Product product = productRepository.findById(p.getProductId())
+                    .orElseThrow(() -> new RuntimeException("Product not found: " + p.getProductId()));
+
+            int qty = Optional.ofNullable(p.getQuantity()).orElse(0);
+            // Stock check & reduction
+            ProductStockResponse stock = productStockService.getByProductAndWarehouse(product.getId(),
+                    warehouse.getId());
+            if (stock.getQuantity() < qty) {
+                throw new RuntimeException("Insufficient stock for product: " + product.getName());
+            }
+            productStockService.adjustStock(product.getId(), warehouse.getId(), -qty);
+
+            BigDecimal unitPrice = Optional.ofNullable(p.getProductUnitPrice()).orElse(BigDecimal.ZERO);
+            BigDecimal lineDiscount = Optional.ofNullable(p.getDiscount()).orElse(BigDecimal.ZERO);
+            BigDecimal lineSubtotal = p.getSubTotal(); // Expected: (unitPrice * qty) - lineDiscount
+
+            subtotalTxn = subtotalTxn.add(lineSubtotal);
+
+            SaleProduct sp = SaleProduct.builder()
+                    .sale(sale)
+                    .product(product)
+                    .productUnitPrice(unitPrice)
+                    .quantity(qty)
+                    .discount(lineDiscount)
+                    .subTotal(lineSubtotal)
+                    .taxName(p.getTaxName())
+                    .taxCategory(p.getTaxCategory())
+                    .taxRate(p.getTaxRate())
+                    .taxInclusionType(p.getTaxInclusionType())
+                    .taxApplicationOrder(p.getTaxApplicationOrder())
+                    .taxAmount(p.getTaxAmount())
+                    .createdBy(currentUserId)
+                    .createdAt(LocalDateTime.now())
+                    .companyId(currentCompanyId)
+                    .build();
+            saleProducts.add(sp);
+        }
+        sale.setProducts(saleProducts);
+
+        // Calculate preliminary totals (without promotion)
+        BigDecimal totalBeforePromo = subtotalTxn
+                .add(sale.getOrderTax())
+                .subtract(sale.getOrderDiscount())
+                .add(sale.getShippingCost())
+                .add(sale.getRoundingAmount());
+
+        sale.setTotalAmountTxnCurrency(totalBeforePromo);
+        sale.setPaidAmountTxnCurrency(BigDecimal.ZERO);
+        sale.setDueAmountTxnCurrency(totalBeforePromo);
+        sale.setGrandTotalTxnCurrency(totalBeforePromo);
+
+        // Apply promotion if coupon code provided
+        if (request.getCouponCode() != null && !request.getCouponCode().isEmpty()) {
+            applyPromotionToSale(sale, request.getCouponCode(), request.getCurrencyCode(),
+                    request.getWarehouseId(), currentCompanyId, request.getCustomerId(), saleProducts);
+        }
+
+        // Recalculate final totals after promotion
+        BigDecimal finalTotal = recalculateSaleTotal(sale);
+        sale.setTotalAmountTxnCurrency(finalTotal);
+        sale.setGrandTotalTxnCurrency(finalTotal);
+        sale.setDueAmountTxnCurrency(finalTotal.subtract(sale.getPaidAmountTxnCurrency()));
+
+        // Base currency conversion
+        BigDecimal totalBase = finalTotal.multiply(exchangeRate);
+        sale.setTotalAmountBaseCurrency(totalBase);
+        sale.setDueAmountBaseCurrency(totalBase.subtract(sale.getPaidAmountBaseCurrency()));
+
+        // Save and return
+        Sale savedSale = saleRepository.save(sale);
+        return SaleResponse.fromEntity(savedSale);
+    }
+
+    private void applyPromotionToSale(Sale sale, String couponCode, String currencyCode,
+            Long warehouseId, Long companyId, Long customerId,
+            List<SaleProduct> saleProducts) {
+
+        List<CartItemDto> cartItems = saleProducts.stream()
+                .map(sp -> new CartItemDto(sp.getProduct().getId(), sp.getQuantity(), sp.getProductUnitPrice()))
+                .collect(Collectors.toList());
+
+        CouponValidationRequest validationRequest = new CouponValidationRequest();
+        validationRequest.setCouponCode(couponCode);
+        validationRequest.setCustomerId(customerId);
+        validationRequest.setWarehouseId(warehouseId);
+        validationRequest.setCompanyId(companyId);
+        validationRequest.setCurrencyCode(currencyCode);
+        validationRequest.setItems(cartItems);
+        validationRequest.setShippingCost(sale.getShippingCost());
+
+        CouponValidationResponse validation = promotionEngineService.validateCoupon(validationRequest);
+        if (!validation.isValid()) {
+            throw new InvalidPromotionException(validation.getMessage());
+        }
+
+        if (validation.getAppliedPromotionId() != null) {
+            Promotion promo = promotionRepository.getReferenceById(validation.getAppliedPromotionId());
+            sale.setAppliedPromotion(promo);
+        }
+        sale.setPromotionDiscountAmount(validation.getDiscountAmount());
+        sale.setPromotionDiscountType(validation.getDiscountType());
+        sale.setPromotionCouponCode(couponCode);
+
+        if (validation.isFreeShipping()) {
+            sale.setShippingCost(BigDecimal.ZERO);
+        }
+
+        if (validation.getAppliedPromotionId() != null && sale.getId() != null) {
+            promotionEngineService.recordPromotionUsage(validation.getAppliedPromotionId(),
+                    sale.getId(), customerId, companyId);
+        }
+    }
+
+    private BigDecimal recalculateSaleTotal(Sale sale) {
+        BigDecimal subtotal = sale.getProducts().stream()
+                .map(SaleProduct::getSubTotal)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal afterManualDiscount = subtotal.subtract(sale.getOrderDiscount());
+        BigDecimal afterPromotion = afterManualDiscount.subtract(
+                sale.getPromotionDiscountAmount() != null ? sale.getPromotionDiscountAmount() : BigDecimal.ZERO);
+        return afterPromotion
+                .add(sale.getOrderTax())
+                .add(sale.getShippingCost())
+                .add(sale.getRoundingAmount());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public SaleResponse getSaleById(Long id) {
+        Sale sale = saleRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Sale not found"));
+        Long currentCompanyId = UserContext.getCurrentCompanyId();
+        if (!sale.getCompanyId().equals(currentCompanyId)) {
+            throw new SecurityException("Access denied to this sale");
+        }
+        return SaleResponse.fromEntity(sale);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<SaleResponse> getMySales() {
+        Long currentUserId = UserContext.getCurrentUserId();
+        List<Sale> sales = saleRepository.findAllByCreatedBy(currentUserId);
+        return sales.stream().map(SaleResponse::fromEntity).collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<SaleResponse> getAllSales() {
+        Long currentCompanyId = UserContext.getCurrentCompanyId();
+        List<Sale> sales = saleRepository.findAllByCompanyId(currentCompanyId);
+        return sales.stream().map(SaleResponse::fromEntity).collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional
+    public SaleResponse updateSale(Long id, UpdateSaleRequest request) {
+        Long currentUserId = UserContext.getCurrentUserId();
+        Long currentCompanyId = UserContext.getCurrentCompanyId();
+
+        Sale sale = saleRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Sale not found"));
+        if (!sale.getCompanyId().equals(currentCompanyId)) {
+            throw new SecurityException("Access denied to this sale");
+        }
+
+        // Restore stock for old products
+        Warehouse oldWarehouse = sale.getWarehouse();
+        for (SaleProduct sp : sale.getProducts()) {
+            productStockService.adjustStock(sp.getProduct().getId(), oldWarehouse.getId(), sp.getQuantity());
+        }
+
+        // Update warehouse if changed
+        if (request.getWarehouseId() != null && !request.getWarehouseId().equals(oldWarehouse.getId())) {
+            Warehouse newWarehouse = warehouseRepository.findById(request.getWarehouseId())
+                    .orElseThrow(() -> new RuntimeException("New warehouse not found"));
+            sale.setWarehouse(newWarehouse);
+        }
+        Warehouse finalWarehouse = sale.getWarehouse();
+
+        // Process products
+        Set<Long> requestProductIds = request.getProducts() != null
+                ? request.getProducts().stream().map(UpdateSaleRequest.SaleProductUpdateRequest::getProductId)
+                        .collect(Collectors.toSet())
+                : new HashSet<>();
+
+        List<SaleProduct> updatedProducts = new ArrayList<>();
+        BigDecimal subtotalTxn = BigDecimal.ZERO;
+
+        if (request.getProducts() != null) {
+            for (UpdateSaleRequest.SaleProductUpdateRequest p : request.getProducts()) {
+                Product product = productRepository.findById(p.getProductId())
+                        .orElseThrow(() -> new RuntimeException("Product not found: " + p.getProductId()));
+                int qty = Optional.ofNullable(p.getQuantity()).orElse(0);
+
+                ProductStockResponse stock = productStockService.getByProductAndWarehouse(product.getId(),
+                        finalWarehouse.getId());
+                if (stock.getQuantity() < qty) {
+                    throw new RuntimeException("Insufficient stock for product: " + product.getName());
                 }
+                productStockService.adjustStock(product.getId(), finalWarehouse.getId(), -qty);
 
-                // load currency from request
-                Currency currency = currencyRepository.findById(request.getCurrencyId())
-                                .orElseThrow(() -> new RuntimeException("Currency not found"));
+                SaleProduct existing = sale.getProducts().stream()
+                        .filter(sp -> sp.getProduct().getId().equals(product.getId()))
+                        .findFirst().orElse(null);
 
-                BigDecimal exchangeRate = request.getExchangeRate();
-                if (exchangeRate == null) {
-                        throw new RuntimeException("Exchange rate is required");
+                BigDecimal unitPrice = Optional.ofNullable(p.getProductUnitPrice()).orElse(BigDecimal.ZERO);
+                BigDecimal lineDiscount = Optional.ofNullable(p.getDiscount()).orElse(BigDecimal.ZERO);
+                BigDecimal lineSubtotal = p.getSubTotal() != null ? p.getSubTotal()
+                        : unitPrice.multiply(BigDecimal.valueOf(qty)).subtract(lineDiscount);
+
+                subtotalTxn = subtotalTxn.add(lineSubtotal);
+
+                if (existing != null) {
+                    existing.setQuantity(qty);
+                    existing.setProductUnitPrice(unitPrice);
+                    existing.setDiscount(lineDiscount);
+                    existing.setSubTotal(lineSubtotal);
+                    if (p.getTaxName() != null)
+                        existing.setTaxName(p.getTaxName());
+                    if (p.getTaxCategory() != null)
+                        existing.setTaxCategory(p.getTaxCategory());
+                    if (p.getTaxRate() != null)
+                        existing.setTaxRate(p.getTaxRate());
+                    if (p.getTaxInclusionType() != null)
+                        existing.setTaxInclusionType(p.getTaxInclusionType());
+                    if (p.getTaxApplicationOrder() != null)
+                        existing.setTaxApplicationOrder(p.getTaxApplicationOrder());
+                    if (p.getTaxAmount() != null)
+                        existing.setTaxAmount(p.getTaxAmount());
+                    existing.setUpdatedBy(currentUserId);
+                    existing.setUpdatedAt(LocalDateTime.now());
+                    updatedProducts.add(existing);
+                } else {
+                    SaleProduct newSp = SaleProduct.builder()
+                            .sale(sale)
+                            .product(product)
+                            .productUnitPrice(unitPrice)
+                            .quantity(qty)
+                            .discount(lineDiscount)
+                            .subTotal(lineSubtotal)
+                            .taxName(p.getTaxName())
+                            .taxCategory(p.getTaxCategory())
+                            .taxRate(p.getTaxRate())
+                            .taxInclusionType(p.getTaxInclusionType())
+                            .taxApplicationOrder(p.getTaxApplicationOrder())
+                            .taxAmount(p.getTaxAmount())
+                            .createdBy(currentUserId)
+                            .createdAt(LocalDateTime.now())
+                            .companyId(currentCompanyId)
+                            .build();
+                    updatedProducts.add(newSp);
                 }
-
-                Sale sale = Sale.builder()
-                                .referenceNumber(ReferenceNumberGenerator.generateReferenceNumber("SALE"))
-                                .date(request.getDate())
-                                .warehouse(warehouse)
-                                .customer(customer)
-                                .currency(currency)
-                                .exchangeRate(exchangeRate)
-                                .companyId(user.getCompanyId())
-                                .createdBy(user.getId())
-                                .createdAt(LocalDateTime.now())
-                                .shipmentStatus(Optional.ofNullable(request.getShipmentStatus())
-                                                .orElse(ShipmentStatus.PENDING))
-                                .saleStatus(Optional.ofNullable(request.getSaleStatus()).orElse(SaleStatus.PENDING))
-                                .source(Optional.ofNullable(request.getSource()).orElse(SaleSource.WEB))
-                                .note(request.getNote())
-                                .orderTax(Optional.ofNullable(request.getOrderTax()).orElse(BigDecimal.ZERO))
-                                .discount(Optional.ofNullable(request.getDiscount()).orElse(BigDecimal.ZERO))
-                                .shippingCost(Optional.ofNullable(request.getShippingCost()).orElse(BigDecimal.ZERO))
-                                .build();
-
-                // Handle sale products
-                BigDecimal totalTxn = BigDecimal.ZERO;
-                List<SaleProduct> saleProducts = new ArrayList<>();
-
-                for (var p : request.getProducts()) {
-                        Product product = productRepository.findById(p.getProductId())
-                                        .orElseThrow(() -> new RuntimeException(
-                                                        "Product not found: " + p.getProductId()));
-
-                        int qty = Optional.ofNullable(p.getSaleQty()).orElse(0);
-
-                        // Stock validation
-                        ProductStockResponse stock = productStockService.getByProductAndWarehouse(
-                                        product.getId(),
-                                        warehouse.getId());
-
-                        if (stock.getQuantity() < qty) {
-                                throw new RuntimeException("Insufficient stock for product: " + product.getName());
-                        }
-
-                        // Deduct stock atomically
-                        productStockService.adjustStock(product.getId(),
-                                        warehouse.getId(), -qty);
-
-                        BigDecimal unitPrice = Optional.ofNullable(p.getProductUnitPrice()).orElse(BigDecimal.ZERO);
-                        BigDecimal discount = Optional.ofNullable(p.getProductDiscount()).orElse(BigDecimal.ZERO);
-                        BigDecimal tax = Optional.ofNullable(p.getProductTax()).orElse(BigDecimal.ZERO);
-
-                        BigDecimal lineTotal = unitPrice.multiply(BigDecimal.valueOf(qty))
-                                        .subtract(discount)
-                                        .add(tax);
-
-                        totalTxn = totalTxn.add(lineTotal);
-
-                        saleProducts.add(SaleProduct.builder()
-                                        .sale(sale)
-                                        .product(product)
-                                        .productUnitPrice(unitPrice)
-                                        .saleQty(qty)
-                                        .productDiscount(discount)
-                                        .productTax(tax)
-                                        .createdBy(user.getId())
-                                        .createdAt(LocalDateTime.now())
-                                        .companyId(user.getCompanyId())
-                                        .build());
-                }
-
-                sale.setProducts(saleProducts);
-
-                totalTxn = totalTxn.add(sale.getOrderTax()).subtract(sale.getDiscount()).add(sale.getShippingCost());
-                sale.setTotalAmountTxnCurrency(totalTxn);
-                sale.setDueAmountTxnCurrency(totalTxn);
-
-                BigDecimal totalBase = totalTxn.multiply(exchangeRate);
-                sale.setTotalAmountBaseCurrency(totalBase);
-                sale.setDueAmountBaseCurrency(totalBase);
-
-                Sale savedSale = saleRepository.save(sale);
-
-                // Only create payments if request contains them
-                List<PaymentResponse> paymentResponses = new ArrayList<>();
-                if (request.getPayments() != null && !request.getPayments().isEmpty()) {
-                        for (CreatePaymentRequest paymentReq : request.getPayments()) {
-                                CreatePaymentRequest enriched = CreatePaymentRequest.builder()
-                                                .referenceType(PaymentSourceType.SALE)
-                                                .referenceId(savedSale.getId())
-                                                .referenceNumber(savedSale.getReferenceNumber())
-                                                .paymentType(paymentReq.getPaymentType())
-                                                .amount(paymentReq.getAmount())
-                                                .currencyCode(Optional.ofNullable(paymentReq.getCurrencyCode())
-                                                                .orElse(currency.getCode()))
-                                                .exchangeRate(Optional.ofNullable(paymentReq.getExchangeRate())
-                                                                .orElse(exchangeRate))
-                                                .baseCurrencyAmount(paymentReq.getBaseCurrencyAmount())
-                                                .paymentMethod(paymentReq.getPaymentMethod())
-                                                .paymentData(paymentReq.getPaymentData())
-                                                .status(paymentReq.getStatus())
-                                                .paymentDate(paymentReq.getPaymentDate())
-                                                .note(paymentReq.getNote())
-                                                .transactionReference(paymentReq.getTransactionReference())
-                                                .idempotencyKey(paymentReq.getIdempotencyKey())
-                                                .build();
-
-                                PaymentResponse response = paymentService.createPayment(enriched);
-                                paymentResponses.add(response);
-                        }
-
-                        // Update due amounts after payment
-                        BigDecimal paid = paymentResponses.stream()
-                                        .map(p -> Optional.ofNullable(p.getAmount()).orElse(BigDecimal.ZERO))
-                                        .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-                        savedSale.setDueAmountTxnCurrency(savedSale.getTotalAmountTxnCurrency().subtract(paid));
-                        savedSale.setDueAmountBaseCurrency(savedSale.getTotalAmountBaseCurrency()
-                                        .subtract(paid.multiply(exchangeRate)));
-                        saleRepository.save(savedSale);
-                }
-
-                return new SaleResponse(savedSale, paymentResponses);
+            }
         }
 
-        @Override
-        @Transactional(readOnly = true)
-        public SaleResponse getSaleById(Long id) {
-                Sale sale = saleRepository.findById(id)
-                                .orElseThrow(() -> new RuntimeException("Sale not found"));
+        // Remove products not in request
+        if (!requestProductIds.isEmpty()) {
+            sale.getProducts().removeIf(sp -> !requestProductIds.contains(sp.getProduct().getId()));
+        }
+        sale.setProducts(updatedProducts);
 
-                List<PaymentResponse> payments = paymentService
-                                .getPaymentsByReference(PaymentSourceType.SALE, sale.getId());
-
-                return new SaleResponse(sale, payments);
+        // Update scalar fields (note discount fields renamed)
+        Optional.ofNullable(request.getDate()).ifPresent(sale::setDate);
+        Optional.ofNullable(request.getOrderTax()).ifPresent(sale::setOrderTax);
+        Optional.ofNullable(request.getOrderDiscount()).ifPresent(sale::setOrderDiscount);
+        Optional.ofNullable(request.getOrderDiscountType()).ifPresent(sale::setOrderDiscountType);
+        Optional.ofNullable(request.getShippingCost()).ifPresent(sale::setShippingCost);
+        Optional.ofNullable(request.getShipmentStatus()).ifPresent(sale::setShipmentStatus);
+        Optional.ofNullable(request.getSaleStatus()).ifPresent(sale::setSaleStatus);
+        Optional.ofNullable(request.getSource()).ifPresent(sale::setSource);
+        Optional.ofNullable(request.getNote()).ifPresent(sale::setNote);
+        if (request.getCustomerId() != null) {
+            Customer newCustomer = customerRepository.findById(request.getCustomerId())
+                    .orElseThrow(() -> new RuntimeException("Customer not found"));
+            sale.setCustomer(newCustomer);
+        }
+        if (request.getCurrencyId() != null) {
+            Currency newCurrency = currencyRepository.findById(request.getCurrencyId())
+                    .orElseThrow(() -> new RuntimeException("Currency not found"));
+            sale.setCurrency(newCurrency);
+        }
+        if (request.getExchangeRate() != null) {
+            sale.setExchangeRate(request.getExchangeRate());
         }
 
-        @Override
-        @Transactional(readOnly = true)
-        public List<SaleResponse> getMySales() {
-                User user = UserContext.getAuthenticatedUser(userRepository);
-                List<Sale> sales = saleRepository.findAllByCreatedBy(user.getId());
+        sale.setUpdatedBy(currentUserId);
+        sale.setUpdatedAt(LocalDateTime.now());
 
-                return sales.stream()
-                                .map(sale -> new SaleResponse(sale,
-                                                paymentService.getPaymentsByReference(PaymentSourceType.SALE,
-                                                                sale.getId())))
-                                .collect(Collectors.toList());
+        // Recalculate totals
+        BigDecimal total = recalculateSaleTotal(sale);
+        sale.setTotalAmountTxnCurrency(total);
+        sale.setGrandTotalTxnCurrency(total);
+        sale.setDueAmountTxnCurrency(total.subtract(sale.getPaidAmountTxnCurrency()));
+
+        BigDecimal totalBase = total.multiply(sale.getExchangeRate());
+        sale.setTotalAmountBaseCurrency(totalBase);
+        sale.setDueAmountBaseCurrency(totalBase.subtract(sale.getPaidAmountBaseCurrency()));
+
+        Sale saved = saleRepository.save(sale);
+        return SaleResponse.fromEntity(saved);
+    }
+
+    @Override
+    @Transactional
+    public void deleteSale(Long id) {
+        Sale sale = saleRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Sale not found"));
+        Long currentCompanyId = UserContext.getCurrentCompanyId();
+        if (!sale.getCompanyId().equals(currentCompanyId)) {
+            throw new SecurityException("Access denied to this sale");
         }
-
-        @Override
-        @Transactional(readOnly = true)
-        public List<SaleResponse> getAllSales() {
-                User user = UserContext.getAuthenticatedUser(userRepository);
-                List<Sale> sales = saleRepository.findAllByCompanyId(user.getCompanyId());
-
-                return sales.stream()
-                                .map(sale -> new SaleResponse(sale,
-                                                paymentService.getPaymentsByReference(PaymentSourceType.SALE,
-                                                                sale.getId())))
-                                .collect(Collectors.toList());
+        for (SaleProduct sp : sale.getProducts()) {
+            productStockService.adjustStock(sp.getProduct().getId(), sale.getWarehouse().getId(), sp.getQuantity());
         }
+        saleRepository.delete(sale);
+    }
 
-        @Override
-        @Transactional
-        public SaleResponse updateSale(Long id, UpdateSaleRequest request) {
-                User user = UserContext.getAuthenticatedUser(userRepository);
+    @Override
+    public List<SaleResponse> findRecentSalesByTenant(Long tenantId, int limit) {
+        List<Sale> sales = saleRepository.findTop5ByCompanyIdOrderByCreatedAtDesc(tenantId);
+        return sales.stream().map(SaleResponse::fromEntity).collect(Collectors.toList());
+    }
 
-                Sale sale = saleRepository.findById(id)
-                                .orElseThrow(() -> new RuntimeException("Sale not found"));
-
-                // Update warehouse first if provided
-                if (request.getWarehouseId() != null) {
-                        Warehouse newWarehouse = warehouseRepository.findById(request.getWarehouseId())
-                                        .orElseThrow(() -> new RuntimeException("Warehouse not found"));
-                        sale.setWarehouse(newWarehouse);
-                }
-
-                // Use effectively final warehouse for stock adjustments
-                final Warehouse warehouseToUse = sale.getWarehouse();
-
-                // Rollback old stock using ProductStockService
-                sale.getProducts().forEach(sp -> {
-                        productStockService.adjustStock(
-                                        sp.getProduct().getId(),
-                                        warehouseToUse.getId(),
-                                        sp.getSaleQty() // rollback
-                        );
-                });
-
-                // Track product IDs from request
-                Set<Long> requestProductIds = request.getProducts().stream()
-                                .map(UpdateSaleRequest.SaleProductUpdateRequest::getProductId)
-                                .collect(Collectors.toSet());
-
-                List<SaleProduct> updatedProducts = new ArrayList<>();
-
-                // Update or add products
-                for (var p : request.getProducts()) {
-                        Product product = productRepository.findById(p.getProductId())
-                                        .orElseThrow(() -> new RuntimeException(
-                                                        "Product not found: " + p.getProductId()));
-
-                        int qty = Optional.ofNullable(p.getSaleQty()).orElse(0);
-
-                        // Validate and adjust stock
-                        ProductStockResponse stock = productStockService.getByProductAndWarehouse(
-                                        product.getId(),
-                                        warehouseToUse.getId());
-
-                        if (stock.getQuantity() < qty) {
-                                throw new RuntimeException("Insufficient stock for product: " + product.getName());
-                        }
-
-                        productStockService.adjustStock(
-                                        product.getId(),
-                                        warehouseToUse.getId(),
-                                        -qty // reduce stock
-                        );
-
-                        // Check if product already exists in sale
-                        SaleProduct existing = sale.getProducts().stream()
-                                        .filter(sp -> sp.getProduct().getId().equals(product.getId()))
-                                        .findFirst()
-                                        .orElse(null);
-
-                        if (existing != null) {
-                                // Update existing product
-                                existing.setSaleQty(qty);
-                                existing.setProductUnitPrice(
-                                                Optional.ofNullable(p.getProductUnitPrice()).orElse(BigDecimal.ZERO));
-                                existing.setProductDiscount(
-                                                Optional.ofNullable(p.getProductDiscount()).orElse(BigDecimal.ZERO));
-                                existing.setProductTax(Optional.ofNullable(p.getProductTax()).orElse(BigDecimal.ZERO));
-                                existing.setUpdatedBy(user.getId());
-                                existing.setUpdatedAt(LocalDateTime.now());
-                                updatedProducts.add(existing);
-                        } else {
-                                // Add new product
-                                SaleProduct newProduct = SaleProduct.builder()
-                                                .sale(sale)
-                                                .product(product)
-                                                .productUnitPrice(Optional.ofNullable(p.getProductUnitPrice())
-                                                                .orElse(BigDecimal.ZERO))
-                                                .saleQty(qty)
-                                                .productDiscount(Optional.ofNullable(p.getProductDiscount())
-                                                                .orElse(BigDecimal.ZERO))
-                                                .productTax(Optional.ofNullable(p.getProductTax())
-                                                                .orElse(BigDecimal.ZERO))
-                                                .createdBy(user.getId())
-                                                .createdAt(LocalDateTime.now())
-                                                .companyId(user.getCompanyId())
-                                                .build();
-                                updatedProducts.add(newProduct);
-                        }
-                }
-
-                // Remove products no longer in request
-                sale.getProducts().removeIf(sp -> !requestProductIds.contains(sp.getProduct().getId()));
-
-                // Set updated products
-                sale.setProducts(updatedProducts);
-
-                // Update sale-level fields
-                Optional.ofNullable(request.getDate()).ifPresent(sale::setDate);
-                Optional.ofNullable(request.getOrderTax()).ifPresent(sale::setOrderTax);
-                Optional.ofNullable(request.getDiscount()).ifPresent(sale::setDiscount);
-                Optional.ofNullable(request.getShippingCost()).ifPresent(sale::setShippingCost);
-                Optional.ofNullable(request.getShipmentStatus()).ifPresent(sale::setShipmentStatus);
-                Optional.ofNullable(request.getSaleStatus()).ifPresent(sale::setSaleStatus);
-                Optional.ofNullable(request.getSource()).ifPresent(sale::setSource);
-                Optional.ofNullable(request.getNote()).ifPresent(sale::setNote);
-
-                if (request.getCustomerId() != null) {
-                        Customer customer = customerRepository.findById(request.getCustomerId())
-                                        .orElseThrow(() -> new RuntimeException("Customer not found"));
-                        sale.setCustomer(customer);
-                }
-
-                sale.setUpdatedBy(user.getId());
-                sale.setUpdatedAt(LocalDateTime.now());
-
-                // Recalculate totals
-                BigDecimal totalTxn = sale.getProducts().stream()
-                                .map(sp -> sp.getProductUnitPrice()
-                                                .multiply(BigDecimal.valueOf(sp.getSaleQty()))
-                                                .subtract(Optional.ofNullable(sp.getProductDiscount())
-                                                                .orElse(BigDecimal.ZERO))
-                                                .add(Optional.ofNullable(sp.getProductTax()).orElse(BigDecimal.ZERO)))
-                                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-                totalTxn = totalTxn.add(Optional.ofNullable(sale.getOrderTax()).orElse(BigDecimal.ZERO))
-                                .subtract(Optional.ofNullable(sale.getDiscount()).orElse(BigDecimal.ZERO))
-                                .add(Optional.ofNullable(sale.getShippingCost()).orElse(BigDecimal.ZERO));
-
-                sale.setTotalAmountTxnCurrency(totalTxn);
-                sale.setTotalAmountBaseCurrency(
-                                totalTxn.multiply(Optional.ofNullable(sale.getExchangeRate()).orElse(BigDecimal.ONE)));
-
-                Sale savedSale = saleRepository.save(sale);
-
-                // Handle payments
-                if (request.getPayments() != null && !request.getPayments().isEmpty()) {
-                        for (CreatePaymentRequest paymentReq : request.getPayments()) {
-                                CreatePaymentRequest enriched = CreatePaymentRequest.builder()
-                                                .referenceType(PaymentSourceType.SALE)
-                                                .referenceId(savedSale.getId())
-                                                .referenceNumber(savedSale.getReferenceNumber())
-                                                .paymentType(paymentReq.getPaymentType())
-                                                .amount(paymentReq.getAmount())
-                                                .currencyCode(Optional.ofNullable(paymentReq.getCurrencyCode())
-                                                                .orElse(savedSale.getCurrency().getCode()))
-                                                .exchangeRate(Optional.ofNullable(paymentReq.getExchangeRate())
-                                                                .orElse(savedSale.getExchangeRate()))
-                                                .baseCurrencyAmount(paymentReq.getBaseCurrencyAmount())
-                                                .paymentMethod(paymentReq.getPaymentMethod())
-                                                .paymentData(paymentReq.getPaymentData())
-                                                .status(paymentReq.getStatus())
-                                                .paymentDate(paymentReq.getPaymentDate())
-                                                .note(paymentReq.getNote())
-                                                .transactionReference(paymentReq.getTransactionReference())
-                                                .idempotencyKey(paymentReq.getIdempotencyKey())
-                                                .build();
-
-                                paymentService.createPayment(enriched);
-                        }
-                }
-
-                // Recalculate due amounts
-                List<PaymentResponse> payments = paymentService.getPaymentsByReference(PaymentSourceType.SALE,
-                                savedSale.getId());
-                BigDecimal paid = payments.stream()
-                                .map(p -> Optional.ofNullable(p.getAmount()).orElse(BigDecimal.ZERO))
-                                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-                savedSale.setDueAmountTxnCurrency(savedSale.getTotalAmountTxnCurrency().subtract(paid));
-                savedSale.setDueAmountBaseCurrency(savedSale.getTotalAmountBaseCurrency()
-                                .subtract(paid.multiply(Optional.ofNullable(savedSale.getExchangeRate())
-                                                .orElse(BigDecimal.ONE))));
-
-                saleRepository.save(savedSale);
-
-                return new SaleResponse(savedSale, payments);
-        }
-
-        @Override
-        @Transactional
-        public void deleteSale(Long id) {
-                Sale sale = saleRepository.findById(id)
-                                .orElseThrow(() -> new RuntimeException("Sale not found"));
-
-                // Use the sale's warehouse for stock adjustments
-                final Warehouse warehouse = sale.getWarehouse();
-
-                // Rollback stock for all sale products
-                sale.getProducts().forEach(sp -> {
-                        productStockService.adjustStock(
-                                        sp.getProduct().getId(),
-                                        warehouse.getId(),
-                                        sp.getSaleQty() // add back sold quantity
-                        );
-                });
-
-                // Delete the sale
-                saleRepository.delete(sale);
-        }
-
-        @Override
-        public List<SaleResponse> findRecentSalesByTenant(Long tenantId, int limit) {
-                List<Sale> sales = saleRepository.findTop5ByCompanyIdOrderByCreatedAtDesc(tenantId);
-                return sales.stream().map(this::mapToResponse).collect(Collectors.toList());
-        }
-
-        private SaleResponse mapToResponse(Sale sale) {
-                List<PaymentResponse> payments = paymentService.getPaymentsByReference(PaymentSourceType.SALE,
-                                sale.getId());
-                return new SaleResponse(sale, payments);
-        }
-
-        @Override
-        public Map<String, Object> getSalesSummary(String period, Long warehouseId) {
-                // Implement aggregation based on period (today, week, month)
-                // For testing, return a dummy map
-                Map<String, Object> summary = new HashMap<>();
-                summary.put("totalSales", 10000.0);
-                summary.put("totalOrders", 50);
-                return summary;
-        }
+    @Override
+    public Map<String, Object> getSalesSummary(String period, Long warehouseId) {
+        Map<String, Object> summary = new HashMap<>();
+        summary.put("totalSales", 10000.0);
+        summary.put("totalOrders", 50);
+        return summary;
+    }
 }

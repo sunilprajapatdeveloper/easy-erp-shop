@@ -7,11 +7,9 @@ import nextpos.app.nextpos.model.dto.request.UpdateRequest.UpdateProductStockReq
 import nextpos.app.nextpos.model.dto.response.ProductStockResponse;
 import nextpos.app.nextpos.model.entity.Product;
 import nextpos.app.nextpos.model.entity.ProductStock;
-import nextpos.app.nextpos.model.entity.User;
 import nextpos.app.nextpos.model.entity.Warehouse;
 import nextpos.app.nextpos.repository.ProductRepository;
 import nextpos.app.nextpos.repository.ProductStockRepository;
-import nextpos.app.nextpos.repository.UserRepository;
 import nextpos.app.nextpos.repository.WarehouseRepository;
 import nextpos.app.nextpos.security.context.UserContext;
 import nextpos.app.nextpos.service.interf.ProductStockService;
@@ -29,7 +27,6 @@ public class ProductStockServiceImpl implements ProductStockService {
     private final ProductStockRepository productStockRepository;
     private final ProductRepository productRepository;
     private final WarehouseRepository warehouseRepository;
-    private final UserRepository userRepository;
 
     /**
      * Create a new product stock entry.
@@ -37,9 +34,8 @@ public class ProductStockServiceImpl implements ProductStockService {
     @Override
     @Transactional
     public ProductStockResponse createProductStock(CreateProductStockRequest request) {
-        User user = UserContext.getAuthenticatedUser(userRepository);
-        Long companyId = user.getCompanyId();
-        Long currentUserId = user.getId();
+        Long companyId = UserContext.getCurrentCompanyId();
+        Long currentUserId = UserContext.getCurrentUserId();
 
         Product product = productRepository.findByIdAndCompanyIdAndIsDeletedFalse(request.getProductId(), companyId)
                 .orElseThrow(() -> new EntityNotFoundException("Product not found with id: " + request.getProductId()));
@@ -84,9 +80,8 @@ public class ProductStockServiceImpl implements ProductStockService {
     @Override
     @Transactional
     public ProductStockResponse updateProductStock(UpdateProductStockRequest request) {
-        User user = UserContext.getAuthenticatedUser(userRepository);
-        Long companyId = user.getCompanyId();
-        Long currentUserId = user.getId();
+        Long companyId = UserContext.getCurrentCompanyId();
+        Long currentUserId = UserContext.getCurrentUserId();
 
         ProductStock stock = productStockRepository.findByIdAndCompanyId(request.getId(), companyId)
                 .orElseThrow(() -> new EntityNotFoundException("ProductStock not found with id: " + request.getId()));
@@ -160,8 +155,7 @@ public class ProductStockServiceImpl implements ProductStockService {
     @Override
     @Transactional(readOnly = true)
     public ProductStockResponse getProductStockById(Long id) {
-        User user = UserContext.getAuthenticatedUser(userRepository);
-        Long companyId = user.getCompanyId();
+        Long companyId = UserContext.getCurrentCompanyId();
 
         ProductStock stock = productStockRepository.findByIdAndCompanyId(id, companyId)
                 .orElseThrow(() -> new EntityNotFoundException("ProductStock not found with id: " + id));
@@ -171,8 +165,7 @@ public class ProductStockServiceImpl implements ProductStockService {
     @Override
     @Transactional(readOnly = true)
     public ProductStockResponse getByProductAndWarehouse(Long productId, Long warehouseId) {
-        User user = UserContext.getAuthenticatedUser(userRepository);
-        Long companyId = user.getCompanyId();
+        Long companyId = UserContext.getCurrentCompanyId();
 
         ProductStock stock = productStockRepository
                 .findByProductIdAndWarehouseIdAndCompanyId(productId, warehouseId, companyId)
@@ -184,8 +177,7 @@ public class ProductStockServiceImpl implements ProductStockService {
     @Override
     @Transactional(readOnly = true)
     public List<ProductStockResponse> listStocksByCompany() {
-        User user = UserContext.getAuthenticatedUser(userRepository);
-        Long companyId = user.getCompanyId();
+        Long companyId = UserContext.getCurrentCompanyId();
 
         return productStockRepository.findAllByCompanyId(companyId)
                 .stream()
@@ -196,9 +188,8 @@ public class ProductStockServiceImpl implements ProductStockService {
     @Override
     @Transactional
     public ProductStockResponse adjustStock(Long productId, Long warehouseId, int delta) {
-        User user = UserContext.getAuthenticatedUser(userRepository);
-        Long companyId = user.getCompanyId();
-        Long currentUserId = user.getId();
+        Long companyId = UserContext.getCurrentCompanyId();
+        Long currentUserId = UserContext.getCurrentUserId();
 
         ProductStock stock = productStockRepository
                 .findByProductIdAndWarehouseIdAndCompanyId(productId, warehouseId, companyId)
@@ -220,8 +211,7 @@ public class ProductStockServiceImpl implements ProductStockService {
     @Override
     @Transactional
     public void deleteProductStock(Long id) {
-        User user = UserContext.getAuthenticatedUser(userRepository);
-        Long companyId = user.getCompanyId();
+        Long companyId = UserContext.getCurrentCompanyId();
 
         ProductStock stock = productStockRepository.findByIdAndCompanyId(id, companyId)
                 .orElseThrow(() -> new EntityNotFoundException("ProductStock not found with id: " + id));
@@ -232,8 +222,7 @@ public class ProductStockServiceImpl implements ProductStockService {
     @Override
     @Transactional(readOnly = true)
     public int getStock(Long productId, Long warehouseId) {
-        User user = UserContext.getAuthenticatedUser(userRepository);
-        Long companyId = user.getCompanyId();
+        Long companyId = UserContext.getCurrentCompanyId();
 
         ProductStock stock = productStockRepository
                 .findByProductIdAndWarehouseIdAndCompanyId(productId, warehouseId, companyId)
@@ -245,9 +234,8 @@ public class ProductStockServiceImpl implements ProductStockService {
     @Override
     @Transactional(readOnly = true)
     public List<ProductStockResponse> listStocksByProduct(Long productId) {
-        User user = UserContext.getAuthenticatedUser(userRepository);
-        List<ProductStock> stocks = productStockRepository.findAllByProductIdAndCompanyId(productId,
-                user.getCompanyId());
+        Long companyId = UserContext.getCurrentCompanyId();
+        List<ProductStock> stocks = productStockRepository.findAllByProductIdAndCompanyId(productId, companyId);
         return stocks.stream()
                 .map(ProductStockResponse::fromEntity)
                 .collect(Collectors.toList());

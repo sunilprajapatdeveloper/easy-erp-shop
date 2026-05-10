@@ -4,12 +4,9 @@ import lombok.RequiredArgsConstructor;
 import nextpos.app.nextpos.model.dto.request.CreateCustomerRequest;
 import nextpos.app.nextpos.model.dto.response.CustomerResponse;
 import nextpos.app.nextpos.model.entity.Customer;
-import nextpos.app.nextpos.model.entity.User;
 import nextpos.app.nextpos.repository.CustomerRepository;
-import nextpos.app.nextpos.repository.UserRepository;
 import nextpos.app.nextpos.security.context.UserContext;
 import nextpos.app.nextpos.service.interf.CustomerService;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -20,19 +17,16 @@ import java.util.stream.Collectors;
 public class CustomerServiceImpl implements CustomerService {
 
     private final CustomerRepository customerRepository;
-    private final UserRepository userRepository;
 
     @Override
     public CustomerResponse createCustomer(CreateCustomerRequest request) {
-        User user = UserContext.getAuthenticatedUser(userRepository);
-
         Customer customer = new Customer();
         customer.setName(request.getName());
         customer.setEmail(request.getEmail());
         customer.setPhone(request.getPhone());
         customer.setCountry(request.getCountry());
         customer.setCity(request.getCity());
-        customer.setCreatedBy(user.getId());
+        customer.setCreatedBy(UserContext.getCurrentUserId());
 
         return new CustomerResponse(customerRepository.save(customer));
     }
@@ -77,14 +71,12 @@ public class CustomerServiceImpl implements CustomerService {
         Customer customer = customerRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Customer not found"));
 
-        User user = UserContext.getAuthenticatedUser(userRepository);
-
         customer.setName(request.getName());
         customer.setEmail(request.getEmail());
         customer.setPhone(request.getPhone());
         customer.setCountry(request.getCountry());
         customer.setCity(request.getCity());
-        customer.setUpdatedBy(user.getId());
+        customer.setUpdatedBy(UserContext.getCurrentUserId());
 
         return new CustomerResponse(customerRepository.save(customer));
     }

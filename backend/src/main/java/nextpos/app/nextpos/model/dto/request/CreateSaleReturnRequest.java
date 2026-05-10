@@ -1,92 +1,120 @@
 package nextpos.app.nextpos.model.dto.request;
 
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.DecimalMin;
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-import nextpos.app.nextpos.model.enums.SaleStatus;
-import nextpos.app.nextpos.model.enums.ShipmentStatus;
+import jakarta.validation.constraints.*;
+import lombok.*;
+import nextpos.app.nextpos.model.enums.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
 @Getter
-@Setter
-@NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class CreateSaleReturnRequest {
 
     @NotNull
-    private LocalDate date;
+    private final LocalDate date;
 
     @NotNull
-    private Long originalSaleId;
+    private final Long originalSaleId;
 
     @NotNull
-    private Long customerId;
+    private final Long customerId;
 
     @NotNull
-    private Long warehouseId;
+    private final Long warehouseId;
 
     @NotNull
     @Size(min = 1)
     @Valid
-    private List<SaleReturnProductRequest> products;
-
-    @Builder.Default
-    @DecimalMin(value = "0.0", inclusive = true)
-    private BigDecimal returnTax = BigDecimal.ZERO;
-
-    @Builder.Default
-    @DecimalMin(value = "0.0", inclusive = true)
-    private BigDecimal returnDiscount = BigDecimal.ZERO;
-
-    @Builder.Default
-    @DecimalMin(value = "0.0", inclusive = true)
-    private BigDecimal shippingCost = BigDecimal.ZERO;
-
-    private ShipmentStatus shipmentStatus;
+    private final List<SaleReturnProductRequest> products;
 
     @NotNull
-    private SaleStatus returnStatus;
+    @DecimalMin(value = "0.0", inclusive = true)
+    private final BigDecimal orderTax;
 
-    private String note;
+    @NotNull
+    @DecimalMin(value = "0.0", inclusive = true)
+    private final BigDecimal orderDiscount;
 
-    @Valid
-    private List<CreatePaymentRequest> payments;
+    @NotNull
+    private final DiscountType orderDiscountType;
+
+    @NotNull
+    @DecimalMin(value = "0.0", inclusive = true)
+    private final BigDecimal shippingCost;
+
+    @DecimalMin(value = "0.0", inclusive = true)
+    private final BigDecimal roundingAmount;
+
+    @NotNull
+    private final ShipmentStatus shipmentStatus;
+
+    @NotNull
+    private final SaleStatus saleStatus;
+
+    @Builder.Default
+    private final SaleSource source = SaleSource.WEB;
+
+    private final PaymentStatus paymentStatus;
+
+    private final String note;
+
+    @NotNull
+    private final Long currencyId;
+
+    @NotNull
+    @DecimalMin(value = "0.00000001", inclusive = true)
+    private final BigDecimal exchangeRate;
+
+    private final String couponCode;
 
     @Getter
-    @Setter
-    @NoArgsConstructor
     @AllArgsConstructor
     @Builder
     public static class SaleReturnProductRequest {
 
         @NotNull
-        private Long productId;
+        private final Long productId;
 
         @NotNull
         @DecimalMin(value = "0.0", inclusive = true)
-        private BigDecimal productUnitPrice;
+        private final BigDecimal productUnitPrice;
 
         @NotNull
         @Min(1)
-        private Integer returnQty;
+        private final Integer quantity;
 
-        @Builder.Default
+        @NotNull
         @DecimalMin(value = "0.0", inclusive = true)
-        private BigDecimal returnDiscount = BigDecimal.ZERO;
+        private final BigDecimal discount;
 
-        @Builder.Default
+        @NotNull
         @DecimalMin(value = "0.0", inclusive = true)
-        private BigDecimal returnTax = BigDecimal.ZERO;
+        private final BigDecimal subTotal;
+
+        @NotBlank
+        @Size(max = 100)
+        private final String taxName;
+
+        @NotNull
+        private final TaxCategory taxCategory;
+
+        @NotNull
+        @DecimalMin(value = "0.000", inclusive = true)
+        @Digits(integer = 5, fraction = 3)
+        private final BigDecimal taxRate;
+
+        @NotNull
+        private final TaxInclusionType taxInclusionType;
+
+        @NotNull
+        private final TaxApplicationOrder taxApplicationOrder;
+
+        @NotNull
+        @DecimalMin(value = "0.0", inclusive = true)
+        private final BigDecimal taxAmount;
     }
 }

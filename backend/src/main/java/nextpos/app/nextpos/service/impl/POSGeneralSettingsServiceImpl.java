@@ -13,14 +13,12 @@ import nextpos.app.nextpos.model.dto.response.POSGeneralSettingsResponse;
 import nextpos.app.nextpos.model.entity.Company;
 import nextpos.app.nextpos.model.entity.Customer;
 import nextpos.app.nextpos.model.entity.POSGeneralSettings;
-import nextpos.app.nextpos.model.entity.User;
 import nextpos.app.nextpos.model.entity.Warehouse;
 import nextpos.app.nextpos.model.entity.WarehouseCurrency;
 import nextpos.app.nextpos.model.enums.CurrencyStatus;
 import nextpos.app.nextpos.repository.CompanyRepository;
 import nextpos.app.nextpos.repository.CustomerRepository;
 import nextpos.app.nextpos.repository.POSGeneralSettingsRepository;
-import nextpos.app.nextpos.repository.UserRepository;
 import nextpos.app.nextpos.repository.WarehouseCurrencyRepository;
 import nextpos.app.nextpos.repository.WarehouseRepository;
 import nextpos.app.nextpos.security.context.UserContext;
@@ -35,13 +33,12 @@ public class POSGeneralSettingsServiceImpl implements POSGeneralSettingsService 
     private final CompanyRepository companyRepo;
     private final CustomerRepository customerRepo;
     private final WarehouseCurrencyRepository warehouseCurrencyRepo;
-    private final UserRepository userRepository;
 
     @Override
     @Transactional
     public POSGeneralSettingsResponse createPOSSettings(Long warehouseId, CreatePOSGeneralSettingsRequest request) {
-        User user = UserContext.getAuthenticatedUser(userRepository);
-        Long companyId = user.getCompanyId();
+        Long companyId = UserContext.getCurrentCompanyId();
+        Long userId = UserContext.getCurrentUserId();
 
         // Validate company
         Company company = companyRepo.findById(companyId)
@@ -85,7 +82,7 @@ public class POSGeneralSettingsServiceImpl implements POSGeneralSettingsService 
         settings.setDefaultCurrency(currency);
         settings.setDefaultPaymentMethod(request.getDefaultPaymentMethod());
         settings.setDefaultTaxInclusive(request.isDefaultTaxInclusive());
-        settings.setCreatedBy(user.getId());
+        settings.setCreatedBy(userId);
 
         POSGeneralSettings saved = posRepo.save(settings);
         return mapToResponse(saved);
@@ -94,8 +91,7 @@ public class POSGeneralSettingsServiceImpl implements POSGeneralSettingsService 
     @Override
     @Transactional
     public POSGeneralSettingsResponse getByWarehouse(Long warehouseId) {
-        User user = UserContext.getAuthenticatedUser(userRepository);
-        Long companyId = user.getCompanyId();
+        Long companyId = UserContext.getCurrentCompanyId();
 
         Warehouse warehouse = warehouseRepo.findById(warehouseId)
                 .orElseThrow(() -> new NoSuchElementException("Warehouse not found: " + warehouseId));
@@ -115,8 +111,8 @@ public class POSGeneralSettingsServiceImpl implements POSGeneralSettingsService 
     @Transactional
     public POSGeneralSettingsResponse updatePOSSettings(Long warehouseId, Long id,
             UpdatePOSGeneralSettingsRequest request) {
-        User user = UserContext.getAuthenticatedUser(userRepository);
-        Long companyId = user.getCompanyId();
+        Long companyId = UserContext.getCurrentCompanyId();
+        Long userId = UserContext.getCurrentUserId();
 
         // Find setting by id and ensure scope matches
         POSGeneralSettings settings = posRepo.findById(id)
@@ -161,7 +157,7 @@ public class POSGeneralSettingsServiceImpl implements POSGeneralSettingsService 
             settings.setDefaultTaxInclusive(request.getDefaultTaxInclusive());
         }
 
-        settings.setUpdatedBy(user.getId());
+        settings.setUpdatedBy(userId);
 
         POSGeneralSettings saved = posRepo.save(settings);
         return mapToResponse(saved);
@@ -170,8 +166,7 @@ public class POSGeneralSettingsServiceImpl implements POSGeneralSettingsService 
     @Override
     @Transactional
     public void deletePOSSettings(Long warehouseId, Long id) {
-        User user = UserContext.getAuthenticatedUser(userRepository);
-        Long companyId = user.getCompanyId();
+        Long companyId = UserContext.getCurrentCompanyId();
 
         POSGeneralSettings settings = posRepo.findById(id)
                 .orElseThrow(() -> new NoSuchElementException("POS settings not found: " + id));
@@ -184,15 +179,9 @@ public class POSGeneralSettingsServiceImpl implements POSGeneralSettingsService 
             throw new IllegalArgumentException("POS settings do not belong to the provided warehouse");
         }
 
-        // If you want soft-delete, set a flag; entity doesn't have one so we delete
         posRepo.delete(settings);
     }
 
-    /**
-     * Map entity -> response DTO.
-     * Note: accesses lazy relations; make sure you fetch them in transactional
-     * boundary.
-     */
     private POSGeneralSettingsResponse mapToResponse(POSGeneralSettings posGeneralSettings) {
         Long warehouseId = posGeneralSettings.getWarehouse() != null ? posGeneralSettings.getWarehouse().getId() : null;
         String warehouseName = null;
@@ -218,19 +207,16 @@ public class POSGeneralSettingsServiceImpl implements POSGeneralSettingsService 
         String defaultCurrencySymbol = null;
         if (posGeneralSettings.getDefaultCurrency() != null) {
             defaultCurrencyId = posGeneralSettings.getDefaultCurrency().getId();
-            // Attempt to fetch code/symbol via currency relation if exists
             try {
                 if (posGeneralSettings.getDefaultCurrency().getCurrency() != null) {
                     defaultCurrencyCode = posGeneralSettings.getDefaultCurrency().getCurrency().getCode();
                     defaultCurrencySymbol = posGeneralSettings.getDefaultCurrency().getCurrency().getSymbol();
                 } else {
-                    // Fallback: maybe WarehouseCurrency has direct getters
                     defaultCurrencyCode = posGeneralSettings.getDefaultCurrency().getCurrency().getCode();
                     defaultCurrencySymbol = posGeneralSettings.getDefaultCurrency().getCurrency().getSymbol();
                 }
             } catch (Exception ex) {
-                // If shape differs, swallow here and leave code/symbol null (frontend still has
-                // id)
+                // Swallow
             }
         }
 

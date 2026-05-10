@@ -5,7 +5,6 @@ import nextpos.app.nextpos.exception.PaymentProcessingException;
 import nextpos.app.nextpos.model.dto.request.CreatePaymentRequest;
 import nextpos.app.nextpos.model.dto.response.PaymentResponse;
 import nextpos.app.nextpos.model.entity.Payment;
-import nextpos.app.nextpos.model.entity.User;
 import nextpos.app.nextpos.model.enums.PaymentMethod;
 import nextpos.app.nextpos.model.enums.PaymentStatus;
 import nextpos.app.nextpos.repository.PaymentRepository;
@@ -21,11 +20,9 @@ import java.time.LocalDateTime;
 public class GiftCardPaymentStrategy implements PaymentStrategy {
 
     private final PaymentRepository paymentRepository;
-    private final UserRepository userRepository;
 
     public GiftCardPaymentStrategy(PaymentRepository paymentRepository, UserRepository userRepository) {
         this.paymentRepository = paymentRepository;
-        this.userRepository = userRepository;
     }
 
     @Override
@@ -37,16 +34,16 @@ public class GiftCardPaymentStrategy implements PaymentStrategy {
     @Transactional
     public PaymentResponse pay(CreatePaymentRequest request) {
         log.info("Processing gift card payment: referenceType={}, referenceId={}, amount={}",
-                request.getReferenceType(), request.getReferenceId(), request.getAmount());
+                request.getReferenceType(), request.getReferenceId(), request.getAmountTxnCurrency());
 
         try {
-            // Get authenticated user
-            User user = UserContext.getAuthenticatedUser(userRepository);
+            Long currentUserId = UserContext.getCurrentUserId();
+            Long currentCompanyId = UserContext.getCurrentCompanyId();
 
             // Compute base currency amount if not provided
-            var baseCurrencyAmount = request.getBaseCurrencyAmount() != null
-                    ? request.getBaseCurrencyAmount()
-                    : request.getAmount().multiply(request.getExchangeRate());
+            var baseCurrencyAmount = request.getAmountBaseCurrency() != null
+                    ? request.getAmountBaseCurrency()
+                    : request.getAmountTxnCurrency().multiply(request.getExchangeRate());
 
             // Save payment
             Payment payment = Payment.builder()
@@ -54,7 +51,7 @@ public class GiftCardPaymentStrategy implements PaymentStrategy {
                     .referenceId(request.getReferenceId())
                     .referenceNumber(request.getReferenceNumber())
                     .paymentType(request.getPaymentType())
-                    .amountTxnCurrency(request.getAmount())
+                    .amountTxnCurrency(request.getAmountTxnCurrency())
                     .amountBaseCurrency(baseCurrencyAmount)
                     .currencyCode(request.getCurrencyCode())
                     .exchangeRate(request.getExchangeRate())
@@ -63,11 +60,16 @@ public class GiftCardPaymentStrategy implements PaymentStrategy {
                     .paymentDate(request.getPaymentDate())
                     .transactionReference(request.getTransactionReference())
                     .idempotencyKey(request.getIdempotencyKey())
-                    .createdBy(user != null ? user.getId() : null)
-                    .updatedBy(user != null ? user.getId() : null)
+                    .createdBy(currentUserId)
+                    .updatedBy(currentUserId)
                     .createdAt(LocalDateTime.now())
                     .updatedAt(LocalDateTime.now())
-                    .companyId(user != null ? user.getCompanyId() : 1L)
+                    .companyId(currentCompanyId)
+                    .referenceCurrencyCode(request.getReferenceCurrencyCode())
+                    .referenceAmount(request.getReferenceAmount())
+                    .warehouseId(request.getWarehouseId())
+                    .posTerminalId(request.getPosTerminalId())
+                    .exchangeRateSource(request.getExchangeRateSource())
                     .build();
 
             Payment savedPayment = paymentRepository.save(payment);
@@ -82,8 +84,8 @@ public class GiftCardPaymentStrategy implements PaymentStrategy {
                     .referenceType(savedPayment.getReferenceType())
                     .referenceId(savedPayment.getReferenceId())
                     .paymentType(savedPayment.getPaymentType())
-                    .amount(savedPayment.getAmountTxnCurrency())
-                    .baseCurrencyAmount(savedPayment.getAmountBaseCurrency())
+                    .amountTxnCurrency(savedPayment.getAmountTxnCurrency())
+                    .amountBaseCurrency(savedPayment.getAmountBaseCurrency())
                     .currencyCode(savedPayment.getCurrencyCode())
                     .exchangeRate(savedPayment.getExchangeRate())
                     .paymentMethod(savedPayment.getPaymentMethod())
@@ -96,6 +98,11 @@ public class GiftCardPaymentStrategy implements PaymentStrategy {
                     .updatedBy(savedPayment.getUpdatedBy())
                     .updatedAt(savedPayment.getUpdatedAt())
                     .message("Gift card payment successful.")
+                    .referenceCurrencyCode(savedPayment.getReferenceCurrencyCode())
+                    .referenceAmount(savedPayment.getReferenceAmount())
+                    .warehouseId(savedPayment.getWarehouseId())
+                    .posTerminalId(savedPayment.getPosTerminalId())
+                    .exchangeRateSource(savedPayment.getExchangeRateSource())
                     .build();
 
         } catch (Exception e) {

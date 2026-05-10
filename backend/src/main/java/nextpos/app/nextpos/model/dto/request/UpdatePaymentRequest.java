@@ -6,9 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import nextpos.app.nextpos.model.enums.PaymentGatewayProvider;
-import nextpos.app.nextpos.model.enums.PaymentMethod;
-import nextpos.app.nextpos.model.enums.PaymentStatus;
+import nextpos.app.nextpos.model.enums.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -20,41 +18,39 @@ import java.time.LocalDate;
 public class UpdatePaymentRequest {
 
     @DecimalMin(value = "0.0", inclusive = false)
-    private BigDecimal amount; // Transaction currency amount
+    private BigDecimal amountTxnCurrency;
 
-    private PaymentMethod paymentMethod; // CASH, CARD, UPI, BANK_TRANSFER, etc.
+    private PaymentMethod paymentMethod;
 
-    private PaymentGatewayProvider gatewayProvider; // Optional: STRIPE, PAYPAL, etc.
+    private PaymentGatewayProvider gatewayProvider;
 
-    private PaymentStatus status; // PENDING, SUCCESS, FAILED, PAID, REFUNDED, etc.
+    private PaymentStatus status;
 
-    private LocalDate paymentDate; // When payment was made
+    private LocalDate paymentDate;
 
-    private String note; // Optional human note
+    private String note;
 
-    private String transactionReference; // External txn ID (bank, POS slip, etc.)
+    private String transactionReference;
 
-    /**
-     * ISO 4217 currency code (e.g., USD, EUR, INR).
-     * Can be updated if the payment currency was entered incorrectly.
-     */
     private String currencyCode;
 
-    /**
-     * Exchange rate relative to the company’s base currency.
-     * Example: if company base = INR, payment = USD, and 1 USD = 83 INR →
-     * exchangeRate = 83.
-     */
     @DecimalMin(value = "0.0", inclusive = false)
     private BigDecimal exchangeRate;
 
-    /**
-     * Converted amount in company base currency.
-     * (amount * exchangeRate). Optional — may be pre-computed or recalculated.
-     */
     @DecimalMin(value = "0.0", inclusive = false)
-    private BigDecimal baseCurrencyAmount;
+    private BigDecimal amountBaseCurrency;
 
     @Size(max = 100)
-    private String idempotencyKey; // Optional safeguard for idempotent updates
+    private String idempotencyKey;
+
+    private String referenceCurrencyCode;
+
+    @DecimalMin(value = "0.0", inclusive = false)
+    private BigDecimal referenceAmount;
+
+    private Long warehouseId;
+
+    private String posTerminalId;
+
+    private ExchangeRateSource exchangeRateSource;
 }

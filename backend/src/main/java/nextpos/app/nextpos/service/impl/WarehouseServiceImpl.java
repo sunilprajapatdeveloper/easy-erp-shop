@@ -7,10 +7,8 @@ import nextpos.app.nextpos.model.dto.request.CreateRequest.CreateWarehouseReques
 import nextpos.app.nextpos.model.dto.request.UpdateRequest.UpdateWarehouseRequest;
 import nextpos.app.nextpos.model.dto.response.WarehouseResponse;
 import nextpos.app.nextpos.model.entity.Currency;
-import nextpos.app.nextpos.model.entity.User;
 import nextpos.app.nextpos.model.entity.Warehouse;
 import nextpos.app.nextpos.repository.CurrencyRepository;
-import nextpos.app.nextpos.repository.UserRepository;
 import nextpos.app.nextpos.repository.WarehouseRepository;
 import nextpos.app.nextpos.security.context.UserContext;
 import nextpos.app.nextpos.service.interf.WarehouseService;
@@ -26,14 +24,13 @@ import java.util.stream.Collectors;
 public class WarehouseServiceImpl implements WarehouseService {
 
         private final WarehouseRepository warehouseRepository;
-        private final UserRepository userRepository;
         private final CurrencyRepository currencyRepository;
 
         @Override
         @Transactional
         public WarehouseResponse createWarehouse(CreateWarehouseRequest request) {
-                User currentUser = UserContext.getAuthenticatedUser(userRepository);
-                Long companyId = currentUser.getCompanyId();
+                Long currentUserId = UserContext.getCurrentUserId();
+                Long companyId = UserContext.getCurrentCompanyId();
 
                 // Check uniqueness of warehouse name within the company
                 warehouseRepository.findByNameAndCompanyIdAndIsDeletedFalse(request.getName(), companyId)
@@ -61,12 +58,13 @@ public class WarehouseServiceImpl implements WarehouseService {
                                 .active(request.getActive() != null ? request.getActive() : true)
                                 .applyTax(request.getApplyTax() != null ? request.getApplyTax() : true)
                                 .applyTds(request.getApplyTds() != null ? request.getApplyTds() : false)
-                                .trackInventory(request.getTrackInventory() != null ? request.getTrackInventory() : true)
+                                .trackInventory(request.getTrackInventory() != null ? request.getTrackInventory()
+                                                : true)
                                 .invoicePrefix(request.getInvoicePrefix())
                                 .timezone(request.getTimezone() != null ? request.getTimezone() : "UTC")
                                 .currency(currency)
                                 .companyId(companyId)
-                                .createdBy(currentUser.getId())
+                                .createdBy(currentUserId)
                                 .build();
 
                 // If this warehouse is marked as default, ensure no other default exists for
@@ -81,15 +79,14 @@ public class WarehouseServiceImpl implements WarehouseService {
 
                 Warehouse saved = warehouseRepository.save(warehouse);
                 log.info("Warehouse [{}] created by user [{}] in company [{}]",
-                                saved.getId(), currentUser.getId(), companyId);
+                                saved.getId(), currentUserId, companyId);
 
                 return new WarehouseResponse(saved);
         }
 
         @Override
         public WarehouseResponse getWarehouseById(Long id) {
-                User currentUser = UserContext.getAuthenticatedUser(userRepository);
-                Long companyId = currentUser.getCompanyId();
+                Long companyId = UserContext.getCurrentCompanyId();
 
                 Warehouse warehouse = warehouseRepository
                                 .findByIdAndCompanyIdAndIsDeletedFalse(id, companyId)
@@ -100,8 +97,7 @@ public class WarehouseServiceImpl implements WarehouseService {
 
         @Override
         public List<WarehouseResponse> getAllWarehouses() {
-                User currentUser = UserContext.getAuthenticatedUser(userRepository);
-                Long companyId = currentUser.getCompanyId();
+                Long companyId = UserContext.getCurrentCompanyId();
 
                 return warehouseRepository.findAllByCompanyIdAndIsDeletedFalse(companyId)
                                 .stream()
@@ -111,8 +107,7 @@ public class WarehouseServiceImpl implements WarehouseService {
 
         @Override
         public List<WarehouseResponse> findAllByCreatedBy(Long userId) {
-                User currentUser = UserContext.getAuthenticatedUser(userRepository);
-                Long companyId = currentUser.getCompanyId();
+                Long companyId = UserContext.getCurrentCompanyId();
 
                 return warehouseRepository
                                 .findAllByCreatedByAndCompanyIdAndIsDeletedFalse(userId, companyId)
@@ -124,8 +119,8 @@ public class WarehouseServiceImpl implements WarehouseService {
         @Override
         @Transactional
         public WarehouseResponse updateWarehouse(Long id, UpdateWarehouseRequest request) {
-                User currentUser = UserContext.getAuthenticatedUser(userRepository);
-                Long companyId = currentUser.getCompanyId();
+                Long currentUserId = UserContext.getCurrentUserId();
+                Long companyId = UserContext.getCurrentCompanyId();
 
                 Warehouse warehouse = warehouseRepository
                                 .findByIdAndCompanyIdAndIsDeletedFalse(id, companyId)
@@ -192,11 +187,11 @@ public class WarehouseServiceImpl implements WarehouseService {
                         warehouse.setCurrency(currency);
                 }
 
-                warehouse.setUpdatedBy(currentUser.getId());
+                warehouse.setUpdatedBy(currentUserId);
 
                 Warehouse saved = warehouseRepository.save(warehouse);
                 log.info("Warehouse [{}] updated by user [{}] in company [{}]",
-                                saved.getId(), currentUser.getId(), companyId);
+                                saved.getId(), currentUserId, companyId);
 
                 return new WarehouseResponse(saved);
         }
@@ -204,18 +199,18 @@ public class WarehouseServiceImpl implements WarehouseService {
         @Override
         @Transactional
         public void deleteWarehouse(Long id) {
-                User currentUser = UserContext.getAuthenticatedUser(userRepository);
-                Long companyId = currentUser.getCompanyId();
+                Long currentUserId = UserContext.getCurrentUserId();
+                Long companyId = UserContext.getCurrentCompanyId();
 
                 Warehouse warehouse = warehouseRepository
                                 .findByIdAndCompanyIdAndIsDeletedFalse(id, companyId)
                                 .orElseThrow(() -> new ResourceNotFoundException("Warehouse not found with id " + id));
 
                 warehouse.setDeleted(true);
-                warehouse.setUpdatedBy(currentUser.getId());
+                warehouse.setUpdatedBy(currentUserId);
 
                 warehouseRepository.save(warehouse);
                 log.info("Warehouse [{}] soft-deleted by user [{}] in company [{}]",
-                                id, currentUser.getId(), companyId);
+                                id, currentUserId, companyId);
         }
 }

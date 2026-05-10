@@ -9,6 +9,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import jakarta.validation.Valid;
 import java.util.List;
 
 @RestController
@@ -18,47 +19,34 @@ public class PurchaseReturnController {
 
     private final PurchaseReturnService purchaseReturnService;
 
-    /**
-     * Create a new purchase return
-     */
     @PostMapping
     public ResponseEntity<PurchaseReturnResponse> createPurchaseReturn(
-            @RequestBody CreatePurchaseReturnRequest request) {
-        PurchaseReturnResponse response = purchaseReturnService.createPurchaseReturn(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+            @Valid @RequestBody CreatePurchaseReturnRequest request) {
+        return new ResponseEntity<>(purchaseReturnService.createPurchaseReturn(request), HttpStatus.CREATED);
     }
 
-    /**
-     * Get purchase return by ID
-     */
     @GetMapping("/{id}")
-    public ResponseEntity<PurchaseReturnResponse> getPurchaseReturnById(@PathVariable Long id) {
+    public ResponseEntity<PurchaseReturnResponse> getPurchaseReturn(@PathVariable Long id) {
         return ResponseEntity.ok(purchaseReturnService.getPurchaseReturnById(id));
     }
 
-    /**
-     * Get all purchase returns (optionally filter by supplier, warehouse)
-     */
     @GetMapping
-    public ResponseEntity<List<PurchaseReturnResponse>> getAllPurchaseReturns(
-            @RequestParam(required = false) Long supplierId, @RequestParam(required = false) Long warehouseId) {
-        List<PurchaseReturnResponse> responses = purchaseReturnService.getAllPurchaseReturns(supplierId, warehouseId);
-        return ResponseEntity.ok(responses);
+    public ResponseEntity<List<PurchaseReturnResponse>> getMyPurchaseReturns() {
+        return ResponseEntity.ok(purchaseReturnService.getMyPurchaseReturns());
     }
 
-    /**
-     * Update an existing purchase return
-     */
+    @GetMapping("/company")
+    public ResponseEntity<List<PurchaseReturnResponse>> getAllPurchaseReturns() {
+        return ResponseEntity.ok(purchaseReturnService.getAllPurchaseReturns());
+    }
+
     @PutMapping("/{id}")
     public ResponseEntity<PurchaseReturnResponse> updatePurchaseReturn(
             @PathVariable Long id,
-            @RequestBody UpdatePurchaseReturnRequest request) {
+            @Valid @RequestBody UpdatePurchaseReturnRequest request) {
         return ResponseEntity.ok(purchaseReturnService.updatePurchaseReturn(id, request));
     }
 
-    /**
-     * Delete a purchase return
-     */
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deletePurchaseReturn(@PathVariable Long id) {
         purchaseReturnService.deletePurchaseReturn(id);

@@ -1,24 +1,18 @@
 package nextpos.app.nextpos.model.dto.request.UpdateRequest;
 
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.DecimalMin;
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.Size;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import nextpos.app.nextpos.model.dto.request.CreatePaymentRequest;
-import nextpos.app.nextpos.model.enums.PurchaseStatus;
-import nextpos.app.nextpos.model.enums.ShipmentStatus;
+import jakarta.validation.constraints.*;
+import lombok.*;
+import nextpos.app.nextpos.model.enums.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
 @Getter
-@AllArgsConstructor
+@Setter
 @NoArgsConstructor
+@AllArgsConstructor
 @Builder
 public class UpdatePurchaseReturnRequest {
 
@@ -27,53 +21,67 @@ public class UpdatePurchaseReturnRequest {
     private Long supplierId;
     private Long warehouseId;
 
-    @Size(min = 1)
     @Valid
     private List<PurchaseReturnProductRequest> products;
 
     @DecimalMin(value = "0.0", inclusive = true)
-    private BigDecimal returnTax;
+    private BigDecimal orderTax;
 
     @DecimalMin(value = "0.0", inclusive = true)
-    private BigDecimal returnDiscount;
+    private BigDecimal orderDiscount;
+
+    private DiscountType orderDiscountType;
 
     @DecimalMin(value = "0.0", inclusive = true)
     private BigDecimal shippingCost;
 
-    @DecimalMin(value = "0.0", inclusive = false)
-    private BigDecimal exchangeRate;
+    @DecimalMin(value = "0.0", inclusive = true)
+    private BigDecimal roundingAmount;
 
-    private ShipmentStatus shipmentStatus;
+    private ShipmentStatus shippingStatus;
+    private PurchaseStatus purchaseStatus;
+    private PaymentStatus paymentStatus;
 
-    private PurchaseStatus returnStatus;
+    private String invoiceNumber;
+    private String receiptNumber;
+    private String supplierInvoiceNumber;
+
+    private PurchaseSource source;
 
     private String note;
 
-    /**
-     * Refund payments can be added/updated on purchase return update.
-     * Handle idempotency at PaymentService layer.
-     */
-    @Valid
-    private List<CreatePaymentRequest> payments;
+    private Long currencyId;
+
+    @DecimalMin(value = "0.00000001", inclusive = true)
+    private BigDecimal exchangeRate;
 
     @Getter
-    @AllArgsConstructor
+    @Setter
     @NoArgsConstructor
+    @AllArgsConstructor
     @Builder
     public static class PurchaseReturnProductRequest {
 
+        @NotNull
         private Long productId;
 
         @DecimalMin(value = "0.0", inclusive = true)
         private BigDecimal productUnitCost;
 
         @Min(1)
-        private Integer returnQty;
+        private Integer quantity;
 
         @DecimalMin(value = "0.0", inclusive = true)
-        private BigDecimal productDiscount;
+        private BigDecimal discount;
 
         @DecimalMin(value = "0.0", inclusive = true)
-        private BigDecimal productTax;
+        private BigDecimal subTotal;
+
+        private String taxName;
+        private TaxCategory taxCategory;
+        private BigDecimal taxRate;
+        private TaxInclusionType taxInclusionType;
+        private TaxApplicationOrder taxApplicationOrder;
+        private BigDecimal taxAmount;
     }
 }

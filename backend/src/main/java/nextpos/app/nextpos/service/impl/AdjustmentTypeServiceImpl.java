@@ -4,9 +4,7 @@ import lombok.RequiredArgsConstructor;
 import nextpos.app.nextpos.model.dto.request.CreateAdjustmentTypeRequest;
 import nextpos.app.nextpos.model.dto.response.AdjustmentTypeResponse;
 import nextpos.app.nextpos.model.entity.AdjustmentType;
-import nextpos.app.nextpos.model.entity.User;
 import nextpos.app.nextpos.repository.AdjustmentTypeRepository;
-import nextpos.app.nextpos.repository.UserRepository;
 import nextpos.app.nextpos.security.context.UserContext;
 import nextpos.app.nextpos.service.interf.AdjustmentTypeService;
 import org.springframework.stereotype.Service;
@@ -20,13 +18,9 @@ import java.util.stream.Collectors;
 public class AdjustmentTypeServiceImpl implements AdjustmentTypeService {
 
     private final AdjustmentTypeRepository adjustmentTypeRepository;
-    private final UserRepository userRepository;
 
     @Override
     public AdjustmentTypeResponse createAdjustmentType(CreateAdjustmentTypeRequest request) {
-        // Get authenticated user using helper
-        User createdBy = UserContext.getAuthenticatedUser(userRepository);
-
         if (request.getStockEffect() == null) {
             throw new IllegalArgumentException("Stock effect is required.");
         }
@@ -35,9 +29,9 @@ public class AdjustmentTypeServiceImpl implements AdjustmentTypeService {
         adjustmentType.setName(request.getName());
         adjustmentType.setDescription(request.getDescription());
         adjustmentType.setStockEffect(request.getStockEffect());
-        adjustmentType.setCreatedBy(createdBy.getId());
+        adjustmentType.setCreatedBy(UserContext.getCurrentUserId());
         adjustmentType.setCreatedAt(LocalDateTime.now());
-        adjustmentType.setCompanyId(createdBy.getCompanyId());
+        adjustmentType.setCompanyId(UserContext.getCurrentCompanyId());
 
         AdjustmentType saved = adjustmentTypeRepository.save(adjustmentType);
         return toResponse(saved);
