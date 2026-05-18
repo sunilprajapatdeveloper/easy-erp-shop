@@ -28,8 +28,6 @@ public class PaymentResponse {
     private String transactionReference;
     private PaymentStatus status;
     private LocalDate paymentDate;
-    private String note;
-    private String message;
     private String currencyCode;
     private BigDecimal exchangeRate;
     private BigDecimal amountBaseCurrency;

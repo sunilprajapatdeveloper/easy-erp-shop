@@ -28,8 +28,6 @@ public class UpdatePaymentRequest {
 
     private LocalDate paymentDate;
 
-    private String note;
-
     private String transactionReference;
 
     private String currencyCode;

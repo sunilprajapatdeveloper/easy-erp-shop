@@ -107,7 +107,7 @@ public class UpiPaymentStrategy implements PaymentStrategy {
                     .build();
             transactionLogRepository.save(logEntry);
 
-            return buildResponse(savedPayment, "UPI Payment initiated successfully via " + gateway.name());
+            return buildResponse(savedPayment);
 
         } catch (Exception ex) {
             log.error("Failed to initiate UPI payment", ex);
@@ -194,7 +194,7 @@ public class UpiPaymentStrategy implements PaymentStrategy {
         }
     }
 
-    private PaymentResponse buildResponse(Payment payment, String message) {
+    private PaymentResponse buildResponse(Payment payment) {
         return PaymentResponse.builder()
                 .id(payment.getId())
                 .referenceNumber(payment.getReferenceNumber())
@@ -216,7 +216,6 @@ public class UpiPaymentStrategy implements PaymentStrategy {
                 .createdAt(payment.getCreatedAt())
                 .updatedBy(payment.getUpdatedBy())
                 .updatedAt(payment.getUpdatedAt())
-                .message(message)
                 .referenceCurrencyCode(payment.getReferenceCurrencyCode())
                 .referenceAmount(payment.getReferenceAmount())
                 .warehouseId(payment.getWarehouseId())

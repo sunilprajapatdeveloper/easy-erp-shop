@@ -46,8 +46,6 @@ public class CreatePaymentRequest {
     @NotNull
     private LocalDate paymentDate;
 
-    private String note;
-
     private String transactionReference;
 
     @NotNull

@@ -187,7 +187,6 @@ public class CashPaymentStrategy implements PaymentStrategy {
                 .createdAt(payment.getCreatedAt())
                 .updatedBy(payment.getUpdatedBy())
                 .updatedAt(payment.getUpdatedAt())
-                .message("Cash Payment Successful")
                 .referenceCurrencyCode(payment.getReferenceCurrencyCode())
                 .referenceAmount(payment.getReferenceAmount())
                 .warehouseId(payment.getWarehouseId())

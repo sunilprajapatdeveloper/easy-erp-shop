@@ -107,7 +107,7 @@ public class CardPaymentStrategy implements PaymentStrategy {
                     .build();
             transactionLogRepository.save(logEntry);
 
-            return buildResponse(saved, metadata, "Card Payment Successful");
+            return buildResponse(saved, metadata);
 
         } catch (Exception e) {
             log.error("Card payment error for referenceId={}, message={}", request.getReferenceId(), e.getMessage(), e);
@@ -171,7 +171,7 @@ public class CardPaymentStrategy implements PaymentStrategy {
         return payload != null && !payload.isBlank();
     }
 
-    private PaymentResponse buildResponse(Payment payment, Map<String, Object> metadata, String message) {
+    private PaymentResponse buildResponse(Payment payment, Map<String, Object> metadata) {
         return PaymentResponse.builder()
                 .id(payment.getId())
                 .referenceNumber(payment.getReferenceNumber())
@@ -192,7 +192,6 @@ public class CardPaymentStrategy implements PaymentStrategy {
                 .createdAt(payment.getCreatedAt())
                 .updatedBy(payment.getUpdatedBy())
                 .updatedAt(payment.getUpdatedAt())
-                .message(message)
                 .referenceCurrencyCode(payment.getReferenceCurrencyCode())
                 .referenceAmount(payment.getReferenceAmount())
                 .warehouseId(payment.getWarehouseId())

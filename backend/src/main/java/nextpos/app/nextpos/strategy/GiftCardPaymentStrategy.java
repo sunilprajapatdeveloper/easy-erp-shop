@@ -97,7 +97,6 @@ public class GiftCardPaymentStrategy implements PaymentStrategy {
                     .createdAt(savedPayment.getCreatedAt())
                     .updatedBy(savedPayment.getUpdatedBy())
                     .updatedAt(savedPayment.getUpdatedAt())
-                    .message("Gift card payment successful.")
                     .referenceCurrencyCode(savedPayment.getReferenceCurrencyCode())
                     .referenceAmount(savedPayment.getReferenceAmount())
                     .warehouseId(savedPayment.getWarehouseId())
