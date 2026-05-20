@@ -47,6 +47,18 @@ public class TaxSettingController {
     }
 
     /**
+     * Get active tax setting for warehouse.
+     */
+    @GetMapping("/active")
+    public ResponseEntity<TaxSettingResponse> getActiveTaxSetting(
+            @RequestParam(required = false) Long warehouseId) {
+
+        TaxSettingResponse response = taxSettingService.getActiveTaxSetting(warehouseId);
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
      * List all tax settings for a company.
      */
     @GetMapping

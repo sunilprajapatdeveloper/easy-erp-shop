@@ -56,18 +56,53 @@
                 </div>
             </div>
 
-            <!-- Is Inclusive -->
+            <!-- Override Inclusion Type -->
             <div class="col-md-6">
-                <BaseCheckbox v-model="form.isInclusive" label="Inclusive Tax (already included in price)" />
+                <div class="form-group">
+                    <label class="d-block fs-14 text-black mb-2">
+                        Override Inclusion Type
+                    </label>
+
+                    <select v-model="form.overrideInclusionType"
+                        class="bg-white border-0 rounded-1 fs-14 text-optional w-100">
+                        <option :value="undefined">
+                            Use Company / Warehouse Default
+                        </option>
+
+                        <option v-for="type in Object.values(TaxInclusionType)" :key="type" :value="type">
+                            {{ TaxInclusionTypeLabels[type] }}
+                        </option>
+                    </select>
+                </div>
             </div>
 
-            <!-- Is Compound -->
+            <!-- Override Application Order -->
             <div class="col-md-6">
-                <BaseCheckbox v-model="form.isCompound" label="Compound Tax (applied on top of other taxes)" />
+                <div class="form-group">
+                    <label class="d-block fs-14 text-black mb-2">
+                        Override Application Order
+                    </label>
+
+                    <select v-model="form.overrideApplicationOrder"
+                        class="bg-white border-0 rounded-1 fs-14 text-optional w-100">
+                        <option :value="undefined">
+                            Use Company / Warehouse Default
+                        </option>
+
+                        <option v-for="order in Object.values(TaxApplicationOrder)" :key="order" :value="order">
+                            {{ TaxApplicationOrderLabels[order] }}
+                        </option>
+                    </select>
+                </div>
             </div>
 
-            <!-- Is Active -->
-            <div class="col-md-12">
+            <!-- Compound -->
+            <div class="col-md-6">
+                <BaseCheckbox v-model="form.isCompound" label="Compound Tax" />
+            </div>
+
+            <!-- Active -->
+            <div class="col-md-6">
                 <BaseCheckbox v-model="form.isActive" label="Active" />
             </div>
 
@@ -88,7 +123,22 @@ import type {
     CreateProductTaxRequest,
     UpdateProductTaxRequest,
 } from "@/types/ProductTax";
-import { TaxCategory, TaxCategoryLabels } from "@/enums/TaxCategory";
+
+import {
+    TaxCategory,
+    TaxCategoryLabels,
+} from "@/enums/TaxCategory";
+
+import {
+    TaxInclusionType,
+    TaxInclusionTypeLabels,
+} from "@/enums/TaxInclusionType";
+
+import {
+    TaxApplicationOrder,
+    TaxApplicationOrderLabels,
+} from "@/enums/TaxApplicationOrder";
+
 import BaseCheckbox from "@/components/ui/BaseCheckbox.vue";
 
 const props = defineProps<{
@@ -99,7 +149,10 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-    (e: "save", payload: CreateProductTaxRequest | UpdateProductTaxRequest): void;
+    (
+        e: "save",
+        payload: CreateProductTaxRequest | UpdateProductTaxRequest
+    ): void;
 }>();
 
 type FormData = {
@@ -109,7 +162,8 @@ type FormData = {
     taxName: string;
     taxCategory: TaxCategory | "";
     taxRate: number;
-    isInclusive: boolean;
+    overrideInclusionType?: TaxInclusionType;
+    overrideApplicationOrder?: TaxApplicationOrder;
     isCompound: boolean;
     isActive: boolean;
 };
@@ -121,7 +175,8 @@ const defaultForm = (): FormData => ({
     taxName: "",
     taxCategory: "",
     taxRate: 0,
-    isInclusive: false,
+    overrideInclusionType: undefined,
+    overrideApplicationOrder: undefined,
     isCompound: false,
     isActive: true,
 });
@@ -139,7 +194,8 @@ watch(
                 taxName: data.taxName,
                 taxCategory: data.taxCategory,
                 taxRate: data.taxRate,
-                isInclusive: data.isInclusive,
+                overrideInclusionType: data.overrideInclusionType,
+                overrideApplicationOrder: data.overrideApplicationOrder,
                 isCompound: data.isCompound,
                 isActive: data.isActive,
             };
@@ -156,9 +212,9 @@ watch(
 
 watch(
     [() => props.productId, () => props.warehouseId],
-    ([prodId, wareId]) => {
-        form.value.productId = prodId;
-        form.value.warehouseId = wareId;
+    ([productId, warehouseId]) => {
+        form.value.productId = productId;
+        form.value.warehouseId = warehouseId;
     }
 );
 
@@ -170,15 +226,12 @@ function submit() {
         taxName: form.value.taxName,
         taxCategory: form.value.taxCategory as TaxCategory,
         taxRate: form.value.taxRate,
-        isInclusive: form.value.isInclusive,
+        overrideInclusionType: form.value.overrideInclusionType,
+        overrideApplicationOrder: form.value.overrideApplicationOrder,
         isCompound: form.value.isCompound,
         isActive: form.value.isActive,
     };
 
-    if (props.existingData) {
-        emit("save", payload);
-    } else {
-        emit("save", payload);
-    }
+    emit("save", payload);
 }
 </script>

@@ -11,46 +11,63 @@ export const useTaxSettingStore = defineStore("taxSetting", () => {
   const taxSettingsList = ref<TaxSetting[]>([]);
   const taxSetting = ref<TaxSetting | null>(null);
 
-  const fetchList = async (companyId: number) => {
-    taxSettingsList.value = await taxSettingService.list(companyId);
+  /*
+   * Main tax configuration used during sale calculation/POS flow
+   */
+  const activeTaxSetting = ref<TaxSetting | null>(null);
+
+  const fetchList = async () => {
+    taxSettingsList.value = await taxSettingService.list();
   };
 
-  const fetch = async (id: number, companyId: number) => {
-    taxSetting.value = await taxSettingService.get(id, companyId);
+  const fetch = async (id: number) => {
+    taxSetting.value = await taxSettingService.get(id);
   };
 
-  const create = async (
-    request: CreateTaxSettingRequest,
-    companyId: number
-  ) => {
-    const created = await taxSettingService.create(request, companyId);
+  /*
+   * Fetch warehouse/company active tax configuration
+   */
+  const fetchActive = async (warehouseId?: number) => {
+    activeTaxSetting.value = await taxSettingService.getActive(warehouseId);
+
+    return activeTaxSetting.value;
+  };
+
+  const create = async (request: CreateTaxSettingRequest) => {
+    const created = await taxSettingService.create(request);
+
     taxSetting.value = created;
-    await fetchList(companyId);
+
+    await fetchList();
+
     return created;
   };
 
-  const update = async (
-    id: number,
-    request: UpdateTaxSettingRequest,
-    companyId: number
-  ) => {
-    const updated = await taxSettingService.update(id, request, companyId);
+  const update = async (id: number, request: UpdateTaxSettingRequest) => {
+    const updated = await taxSettingService.update(id, request);
+
     taxSetting.value = updated;
-    await fetchList(companyId);
+
+    await fetchList();
+
     return updated;
   };
 
-  const remove = async (id: number, companyId: number) => {
-    await taxSettingService.delete(id, companyId);
+  const remove = async (id: number) => {
+    await taxSettingService.delete(id);
+
     taxSetting.value = null;
-    await fetchList(companyId);
+
+    await fetchList();
   };
 
   return {
     taxSettingsList,
     taxSetting,
+    activeTaxSetting,
     fetchList,
     fetch,
+    fetchActive,
     create,
     update,
     remove,

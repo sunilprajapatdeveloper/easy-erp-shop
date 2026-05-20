@@ -5,7 +5,9 @@ import lombok.Builder;
 import lombok.Getter;
 
 import nextpos.app.nextpos.model.entity.ProductTax;
+import nextpos.app.nextpos.model.enums.TaxApplicationOrder;
 import nextpos.app.nextpos.model.enums.TaxCategory;
+import nextpos.app.nextpos.model.enums.TaxInclusionType;
 
 import java.math.BigDecimal;
 
@@ -25,7 +27,13 @@ public class ProductTaxResponse {
     private final String taxName;
     private final TaxCategory taxCategory;
     private final BigDecimal taxRate;
-    private final Boolean isInclusive;
+
+    /** Optional product-level override. */
+    private final TaxInclusionType overrideInclusionType;
+
+    /** Optional product-level override. */
+    private final TaxApplicationOrder overrideApplicationOrder;
+
     private final Boolean isCompound;
     private final Boolean isActive;
 
@@ -44,7 +52,8 @@ public class ProductTaxResponse {
                 .taxName(tax.getTaxName())
                 .taxCategory(tax.getTaxCategory())
                 .taxRate(tax.getTaxRate())
-                .isInclusive(tax.getIsInclusive())
+                .overrideInclusionType(tax.getOverrideInclusionType())
+                .overrideApplicationOrder(tax.getOverrideApplicationOrder())
                 .isCompound(tax.getIsCompound())
                 .isActive(tax.getIsActive())
                 .build();

@@ -1,4 +1,6 @@
+import { TaxApplicationOrder } from "@/enums/TaxApplicationOrder";
 import { TaxCategory } from "@/enums/TaxCategory";
+import { TaxInclusionType } from "@/enums/TaxInclusionType";
 
 export interface ProductTaxResponse {
   id: number;
@@ -8,7 +10,8 @@ export interface ProductTaxResponse {
   taxName: string;
   taxCategory: TaxCategory;
   taxRate: number;
-  isInclusive: boolean;
+  overrideInclusionType?: TaxInclusionType;
+  overrideApplicationOrder?: TaxApplicationOrder;
   isCompound: boolean;
   isActive: boolean;
 }
@@ -20,7 +23,8 @@ export interface CreateProductTaxRequest {
   taxName: string;
   taxCategory: TaxCategory;
   taxRate: number;
-  isInclusive?: boolean;
+  overrideInclusionType?: TaxInclusionType;
+  overrideApplicationOrder?: TaxApplicationOrder;
   isCompound?: boolean;
   isActive?: boolean;
 }
@@ -32,10 +36,10 @@ export interface UpdateProductTaxRequest {
   taxName?: string;
   taxCategory?: TaxCategory;
   taxRate?: number;
-  isInclusive?: boolean;
+  overrideInclusionType?: TaxInclusionType;
+  overrideApplicationOrder?: TaxApplicationOrder;
   isCompound?: boolean;
   isActive?: boolean;
 }
 
-// Convenience type
 export type ProductTax = ProductTaxResponse;

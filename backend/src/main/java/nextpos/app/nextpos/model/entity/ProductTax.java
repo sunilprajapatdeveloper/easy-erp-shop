@@ -21,7 +21,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
+import nextpos.app.nextpos.model.enums.TaxApplicationOrder;
 import nextpos.app.nextpos.model.enums.TaxCategory;
+import nextpos.app.nextpos.model.enums.TaxInclusionType;
 
 import java.math.BigDecimal;
 
@@ -73,10 +75,15 @@ public class ProductTax extends BaseEntity {
     @Column(name = "tax_rate", nullable = false, precision = 5, scale = 3)
     private BigDecimal taxRate;
 
-    /** Inclusive tax (already included in price) */
-    @Column(name = "is_inclusive", nullable = false)
-    @Builder.Default
-    private Boolean isInclusive = false;
+    /** Optional override for tax inclusion strategy. */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "override_inclusion_type", length = 50)
+    private TaxInclusionType overrideInclusionType;
+
+    /** Optional override for tax application order. */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "override_application_order", length = 50)
+    private TaxApplicationOrder overrideApplicationOrder;
 
     /** Compound tax (applied on top of other taxes) */
     @Column(name = "is_compound", nullable = false)

@@ -8,7 +8,9 @@ import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
+import nextpos.app.nextpos.model.enums.TaxApplicationOrder;
 import nextpos.app.nextpos.model.enums.TaxCategory;
+import nextpos.app.nextpos.model.enums.TaxInclusionType;
 
 import java.math.BigDecimal;
 
@@ -47,9 +49,11 @@ public class CreateProductTaxRequest {
     @Digits(integer = 2, fraction = 3, message = "Tax rate must have up to 2 digits and 3 decimals")
     private final BigDecimal taxRate;
 
-    /** Inclusive tax (already included in price) */
-    @Builder.Default
-    private final Boolean isInclusive = false;
+    /** Optional override for tax inclusion strategy. */
+    private final TaxInclusionType overrideInclusionType;
+
+    /** Optional override for tax application order. */
+    private final TaxApplicationOrder overrideApplicationOrder;
 
     /** Compound tax (applied on top of other taxes) */
     @Builder.Default

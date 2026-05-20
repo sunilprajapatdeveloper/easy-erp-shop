@@ -17,7 +17,7 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 @Builder
 public class TaxSettingResponse {
-
+    private Long id;
     private TaxCategory taxCategory;
     private String name;
     private BigDecimal rate;

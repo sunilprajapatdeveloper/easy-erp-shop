@@ -17,4 +17,6 @@ public interface TaxSettingService {
     TaxSettingResponse updateTaxSetting(Long id, UpdateTaxSettingRequest request);
 
     void deleteTaxSetting(Long id);
+
+    TaxSettingResponse getActiveTaxSetting(Long warehouseId);
 }

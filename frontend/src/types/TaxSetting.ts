@@ -1,9 +1,9 @@
 import { TaxApplicationOrder } from "@/enums/TaxApplicationOrder";
-import { TaxCategory} from "@/enums/TaxCategory";
+import { TaxCategory } from "@/enums/TaxCategory";
 import { TaxInclusionType } from "@/enums/TaxInclusionType";
 
 export interface TaxSetting {
-  id?: number;
+  id: number;
   taxCategory: TaxCategory;
   name: string;
   rate: number;

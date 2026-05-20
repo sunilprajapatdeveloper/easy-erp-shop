@@ -66,7 +66,8 @@ public class ProductTaxServiceImpl implements ProductTaxService {
                 .taxName(request.getTaxName())
                 .taxCategory(request.getTaxCategory())
                 .taxRate(request.getTaxRate())
-                .isInclusive(request.getIsInclusive())
+                .overrideInclusionType(request.getOverrideInclusionType())
+                .overrideApplicationOrder(request.getOverrideApplicationOrder())
                 .isCompound(request.getIsCompound())
                 .isActive(request.getIsActive())
                 .companyId(companyId)
@@ -114,8 +115,10 @@ public class ProductTaxServiceImpl implements ProductTaxService {
             existing.setTaxCategory(request.getTaxCategory());
         if (request.getTaxRate() != null)
             existing.setTaxRate(request.getTaxRate());
-        if (request.getIsInclusive() != null)
-            existing.setIsInclusive(request.getIsInclusive());
+        if (request.getOverrideInclusionType() != null)
+            existing.setOverrideInclusionType(request.getOverrideInclusionType());
+        if (request.getOverrideApplicationOrder() != null)
+            existing.setOverrideApplicationOrder(request.getOverrideApplicationOrder());
         if (request.getIsCompound() != null)
             existing.setIsCompound(request.getIsCompound());
         if (request.getIsActive() != null)

@@ -14,5 +14,9 @@ public interface TaxSettingRepository extends JpaRepository<TaxSetting, Long> {
 
     Optional<TaxSetting> findByCompanyId(Long companyId);
 
+    Optional<TaxSetting> findByCompanyIdAndWarehouseIdAndActiveTrue(Long companyId, Long warehouseId);
+
+    Optional<TaxSetting> findByCompanyIdAndWarehouseIsNullAndActiveTrue(Long companyId);
+
     void deleteByIdAndCompanyId(Long id, Long companyId);
 }

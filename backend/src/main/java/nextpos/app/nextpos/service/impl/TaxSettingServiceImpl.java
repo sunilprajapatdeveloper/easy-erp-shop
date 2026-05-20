@@ -77,6 +77,36 @@ public class TaxSettingServiceImpl implements TaxSettingService {
 
     @Override
     @Transactional(readOnly = true)
+    public TaxSettingResponse getActiveTaxSetting(Long warehouseId) {
+        Long companyId = UserContext.getCurrentCompanyId();
+
+        log.info("Fetching active TaxSetting for companyId={} warehouseId={}", companyId, warehouseId);
+
+        TaxSetting taxSetting = null;
+
+        /*
+         * First priority:
+         * Warehouse-specific active tax setting
+         */
+        if (warehouseId != null) {
+            taxSetting = taxSettingRepository.findByCompanyIdAndWarehouseIdAndActiveTrue(companyId, warehouseId)
+                    .orElse(null);
+        }
+
+        /*
+         * Fallback:
+         * Company-level default active tax setting
+         */
+        if (taxSetting == null) {
+            taxSetting = taxSettingRepository.findByCompanyIdAndWarehouseIsNullAndActiveTrue(companyId)
+                    .orElseThrow(() -> new EntityNotFoundException("No active TaxSetting configured for companyId=" + companyId + " warehouseId=" + warehouseId));
+        }
+
+        return mapToResponse(taxSetting);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<TaxSettingResponse> listTaxSettings() {
         Long companyId = UserContext.getCurrentCompanyId();
 
@@ -134,6 +164,7 @@ public class TaxSettingServiceImpl implements TaxSettingService {
 
     private TaxSettingResponse mapToResponse(TaxSetting taxSetting) {
         return TaxSettingResponse.builder()
+                .id(taxSetting.getId())
                 .taxCategory(taxSetting.getTaxCategory())
                 .name(taxSetting.getName())
                 .rate(taxSetting.getRate())
