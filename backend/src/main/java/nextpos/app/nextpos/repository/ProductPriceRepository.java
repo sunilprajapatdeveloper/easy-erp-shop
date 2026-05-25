@@ -1,7 +1,12 @@
 package nextpos.app.nextpos.repository;
 
 import nextpos.app.nextpos.model.entity.ProductPrice;
+import nextpos.app.nextpos.model.entity.Product;
+import nextpos.app.nextpos.model.entity.Warehouse;
+import nextpos.app.nextpos.model.entity.Currency;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -17,10 +22,6 @@ public interface ProductPriceRepository extends JpaRepository<ProductPrice, Long
                         String channel,
                         Long companyId);
 
-        /**
-         * Finds a global (warehouse = null) price for the product/channel at company
-         * scope.
-         */
         Optional<ProductPrice> findByProductIdAndWarehouseIsNullAndChannelAndCompanyId(Long productId,
                         String channel,
                         Long companyId);
@@ -51,4 +52,20 @@ public interface ProductPriceRepository extends JpaRepository<ProductPrice, Long
         List<ProductPrice> findAllByProductIdInAndCompanyId(
                         List<Long> productIds, Long companyId);
 
+        /**
+         * Returns the best matching price for a given product, warehouse, and currency.
+         * Priority: warehouse‑specific first, then company‑wide (warehouse is null).
+         * Only active prices that are currently valid (if dates set).
+         */
+        @Query("SELECT pp FROM ProductPrice pp " +
+                        "WHERE pp.product = :product " +
+                        "  AND (pp.warehouse = :warehouse OR pp.warehouse IS NULL) " +
+                        "  AND pp.currency = :currency " +
+                        "  AND pp.isActive = true " +
+                        "  AND (pp.validFrom IS NULL OR pp.validFrom <= CURRENT_TIMESTAMP) " +
+                        "  AND (pp.validTo IS NULL OR pp.validTo >= CURRENT_TIMESTAMP) " +
+                        "ORDER BY CASE WHEN pp.warehouse IS NOT NULL THEN 0 ELSE 1 END")
+        Optional<ProductPrice> findBestPriceForProduct(@Param("product") Product product,
+                        @Param("warehouse") Warehouse warehouse,
+                        @Param("currency") Currency currency);
 }

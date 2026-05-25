@@ -240,4 +240,15 @@ public class ProductStockServiceImpl implements ProductStockService {
                 .map(ProductStockResponse::fromEntity)
                 .collect(Collectors.toList());
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public int getAvailableQuantity(Long productId, Long warehouseId) {
+        Long companyId = UserContext.getCurrentCompanyId();
+        ProductStock stock = productStockRepository
+                .findByProductIdAndWarehouseIdAndCompanyId(productId, warehouseId, companyId)
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "ProductStock not found for productId=" + productId + " and warehouseId=" + warehouseId));
+        return stock.getAvailableQuantity();
+    }
 }

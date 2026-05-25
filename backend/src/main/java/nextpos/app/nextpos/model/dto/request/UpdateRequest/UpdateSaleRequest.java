@@ -23,56 +23,47 @@ public class UpdateSaleRequest {
     @Valid
     private List<SaleProductUpdateRequest> products;
 
-    @DecimalMin(value = "0.0", inclusive = true)
-    private BigDecimal orderTax;
+    // Manual discount
+    private BigDecimal manualDiscountValue;
+    private DiscountType manualDiscountType;
+    private String manualDiscountReason;
 
-    @DecimalMin(value = "0.0", inclusive = true)
-    private BigDecimal orderDiscount;
+    // system discount
+    private Long appliedDiscountId;
 
-    private DiscountType orderDiscountType;
+    // promotion coupon code
+    private String couponCode;
 
-    @DecimalMin(value = "0.0", inclusive = true)
     private BigDecimal shippingCost;
+    private BigDecimal roundingAmount;
+
+    @Size(max = 100)
+    private String posTerminalId;
+    private Long cashierId;
+    private LocalDate dueDate;
 
     private ShipmentStatus shipmentStatus;
     private SaleStatus saleStatus;
+    private PaymentStatus paymentStatus;
     private SaleSource source;
     private String note;
 
     private Long currencyId;
-
-    @DecimalMin(value = "0.00000001", inclusive = true)
     private BigDecimal exchangeRate;
 
-    private String couponCode;
-
+    // inner product update request
     @Getter
     @Setter
     @NoArgsConstructor
     @AllArgsConstructor
     @Builder
     public static class SaleProductUpdateRequest {
-
         @NotNull
         private Long productId;
-
-        @DecimalMin(value = "0.0", inclusive = true)
-        private BigDecimal productUnitPrice;
-
         @Min(1)
         private Integer quantity;
-
-        @DecimalMin(value = "0.0", inclusive = true)
-        private BigDecimal discount;
-
-        @DecimalMin(value = "0.0", inclusive = true)
-        private BigDecimal subTotal;
-
-        private String taxName;
-        private TaxCategory taxCategory;
-        private BigDecimal taxRate;
-        private TaxInclusionType taxInclusionType;
-        private TaxApplicationOrder taxApplicationOrder;
-        private BigDecimal taxAmount;
+        @DecimalMin("0.0")
+        @Digits(integer = 15, fraction = 4)
+        private BigDecimal unitPriceOverride;
     }
 }

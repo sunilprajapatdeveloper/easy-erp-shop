@@ -19,6 +19,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+
 import nextpos.app.nextpos.model.enums.TaxApplicationOrder;
 import nextpos.app.nextpos.model.enums.TaxCategory;
 import nextpos.app.nextpos.model.enums.TaxInclusionType;
@@ -34,6 +35,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 public class SaleProduct {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -52,8 +54,8 @@ public class SaleProduct {
     @Column(name = "quantity", nullable = false)
     private Integer quantity;
 
-    @Column(name = "discount", nullable = false, precision = 15, scale = 2)
-    private BigDecimal discount;
+    @Column(name = "line_discount_amount", nullable = false, precision = 15, scale = 2)
+    private BigDecimal lineDiscountAmount;
 
     @Column(name = "tax_name", nullable = false, length = 100)
     private String taxName;
@@ -73,11 +75,14 @@ public class SaleProduct {
     @Column(name = "tax_application_order", nullable = false, length = 50)
     private TaxApplicationOrder taxApplicationOrder;
 
-    @Column(name = "tax_amount", nullable = false, precision = 15, scale = 2)
-    private BigDecimal taxAmount;
+    @Column(name = "line_net_amount", nullable = false, precision = 15, scale = 2)
+    private BigDecimal lineNetAmount;
 
-    @Column(name = "sub_total", nullable = false, precision = 15, scale = 2)
-    private BigDecimal subTotal;
+    @Column(name = "line_tax_amount", nullable = false, precision = 15, scale = 2)
+    private BigDecimal lineTaxAmount;
+
+    @Column(name = "line_gross_amount", nullable = false, precision = 15, scale = 2)
+    private BigDecimal lineGrossAmount;
 
     @Column(name = "created_by", updatable = false, nullable = false)
     private Long createdBy;
@@ -96,8 +101,27 @@ public class SaleProduct {
 
     @PrePersist
     protected void onCreate() {
-        this.createdAt = LocalDateTime.now();
-        this.updatedAt = LocalDateTime.now();
+
+        LocalDateTime now = LocalDateTime.now();
+
+        this.createdAt = now;
+        this.updatedAt = now;
+
+        if (this.lineDiscountAmount == null) {
+            this.lineDiscountAmount = BigDecimal.ZERO;
+        }
+
+        if (this.lineNetAmount == null) {
+            this.lineNetAmount = BigDecimal.ZERO;
+        }
+
+        if (this.lineTaxAmount == null) {
+            this.lineTaxAmount = BigDecimal.ZERO;
+        }
+
+        if (this.lineGrossAmount == null) {
+            this.lineGrossAmount = BigDecimal.ZERO;
+        }
     }
 
     @PreUpdate

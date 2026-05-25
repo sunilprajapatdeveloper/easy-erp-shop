@@ -49,4 +49,7 @@ public interface ProductStockService {
     int getStock(Long productId, Long warehouseId);
 
     List<ProductStockResponse> listStocksByProduct(Long productId);
+
+    /** Returns available quantity = quantity - reserved - committed */
+    int getAvailableQuantity(Long productId, Long warehouseId);
 }

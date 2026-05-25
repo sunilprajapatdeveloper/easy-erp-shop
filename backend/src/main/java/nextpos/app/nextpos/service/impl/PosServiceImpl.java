@@ -20,7 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class PosServiceImpl implements PosService {
 
         private final SaleService saleService;
-        private final PaymentService paymentService; // added for payment delegation
+        private final PaymentService paymentService;
 
         @Override
         @Transactional
@@ -30,16 +30,26 @@ public class PosServiceImpl implements PosService {
                                 .customerId(request.getCustomerId())
                                 .warehouseId(request.getWarehouseId())
                                 .products(request.getProducts())
-                                .orderTax(request.getOrderTax())
-                                .orderDiscount(request.getOrderDiscount())
-                                .shippingCost(request.getShippingCost())
-                                .shipmentStatus(request.getShipmentStatus())
-                                .saleStatus(request.getSaleStatus())
-                                .source(SaleSource.POS)
-                                .note(request.getNote())
                                 .currencyId(request.getCurrencyId())
                                 .exchangeRate(request.getExchangeRate())
+                                .manualDiscountValue(request.getManualDiscountValue())
+                                .manualDiscountType(request.getManualDiscountType())
+                                .manualDiscountReason(request.getManualDiscountReason())
+                                .appliedDiscountId(request.getAppliedDiscountId())
+                                .couponCode(request.getCouponCode())
+                                .shippingCost(request.getShippingCost())
+                                .roundingAmount(request.getRoundingAmount())
+                                .paidAmountTxnCurrency(request.getPaidAmountTxnCurrency())
+                                .posTerminalId(request.getPosTerminalId())
+                                .cashierId(request.getCashierId())
+                                .dueDate(request.getDueDate())
+                                .shipmentStatus(request.getShipmentStatus())
+                                .saleStatus(request.getSaleStatus())
+                                .paymentStatus(request.getPaymentStatus())
+                                .source(SaleSource.POS)
+                                .note(request.getNote())
                                 .build();
+
                 return saleService.createSale(posRequest);
         }
 

@@ -2,9 +2,7 @@ package nextpos.app.nextpos.model.dto.request.CreateRequest;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
+import lombok.*;
 import nextpos.app.nextpos.model.enums.*;
 
 import java.math.BigDecimal;
@@ -27,89 +25,84 @@ public class CreateSaleRequest {
     @NotNull
     @Size(min = 1)
     @Valid
+    @Singular
     private final List<SaleProductRequest> products;
-
-    @NotNull
-    @DecimalMin(value = "0.0", inclusive = true)
-    private final BigDecimal orderTax;
-
-    @NotNull
-    @DecimalMin(value = "0.0", inclusive = true)
-    private final BigDecimal orderDiscount;
-
-    @NotNull
-    private final DiscountType orderDiscountType;
-
-    @NotNull
-    @DecimalMin(value = "0.0", inclusive = true)
-    private final BigDecimal shippingCost;
-
-    @NotNull
-    private final ShipmentStatus shipmentStatus;
-
-    @NotNull
-    private final SaleStatus saleStatus;
-
-    @Builder.Default
-    private final SaleSource source = SaleSource.WEB;
-
-    private final String note;
 
     @NotNull
     private final Long currencyId;
 
     @NotNull
-    @DecimalMin(value = "0.00000001", inclusive = true)
+    @DecimalMin("0.00000001")
+    @Digits(integer = 10, fraction = 8)
     private final BigDecimal exchangeRate;
 
+    // Manual discount (optional)
+    @DecimalMin("0.0")
+    private final BigDecimal manualDiscountValue;
+
+    private final DiscountType manualDiscountType;
+
+    @Size(max = 500)
+    private final String manualDiscountReason;
+
+    // System discount (optional)
+    private final Long appliedDiscountId;
+
+    // Promotion coupon (optional)
+    @Size(max = 100)
     private final String couponCode;
 
-    private final String currencyCode;
+    // User‑entered amounts (will be validated / overridden by promotion if free
+    // shipping)
+    @DecimalMin("0.0")
+    private final BigDecimal shippingCost;
 
+    @DecimalMin("0.0")
+    private final BigDecimal roundingAmount;
+
+    @DecimalMin("0.0")
+    private final BigDecimal paidAmountTxnCurrency;
+
+    @Builder.Default
+    private final ShipmentStatus shipmentStatus = ShipmentStatus.PENDING;
+
+    @Builder.Default
+    private final SaleStatus saleStatus = SaleStatus.PENDING;
+
+    @Builder.Default
+    private final PaymentStatus paymentStatus = PaymentStatus.PENDING;
+
+    @Builder.Default
+    private final SaleSource source = SaleSource.WEB;
+
+    @Size(max = 100)
+    private final String posTerminalId;
+
+    private final Long cashierId;
+
+    private final LocalDate dueDate;
+
+    @Size(max = 5000)
+    private final String note;
+
+    // inner product request
     @Getter
     @AllArgsConstructor
     @Builder
     public static class SaleProductRequest {
-
         @NotNull
         private final Long productId;
-
-        @NotNull
-        @DecimalMin(value = "0.0", inclusive = true)
-        private final BigDecimal productUnitPrice;
 
         @NotNull
         @Min(1)
         private final Integer quantity;
 
-        @NotNull
-        @DecimalMin(value = "0.0", inclusive = true)
-        private final BigDecimal discount;
-
-        @NotNull
-        @DecimalMin(value = "0.0", inclusive = true)
-        private final BigDecimal subTotal;
-
-        @NotBlank
-        @Size(max = 100)
-        private final String taxName;
-
-        @NotNull
-        private final TaxCategory taxCategory;
-
-        @NotNull
-        @DecimalMin(value = "0.000", inclusive = true)
-        @Digits(integer = 5, fraction = 3)
-        private final BigDecimal taxRate;
-
-        @NotNull
-        private final TaxInclusionType taxInclusionType;
-
-        @NotNull
-        private final TaxApplicationOrder taxApplicationOrder;
-
-        @NotNull
-        @DecimalMin(value = "0.0", inclusive = true)
-        private final BigDecimal taxAmount;
+        /**
+         * Optional: override the default price (excl. tax). If null, backend will
+         * resolve it.
+         */
+        @DecimalMin("0.0")
+        @Digits(integer = 15, fraction = 4)
+        private final BigDecimal unitPriceOverride;
     }
 }
