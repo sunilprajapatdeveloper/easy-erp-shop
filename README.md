@@ -1,8 +1,19 @@
 # Easy ERP Shop
 
+![Status](https://img.shields.io/badge/status-under%20development-orange)
+![Java](https://img.shields.io/badge/Java-21-blue)
+![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.4-green)
+![Vue](https://img.shields.io/badge/Vue-3-brightgreen)
+![License](https://img.shields.io/badge/license-All%20Rights%20Reserved-red)
+
 A modern, cloud-native Point of Sale (POS) and Enterprise Resource Planning (ERP) platform built with Spring Boot, Vue.js, PostgreSQL, Redis, and Apache Kafka.
 
 ⚠️ Project Status: Under Active Development
+
+> This repository is publicly available for portfolio, recruitment,
+> technical evaluation, and demonstration purposes.
+>
+> The project is not currently accepting external contributions.
 
 Easy ERP Shop is currently under active development and is not yet feature-complete.
 
@@ -243,7 +254,6 @@ easy-erp-shop/
 │
 ├── docker-compose.yml
 ├── docker-compose.example.yml
-├── .env
 ├── .env.example
 ├── README.md
 └── LICENSE
@@ -477,11 +487,94 @@ Sensitive values are intentionally excluded from version control.
 
 ---
 
+# Screenshots
+
+## Home Page
+
+<img src="docs/screenshots/home-page.jpg" width="400">
+
+## User Onboarding
+
+### Email Verification
+
+<img src="docs/screenshots/user-onboard-step-1-email-verification.jpg" width="400">
+
+**Email Verification**
+
+<img src="docs/screenshots/user-onboard-step-1-email-otp-verification.jpg" width="400">
+
+**OTP Verification**
+
+<img src="docs/screenshots/user-onboard-step-1-email-verified.jpg" width="400">
+
+**Email Verified**
+
+### Company Details
+
+<img src="docs/screenshots/user-onboard-step-2-company-details.jpg" width="400">
+
+### User Details
+
+<img src="docs/screenshots/user-onboard-step-3-user-details.jpg" width="400">
+
+### Plan Selection
+
+<img src="docs/screenshots/user-onboard-step-4-plan-selection.jpg" width="400">
+
+### Warehouse Setup
+
+<img src="docs/screenshots/user-onboard-step-5-warehouse-setup-page1.jpg" width="400">
+
+**Warehouse Setup - Step 1**
+
+<img src="docs/screenshots/user-onboard-step-5-warehouse-setup-page2.jpg" width="400">
+
+**Warehouse Setup - Step 2**
+
+### POS General Configuration
+
+<img src="docs/screenshots/user-onboard-step-6-pos-general-configuration-setting.jpg" width="400">
+
+## Product Management
+
+### Create Product
+
+<img src="docs/screenshots/create-product-page.jpg" width="400">
+
+### Import Products
+
+<img src="docs/screenshots/import-products.jpg" width="400">
+
+### Product List
+
+<img src="docs/screenshots/imported-product-list.jpg" width="400">
+
+## Sales
+
+<img src="docs/screenshots/create-sale.jpg" width="400">
+
+## Role & Permission Management
+
+<img src="docs/screenshots/group-and-permission-creation.jpg" width="400">
+
+## Dashboard
+
+<img src="docs/screenshots/dashboard.jpg" width="400">
+
+---
+
 # License
 
-This project is licensed under the MIT License.
+Copyright (c) 2026 Sunil Prajapat
 
-See the LICENSE file for details.
+All Rights Reserved.
+
+This repository is provided for portfolio, recruitment, evaluation,
+and demonstration purposes only.
+
+No permission is granted to copy, modify, distribute, sublicense,
+or commercially use the source code without prior written permission
+from the author.
 
 ---
 
@@ -490,3 +583,17 @@ See the LICENSE file for details.
 This project is under active development.
 
 Features, APIs, database structures, and integrations may change between releases.
+
+---
+
+# Author
+
+Sunil Prajapat
+
+Full Stack Developer
+
+GitHub:
+https://github.com/sunilprajapatdeveloper
+
+Project Repository:
+https://github.com/sunilprajapatdeveloper/easy-erp-shop
