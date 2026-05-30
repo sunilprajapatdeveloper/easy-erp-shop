@@ -1,31 +1,22 @@
-# =================================================
-# PRODUCTION (Docker / DigitalOcean)
-# =================================================
-
-# ===============================
+# PRODUCTION (Docker / Cloud)
 # DATABASE (PostgreSQL)
-# ===============================
 spring.datasource.url=${SPRING_DATASOURCE_URL:jdbc:postgresql://postgres:5432/easyerpshop}
 spring.datasource.username=${SPRING_DATASOURCE_USERNAME:postgres}
-spring.datasource.password=${SPRING_DATASOURCE_PASSWORD:12345678}
+spring.datasource.password=${SPRING_DATASOURCE_PASSWORD:YOUR_DB_PASSWORD}
 
 init.datasource.url=${INIT_DATASOURCE_URL:jdbc:postgresql://postgres:5432/postgres}
 init.datasource.username=${INIT_DATASOURCE_USERNAME:postgres}
-init.datasource.password=${INIT_DATASOURCE_PASSWORD:12345678}
+init.datasource.password=${INIT_DATASOURCE_PASSWORD:YOUR_INIT_DB_PASSWORD}
 
 spring.jpa.hibernate.ddl-auto=update
 spring.jpa.show-sql=false
 
-# ===============================
 # REDIS
-# ===============================
 spring.redis.host=${SPRING_REDIS_HOST:redis}
 spring.redis.port=${SPRING_REDIS_PORT:6379}
-spring.redis.password=${REDIS_PASSWORD:12345678}
+spring.redis.password=${REDIS_PASSWORD:YOUR_REDIS_PASSWORD}
 
-# ===============================
 # KAFKA
-# ===============================
 spring.kafka.bootstrap-servers=${KAFKA_BROKER:kafka:9092}
 spring.kafka.consumer.group-id=${KAFKA_CONSUMER_GROUP:verification-group}
 spring.kafka.consumer.auto-offset-reset=earliest
@@ -46,45 +37,30 @@ kafka.topics.export-job=${KAFKA_TOPIC_EXPORT_JOB:export-job}
 kafka.consumer-groups.import=${KAFKA_CONSUMER_GROUP_IMPORT:import-group}
 kafka.consumer-groups.export=${KAFKA_CONSUMER_GROUP_EXPORT:export-group}
 
-# ===============================
 # JWT & SECURITY
-# ===============================
 jwt.secret=${JWT_SECRET:ChangeThisJWTSecretInProduction123!}
 jwt.expirationMs=${JWT_EXPIRATION_MS:86400000}
 
-# ===============================
-# INIT / ADMIN DATABASE
-# ===============================
-init.datasource.url=${INIT_DATASOURCE_URL:jdbc:postgresql://postgres:5432/postgres}
-init.datasource.username=${INIT_DATASOURCE_USERNAME:postgres}
-init.datasource.password=${INIT_DATASOURCE_PASSWORD:12345678}
-
-# ===============================
-# MAIL (SMTP)
-# ===============================
+# MAIL (SendGrid)
 spring.mail.host=smtp.sendgrid.net
 spring.mail.port=587
 spring.mail.username=apikey
-spring.mail.properties.mail.from=easyerpshop@gmail.com
-spring.mail.password=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
+spring.mail.properties.mail.from=YOUR_FROM_EMAIL
+spring.mail.password=YOUR_SENDGRID_API_KEY
 spring.mail.properties.mail.smtp.auth=true
 spring.mail.properties.mail.smtp.starttls.enable=true
 
-# ===============================
 # RAZORPAY
-# ===============================
-razorpay.key=${RAZORPAY_KEY:}
-razorpay.secret=${RAZORPAY_SECRET:}
-razorpay.webhook-secret=${RAZORPAY_WEBHOOK_SECRET:}
+razorpay.key=${RAZORPAY_KEY:YOUR_RAZORPAY_KEY}
+razorpay.secret=${RAZORPAY_SECRET:YOUR_RAZORPAY_SECRET}
+razorpay.webhook-secret=${RAZORPAY_WEBHOOK_SECRET:YOUR_RAZORPAY_WEBHOOK_SECRET}
 
-# ===============================
 # STORAGE
-# ===============================
 storage.active=LOCAL
 storage.max-file-size=10MB
 storage.allowed-content-types=image/jpeg,image/png,image/gif,image/webp,image/svg+xml,application/pdf,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/x-tika-ooxml,application/octet-stream,text/csv,application/csv,text/plain
 storage.local.base-path=/app/uploads
-storage.local.public-url-prefix=${STORAGE_PUBLIC_URL:http://139.59.28.233:9091}
+storage.local.public-url-prefix=${STORAGE_PUBLIC_URL:http://YOUR_SERVER_IP:9091}
 
 # Thumbnail configuration
 storage.thumbnail.enabled=true
@@ -96,16 +72,12 @@ storage.s3.enabled=${STORAGE_S3_ENABLED:false}
 storage.azure.enabled=${STORAGE_AZURE_ENABLED:false}
 storage.gcs.enabled=${STORAGE_GCS_ENABLED:false}
 
-# ===============================
 # LOGGING
-# ===============================
 logging.level.root=INFO
 logging.level.com.easyerpshop=DEBUG
 logging.file.name=${LOG_FILE_PATH:/app/logs/application.log}
 
-# ===============================
 # VERIFICATION SYSTEM CONFIGURATION
-# ===============================
 
 # Verification Properties
 verification.token.default-expiry=PT15M

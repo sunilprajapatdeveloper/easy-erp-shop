@@ -1,21 +1,15 @@
-# ===============================
 # DATABASE (PostgreSQL)
-# ===============================
 spring.datasource.url=${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/easyerpshop}
 spring.datasource.username=${SPRING_DATASOURCE_USERNAME:postgres}
-spring.datasource.password=${SPRING_DATASOURCE_PASSWORD:12345678}
+spring.datasource.password=${SPRING_DATASOURCE_PASSWORD:YOUR_DB_PASSWORD}
 spring.jpa.hibernate.ddl-auto=${SPRING_JPA_HIBERNATE_DDL_AUTO:update}
 
-# ===============================
 # REDIS
-# ===============================
 spring.redis.host=${SPRING_REDIS_HOST:localhost}
 spring.redis.port=${SPRING_REDIS_PORT:6379}
-spring.redis.password=${SPRING_REDIS_PASSWORD:12345678}
+spring.redis.password=${SPRING_REDIS_PASSWORD:YOUR_REDIS_PASSWORD}
 
-# ===============================
 # KAFKA
-# ===============================
 spring.kafka.bootstrap-servers=${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
 spring.kafka.consumer.group-id=verification-group
 spring.kafka.consumer.auto-offset-reset=earliest
@@ -36,15 +30,11 @@ kafka.topics.export-job=export-job
 kafka.consumer-groups.import=import-group
 kafka.consumer-groups.export=export-group
 
-# ===============================
 # JWT & SECURITY
-# ===============================
-jwt.secret=${JWT_SECRET:MySuperSecretKeyThatIsAtLeast32CharactersLong}
+jwt.secret=${JWT_SECRET:ChangeThisJWTSecretInProduction123!}
 jwt.expirationMs=${JWT_EXPIRATION_MS:86400000}
 
-# ===============================
 # SERVER & STORAGE
-# ===============================
 server.port=${SERVER_PORT:9090}
 storage.active=${STORAGE_ACTIVE:LOCAL}
 storage.local.base-path=${STORAGE_LOCAL_PATH:./uploads}
@@ -55,40 +45,30 @@ storage.s3.enabled=false
 storage.azure.enabled=false
 storage.gcs.enabled=false
 
-# ===============================
-# EMAIL CONFIGURATION (Gmail)
-# ===============================
+# EMAIL CONFIGURATION (SendGrid)
 spring.mail.host=smtp.sendgrid.net
 spring.mail.port=587
 spring.mail.username=apikey
-spring.mail.properties.mail.from=easyerpshop@gmail.com
-spring.mail.password=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
+spring.mail.properties.mail.from=YOUR_FROM_EMAIL
+spring.mail.password=YOUR_SENDGRID_API_KEY
 spring.mail.properties.mail.smtp.auth=true
 spring.mail.properties.mail.smtp.starttls.enable=true
 spring.mail.properties.mail.smtp.starttls.required=true
 
-# ===============================
 # PAYMENT GATEWAY (Razorpay)
-# ===============================
-razorpay.key=rzp_test_GGpz766jcBRnsR
-razorpay.secret=jCQGUnGw7RSvy3aVEsmFuah6
-razorpay.webhook-secret=secret_for_webhook_validation
+razorpay.key=YOUR_RAZORPAY_KEY
+razorpay.secret=YOUR_RAZORPAY_SECRET
+razorpay.webhook-secret=YOUR_RAZORPAY_WEBHOOK_SECRET
 
-# ===============================
 # INIT / ADMIN DATABASE
-# ===============================
 init.datasource.url=${INIT_DATASOURCE_URL:jdbc:postgresql://localhost:5432/postgres}
 init.datasource.username=${INIT_DATASOURCE_USERNAME:postgres}
-init.datasource.password=${INIT_DATASOURCE_PASSWORD:12345678}
+init.datasource.password=${INIT_DATASOURCE_PASSWORD:YOUR_INIT_DB_PASSWORD}
 
-# ===============================
 # LOGGING & PROFILES
-# ===============================
 spring.jpa.show-sql=false
 
-# ===============================
 # VERIFICATION SYSTEM CONFIGURATION
-# ===============================
 
 # Verification Properties
 verification.token.default-expiry=PT15M

@@ -38,12 +38,12 @@ module.exports = defineConfig({
     port: 8080,
 
     /*
-     | WebSocket config (ngrok / local dev)
+     | WebSocket config (e.g., for ngrok / local dev)
      */
     client: {
       webSocketURL: {
         protocol: "wss",
-        hostname: "noncondensible-catchingly-beatriz.ngrok-free.dev",
+        hostname: "YOUR_NGROK_HOSTNAME",
         port: 443,
         pathname: "/ws",
       },
@@ -54,7 +54,7 @@ module.exports = defineConfig({
      */
     proxy: {
       "/api": {
-        target: "http://localhost:9090",
+        target: "http://localhost:9090", // your backend API URL
         changeOrigin: true,
         secure: false,
       },

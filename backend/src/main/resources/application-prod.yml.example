@@ -4,11 +4,11 @@ storage:
 
   s3:
     enabled: true
-    bucket: ${STORAGE_S3_BUCKET}
-    region: ${STORAGE_S3_REGION}
-    access-key: ${STORAGE_S3_ACCESS_KEY}
-    secret-key: ${STORAGE_S3_SECRET_KEY}
-    cdn-url: ${STORAGE_S3_CDN_URL}
+    bucket: ${STORAGE_S3_BUCKET:YOUR_S3_BUCKET}
+    region: ${STORAGE_S3_REGION:YOUR_S3_REGION}
+    access-key: ${STORAGE_S3_ACCESS_KEY:YOUR_S3_ACCESS_KEY}
+    secret-key: ${STORAGE_S3_SECRET_KEY:YOUR_S3_SECRET_KEY}
+    cdn-url: ${STORAGE_S3_CDN_URL:YOUR_S3_CDN_URL}
 
   thumbnail:
     enabled: true

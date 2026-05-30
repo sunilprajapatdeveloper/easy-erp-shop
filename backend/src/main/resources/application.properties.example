@@ -1,7 +1,7 @@
 # DATABASE (PostgreSQL)
 spring.datasource.url=${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/easyerpshop}
-spring.datasource.username=${SPRING_DATASOURCE_USERNAME:your_database_username}
-spring.datasource.password=${SPRING_DATASOURCE_PASSWORD:your_database_password}
+spring.datasource.username=${SPRING_DATASOURCE_USERNAME:postgres}
+spring.datasource.password=${SPRING_DATASOURCE_PASSWORD:YOUR_DB_PASSWORD}
 
 spring.jpa.hibernate.ddl-auto=${SPRING_JPA_HIBERNATE_DDL_AUTO:update}
 spring.jpa.show-sql=false
@@ -10,7 +10,7 @@ spring.jpa.properties.hibernate.format_sql=true
 # REDIS
 spring.redis.host=${SPRING_REDIS_HOST:localhost}
 spring.redis.port=${SPRING_REDIS_PORT:6379}
-spring.redis.password=${SPRING_REDIS_PASSWORD:your_redis_password}
+spring.redis.password=${SPRING_REDIS_PASSWORD:YOUR_REDIS_PASSWORD}
 
 # KAFKA
 spring.kafka.bootstrap-servers=${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
@@ -19,13 +19,12 @@ spring.kafka.bootstrap-servers=${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
 kafka.topics.verification-email=verification-email
 kafka.topics.import-job=import-job
 kafka.topics.export-job=export-job
-
 kafka.consumer-groups.verification=verification-group
 kafka.consumer-groups.import=import-group
 kafka.consumer-groups.export=export-group
 
 # JWT
-jwt.secret=${JWT_SECRET:your_secure_jwt_secret}
+jwt.secret=${JWT_SECRET:ChangeThisJWTSecretInProduction123!}
 jwt.expirationMs=${JWT_EXPIRATION_MS:86400000}
 
 # SERVER
@@ -34,53 +33,46 @@ server.port=${SERVER_PORT:9090}
 # FILE STORAGE
 storage.active=${STORAGE_ACTIVE:LOCAL}
 storage.local.base-path=${STORAGE_LOCAL_PATH:./uploads}
-storage.local.public-url-prefix=${STORAGE_PUBLIC_URL:[http://localhost:9090}](http://localhost:9090})
+storage.local.public-url-prefix=${STORAGE_PUBLIC_URL:http://localhost:9090}
 
 # SPRING PROFILE
 spring.profiles.active=${SPRING_PROFILES_ACTIVE:local}
 
 # INIT / ADMIN DATABASE
 init.datasource.url=${INIT_DATASOURCE_URL:jdbc:postgresql://localhost:5432/postgres}
-init.datasource.username=${INIT_DATASOURCE_USERNAME:your_database_username}
-init.datasource.password=${INIT_DATASOURCE_PASSWORD:your_database_password}
+init.datasource.username=${INIT_DATASOURCE_USERNAME:postgres}
+init.datasource.password=${INIT_DATASOURCE_PASSWORD:YOUR_INIT_DB_PASSWORD}
 
-# ACTUATOR
 management.endpoint.health.show-details=always
 
-# EMAIL SERVICE
+# Email Service Configuration
 email.service.async-thread-pool=10
 email.service.max-retry-attempts=3
 email.service.retry-delay-ms=1000
 
-# ENCRYPTION
-app.encryption.secret-key=${ENCRYPTION_SECRET_KEY:your_encryption_secret_key}
+app.encryption.secret-key=${ENCRYPTION_SECRET_KEY:YOUR_ENCRYPTION_SECRET_KEY}
 
-# AI PROVIDERS
-# OpenAI
-ai.providers.openai.api-key=${OPENAI_API_KEY:your_openai_api_key}
+# AI Providers
+ai.providers.openai.api-key=${OPENAI_API_KEY:YOUR_OPENAI_API_KEY}
 ai.providers.openai.base-url=https://api.openai.com
 ai.providers.openai.default-model=gpt-4
 
-# DeepSeek
-ai.providers.deepseek.api-key=${DEEPSEEK_API_KEY:your_deepseek_api_key}
+ai.providers.deepseek.api-key=${DEEPSEEK_API_KEY:YOUR_DEEPSEEK_API_KEY}
 ai.providers.deepseek.base-url=https://api.deepseek.com
 ai.providers.deepseek.default-model=deepseek-chat
 
-# Anthropic Claude
-ai.providers.claude.api-key=${ANTHROPIC_API_KEY:your_anthropic_api_key}
+ai.providers.claude.api-key=${ANTHROPIC_API_KEY:YOUR_ANTHROPIC_API_KEY}
 ai.providers.claude.base-url=https://api.anthropic.com
 ai.providers.claude.default-model=claude-3-opus-20240229
 
-# Ollama
 ai.providers.ollama.base-url=http://localhost:11434
 ai.providers.ollama.default-model=llama2
 
 ai.retry.max-attempts=3
 ai.retry.backoff-delay-ms=1000
 
-ai.encryption.secret=${AI_ENCRYPTION_SECRET:your_ai_encryption_secret}
-ai.encryption.salt=${AI_ENCRYPTION_SALT:your_ai_encryption_salt}
+ai.encryption.secret=${AI_ENCRYPTION_SECRET:YOUR_AI_ENCRYPTION_SECRET_32_CHARS}
+ai.encryption.salt=${AI_ENCRYPTION_SALT:YOUR_AI_ENCRYPTION_SALT_16_CHARS}
 
-# EXCHANGE RATE PROVIDER
 exchange.provider.name=FRANKFURTER
 exchange.provider.frankfurter.url=https://api.frankfurter.app
