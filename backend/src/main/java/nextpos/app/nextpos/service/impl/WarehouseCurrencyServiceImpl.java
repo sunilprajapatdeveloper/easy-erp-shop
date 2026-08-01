@@ -14,6 +14,7 @@ import nextpos.app.nextpos.repository.CompanyRepository;
 import nextpos.app.nextpos.repository.CurrencyRepository;
 import nextpos.app.nextpos.repository.WarehouseCurrencyRepository;
 import nextpos.app.nextpos.repository.WarehouseRepository;
+import nextpos.app.nextpos.security.access.WarehouseAccessService;
 import nextpos.app.nextpos.service.interf.WarehouseCurrencyService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,12 +31,14 @@ public class WarehouseCurrencyServiceImpl implements WarehouseCurrencyService {
     private final CurrencyRepository currencyRepository;
     private final CompanyRepository companyRepository;
     private final WarehouseRepository warehouseRepository;
+    private final WarehouseAccessService warehouseAccessService;
 
     @Override
     public WarehouseCurrencyResponse createWarehouseCurrency(Long companyId, Long warehouseId,
             CreateWarehouseCurrencyRequest request) {
         log.info("Creating warehouse currency for companyId={} warehouseId={} currencyId={}",
                 companyId, warehouseId, request.getCurrencyId());
+        warehouseAccessService.requireAccessible(warehouseId);
 
         Currency currency = currencyRepository.findById(request.getCurrencyId())
                 .orElseThrow(
@@ -72,6 +75,7 @@ public class WarehouseCurrencyServiceImpl implements WarehouseCurrencyService {
     @Override
     @Transactional(readOnly = true)
     public WarehouseCurrencyResponse getWarehouseCurrency(Long id, Long companyId, Long warehouseId) {
+        warehouseAccessService.requireAccessible(warehouseId);
         WarehouseCurrency wc = warehouseCurrencyRepository
                 .findByIdAndCompanyIdAndWarehouseId(id, companyId, warehouseId)
                 .orElseThrow(() -> new EntityNotFoundException(
@@ -83,6 +87,7 @@ public class WarehouseCurrencyServiceImpl implements WarehouseCurrencyService {
     @Override
     @Transactional(readOnly = true)
     public WarehouseCurrencyResponse getDefaultWarehouseCurrency(Long companyId, Long warehouseId) {
+        warehouseAccessService.requireAccessible(warehouseId);
         WarehouseCurrency wc = warehouseCurrencyRepository
                 .findDefaultByCompanyIdAndWarehouseId(companyId, warehouseId)
                 .orElseThrow(() -> new EntityNotFoundException(
@@ -94,6 +99,7 @@ public class WarehouseCurrencyServiceImpl implements WarehouseCurrencyService {
     @Override
     @Transactional(readOnly = true)
     public List<WarehouseCurrencyResponse> listWarehouseCurrencies(Long companyId, Long warehouseId) {
+        warehouseAccessService.requireAccessible(warehouseId);
         return warehouseCurrencyRepository.findByCompany_IdAndWarehouse_Id(companyId, warehouseId)
                 .stream()
                 .map(this::mapToResponse)
@@ -103,6 +109,7 @@ public class WarehouseCurrencyServiceImpl implements WarehouseCurrencyService {
     @Override
     public WarehouseCurrencyResponse updateWarehouseCurrency(Long id, Long companyId, Long warehouseId,
             UpdateWarehouseCurrencyRequest request) {
+        warehouseAccessService.requireAccessible(warehouseId);
 
         WarehouseCurrency wc = warehouseCurrencyRepository
                 .findByIdAndCompanyIdAndWarehouseId(id, companyId, warehouseId)
@@ -142,6 +149,7 @@ public class WarehouseCurrencyServiceImpl implements WarehouseCurrencyService {
 
     @Override
     public void deleteWarehouseCurrency(Long id, Long companyId, Long warehouseId) {
+        warehouseAccessService.requireAccessible(warehouseId);
         warehouseCurrencyRepository.deleteByIdAndCompanyIdAndWarehouseId(id, companyId, warehouseId);
         log.info("Deleted warehouse currency id={} for companyId={} warehouseId={}", id, companyId, warehouseId);
     }

@@ -15,4 +15,6 @@ public interface SecuritySettingsRepository extends JpaRepository<SecuritySettin
     Optional<SecuritySettings> findByCompany(Company company);
 
     boolean existsByCompany(Company company);
+
+    boolean existsByCompanyId(Long companyId);
 }

@@ -6,6 +6,7 @@ import nextpos.app.nextpos.model.dto.request.CreateRequest.CreateWarehouseCurren
 import nextpos.app.nextpos.model.dto.request.UpdateRequest.UpdateWarehouseCurrencyRequest;
 import nextpos.app.nextpos.model.dto.response.WarehouseCurrencyResponse;
 import nextpos.app.nextpos.service.interf.WarehouseCurrencyService;
+import nextpos.app.nextpos.security.context.UserContext;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -21,10 +22,11 @@ public class WarehouseCurrencyController {
 
     @PostMapping
     public ResponseEntity<WarehouseCurrencyResponse> createWarehouseCurrency(
-            @RequestHeader("X-Company-Id") Long companyId,
+            @RequestHeader(value = "X-Company-Id", required = false) Long requestedCompanyId,
             @RequestHeader("X-Warehouse-Id") Long warehouseId,
             @Valid @RequestBody CreateWarehouseCurrencyRequest request) {
 
+        Long companyId = authenticatedCompany(requestedCompanyId);
         WarehouseCurrencyResponse response = warehouseCurrencyService.createWarehouseCurrency(companyId, warehouseId,
                 request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
@@ -32,53 +34,65 @@ public class WarehouseCurrencyController {
 
     @GetMapping("/{id}")
     public ResponseEntity<WarehouseCurrencyResponse> getWarehouseCurrency(
-            @RequestHeader("X-Company-Id") Long companyId,
+            @RequestHeader(value = "X-Company-Id", required = false) Long requestedCompanyId,
             @RequestHeader("X-Warehouse-Id") Long warehouseId,
             @PathVariable Long id) {
 
-        WarehouseCurrencyResponse response = warehouseCurrencyService.getWarehouseCurrency(id, companyId, warehouseId);
+        WarehouseCurrencyResponse response = warehouseCurrencyService.getWarehouseCurrency(id,
+                authenticatedCompany(requestedCompanyId), warehouseId);
         return ResponseEntity.ok(response);
     }
 
     @GetMapping("/default")
     public ResponseEntity<WarehouseCurrencyResponse> getDefaultWarehouseCurrency(
-            @RequestHeader("X-Company-Id") Long companyId,
+            @RequestHeader(value = "X-Company-Id", required = false) Long requestedCompanyId,
             @RequestHeader("X-Warehouse-Id") Long warehouseId) {
 
-        WarehouseCurrencyResponse response = warehouseCurrencyService.getDefaultWarehouseCurrency(companyId,
+        WarehouseCurrencyResponse response = warehouseCurrencyService.getDefaultWarehouseCurrency(
+                authenticatedCompany(requestedCompanyId),
                 warehouseId);
         return ResponseEntity.ok(response);
     }
 
     @GetMapping
     public ResponseEntity<List<WarehouseCurrencyResponse>> listWarehouseCurrencies(
-            @RequestHeader("X-Company-Id") Long companyId,
+            @RequestHeader(value = "X-Company-Id", required = false) Long requestedCompanyId,
             @RequestHeader("X-Warehouse-Id") Long warehouseId) {
 
-        List<WarehouseCurrencyResponse> response = warehouseCurrencyService.listWarehouseCurrencies(companyId,
+        List<WarehouseCurrencyResponse> response = warehouseCurrencyService.listWarehouseCurrencies(
+                authenticatedCompany(requestedCompanyId),
                 warehouseId);
         return ResponseEntity.ok(response);
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<WarehouseCurrencyResponse> updateWarehouseCurrency(
-            @RequestHeader("X-Company-Id") Long companyId,
+            @RequestHeader(value = "X-Company-Id", required = false) Long requestedCompanyId,
             @RequestHeader("X-Warehouse-Id") Long warehouseId,
             @PathVariable Long id,
             @Valid @RequestBody UpdateWarehouseCurrencyRequest request) {
 
-        WarehouseCurrencyResponse response = warehouseCurrencyService.updateWarehouseCurrency(id, companyId,
+        WarehouseCurrencyResponse response = warehouseCurrencyService.updateWarehouseCurrency(id,
+                authenticatedCompany(requestedCompanyId),
                 warehouseId, request);
         return ResponseEntity.ok(response);
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteWarehouseCurrency(
-            @RequestHeader("X-Company-Id") Long companyId,
+            @RequestHeader(value = "X-Company-Id", required = false) Long requestedCompanyId,
             @RequestHeader("X-Warehouse-Id") Long warehouseId,
             @PathVariable Long id) {
 
-        warehouseCurrencyService.deleteWarehouseCurrency(id, companyId, warehouseId);
+        warehouseCurrencyService.deleteWarehouseCurrency(id, authenticatedCompany(requestedCompanyId), warehouseId);
         return ResponseEntity.noContent().build();
+    }
+
+    private Long authenticatedCompany(Long requestedCompanyId) {
+        Long companyId = UserContext.getCurrentCompanyId();
+        if (requestedCompanyId != null && !companyId.equals(requestedCompanyId)) {
+            throw new SecurityException("Company identifier does not match authenticated tenant");
+        }
+        return companyId;
     }
 }

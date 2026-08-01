@@ -43,7 +43,7 @@ public class SecuritySettingsServiceImpl implements SecuritySettingsService {
         Company company = companyRepository.findById(companyId)
                 .orElseThrow(() -> new ResourceNotFoundException("Company not found with id " + companyId));
 
-        if (securitySettingsRepository.existsByCompany(company)) {
+        if (securitySettingsRepository.existsByCompanyId(companyId)) {
             throw new IllegalStateException("SecuritySettings already exist for companyId " + companyId);
         }
 
@@ -78,10 +78,7 @@ public class SecuritySettingsServiceImpl implements SecuritySettingsService {
 
         log.info("Updating SecuritySettings for companyId={}", companyId);
 
-        Company company = companyRepository.findById(companyId)
-                .orElseThrow(() -> new ResourceNotFoundException("Company not found with id " + companyId));
-
-        SecuritySettings settings = securitySettingsRepository.findByCompany(company)
+        SecuritySettings settings = securitySettingsRepository.findByCompanyId(companyId)
                 .orElseThrow(
                         () -> new ResourceNotFoundException("SecuritySettings not found for companyId " + companyId));
 
@@ -113,10 +110,7 @@ public class SecuritySettingsServiceImpl implements SecuritySettingsService {
 
         log.info("Fetching SecuritySettings for companyId={}", companyId);
 
-        Company company = companyRepository.findById(companyId)
-                .orElseThrow(() -> new ResourceNotFoundException("Company not found with id " + companyId));
-
-        SecuritySettings settings = securitySettingsRepository.findByCompany(company)
+        SecuritySettings settings = securitySettingsRepository.findByCompanyId(companyId)
                 .orElseThrow(
                         () -> new ResourceNotFoundException("SecuritySettings not found for companyId " + companyId));
 
@@ -126,7 +120,7 @@ public class SecuritySettingsServiceImpl implements SecuritySettingsService {
     @Override
     @Transactional(readOnly = true)
     public List<SecuritySettingsResponse> listAllSecuritySettings() {
-        return securitySettingsRepository.findAll().stream()
+        return securitySettingsRepository.findByCompanyId(UserContext.getCurrentCompanyId()).stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
