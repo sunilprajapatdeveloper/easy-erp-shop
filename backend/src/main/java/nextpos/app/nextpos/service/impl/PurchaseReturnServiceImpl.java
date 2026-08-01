@@ -8,6 +8,7 @@ import nextpos.app.nextpos.model.entity.*;
 import nextpos.app.nextpos.model.entity.Currency;
 import nextpos.app.nextpos.model.enums.*;
 import nextpos.app.nextpos.repository.*;
+import nextpos.app.nextpos.security.access.WarehouseAccessService;
 import nextpos.app.nextpos.security.context.UserContext;
 import nextpos.app.nextpos.service.interf.ProductStockService;
 import nextpos.app.nextpos.service.interf.PurchaseReturnService;
@@ -27,10 +28,10 @@ public class PurchaseReturnServiceImpl implements PurchaseReturnService {
         private final PurchaseReturnRepository purchaseReturnRepository;
         private final PurchaseRepository purchaseRepository;
         private final SupplierRepository supplierRepository;
-        private final WarehouseRepository warehouseRepository;
         private final ProductRepository productRepository;
         private final CurrencyRepository currencyRepository;
         private final ProductStockService productStockService;
+        private final WarehouseAccessService warehouseAccessService;
 
         @Override
         @Transactional
@@ -38,10 +39,9 @@ public class PurchaseReturnServiceImpl implements PurchaseReturnService {
                 Long currentUserId = UserContext.getCurrentUserId();
                 Long currentCompanyId = UserContext.getCurrentCompanyId();
 
-                Supplier supplier = supplierRepository.findById(request.getSupplierId())
+                Supplier supplier = supplierRepository.findByIdAndCompanyId(request.getSupplierId(), currentCompanyId)
                                 .orElseThrow(() -> new RuntimeException("Supplier not found"));
-                Warehouse warehouse = warehouseRepository.findById(request.getWarehouseId())
-                                .orElseThrow(() -> new RuntimeException("Warehouse not found"));
+                Warehouse warehouse = warehouseAccessService.requireAccessible(request.getWarehouseId());
                 Currency currency = currencyRepository.findById(request.getCurrencyId())
                                 .orElseThrow(() -> new RuntimeException("Currency not found"));
                 BigDecimal exchangeRate = request.getExchangeRate();
@@ -49,8 +49,10 @@ public class PurchaseReturnServiceImpl implements PurchaseReturnService {
                         throw new RuntimeException("Valid exchange rate is required");
                 }
 
-                Purchase originalPurchase = purchaseRepository.findById(request.getOriginalPurchaseId())
+                Purchase originalPurchase = purchaseRepository
+                                .findByIdAndCompanyId(request.getOriginalPurchaseId(), currentCompanyId)
                                 .orElseThrow(() -> new RuntimeException("Original purchase not found"));
+                warehouseAccessService.requireAccessible(originalPurchase.getWarehouse().getId());
 
                 PurchaseReturn purchaseReturn = PurchaseReturn.builder()
                                 .referenceNumber(ReferenceNumberGenerator.generateReferenceNumber("PURCHASE-RETURN"))
@@ -86,7 +88,8 @@ public class PurchaseReturnServiceImpl implements PurchaseReturnService {
                 List<PurchaseReturnProduct> returnProducts = new ArrayList<>();
 
                 for (CreatePurchaseReturnRequest.PurchaseReturnProductRequest p : request.getProducts()) {
-                        Product product = productRepository.findById(p.getProductId())
+                        Product product = productRepository
+                                        .findByIdAndCompanyIdAndIsDeletedFalse(p.getProductId(), currentCompanyId)
                                         .orElseThrow(() -> new RuntimeException(
                                                         "Product not found: " + p.getProductId()));
 
@@ -100,7 +103,7 @@ public class PurchaseReturnServiceImpl implements PurchaseReturnService {
                                         .mapToInt(PurchaseProduct::getQuantity)
                                         .sum();
                         int alreadyReturned = purchaseReturnRepository.sumReturnedQtyByPurchaseAndProduct(
-                                        originalPurchase.getId(), product.getId());
+                                        originalPurchase.getId(), product.getId(), currentCompanyId);
                         if (qty > purchasedQty - alreadyReturned) {
                                 throw new RuntimeException("Return quantity exceeds purchased quantity for product: "
                                                 + product.getName());
@@ -159,18 +162,22 @@ public class PurchaseReturnServiceImpl implements PurchaseReturnService {
         @Override
         @Transactional(readOnly = true)
         public PurchaseReturnResponse getPurchaseReturnById(Long id) {
-                PurchaseReturn pr = purchaseReturnRepository.findById(id)
+                Long companyId = UserContext.getCurrentCompanyId();
+                PurchaseReturn pr = purchaseReturnRepository.findByIdAndCompanyId(id, companyId)
                                 .orElseThrow(() -> new RuntimeException("Purchase return not found"));
-                if (!pr.getCompanyId().equals(UserContext.getCurrentCompanyId())) {
-                        throw new SecurityException("Access denied");
-                }
+                warehouseAccessService.requireAccessible(pr.getWarehouse().getId());
                 return PurchaseReturnResponse.fromEntity(pr);
         }
 
         @Override
         public List<PurchaseReturnResponse> getMyPurchaseReturns() {
                 Long currentUserId = UserContext.getCurrentUserId();
-                return purchaseReturnRepository.findByCreatedBy(currentUserId).stream()
+                Long companyId = UserContext.getCurrentCompanyId();
+                List<Long> warehouseIds = warehouseAccessService.accessibleWarehouses().stream()
+                                .map(Warehouse::getId).toList();
+                return purchaseReturnRepository
+                                .findByCreatedByAndCompanyIdAndWarehouse_IdIn(currentUserId, companyId, warehouseIds)
+                                .stream()
                                 .map(PurchaseReturnResponse::fromEntity)
                                 .collect(Collectors.toList());
         }
@@ -178,7 +185,9 @@ public class PurchaseReturnServiceImpl implements PurchaseReturnService {
         @Override
         public List<PurchaseReturnResponse> getAllPurchaseReturns() {
                 Long currentCompanyId = UserContext.getCurrentCompanyId();
-                return purchaseReturnRepository.findByCompanyId(currentCompanyId).stream()
+                List<Long> warehouseIds = warehouseAccessService.accessibleWarehouses().stream()
+                                .map(Warehouse::getId).toList();
+                return purchaseReturnRepository.findByCompanyIdAndWarehouse_IdIn(currentCompanyId, warehouseIds).stream()
                                 .map(PurchaseReturnResponse::fromEntity)
                                 .collect(Collectors.toList());
         }
@@ -189,14 +198,12 @@ public class PurchaseReturnServiceImpl implements PurchaseReturnService {
                 Long currentUserId = UserContext.getCurrentUserId();
                 Long currentCompanyId = UserContext.getCurrentCompanyId();
 
-                PurchaseReturn pr = purchaseReturnRepository.findById(id)
+                PurchaseReturn pr = purchaseReturnRepository.findByIdAndCompanyId(id, currentCompanyId)
                                 .orElseThrow(() -> new RuntimeException("Purchase return not found"));
-                if (!pr.getCompanyId().equals(currentCompanyId)) {
-                        throw new SecurityException("Access denied");
-                }
 
                 Purchase originalPurchase = pr.getOriginalPurchase();
                 Warehouse warehouse = pr.getWarehouse();
+                warehouseAccessService.requireAccessible(warehouse.getId());
 
                 // Restore stock for previously returned products
                 for (PurchaseReturnProduct oldPr : pr.getProducts()) {
@@ -206,8 +213,7 @@ public class PurchaseReturnServiceImpl implements PurchaseReturnService {
 
                 // Update warehouse if changed
                 if (request.getWarehouseId() != null && !request.getWarehouseId().equals(warehouse.getId())) {
-                        Warehouse newWarehouse = warehouseRepository.findById(request.getWarehouseId())
-                                        .orElseThrow(() -> new RuntimeException("New warehouse not found"));
+                        Warehouse newWarehouse = warehouseAccessService.requireAccessible(request.getWarehouseId());
                         pr.setWarehouse(newWarehouse);
                         warehouse = newWarehouse;
                 }
@@ -223,7 +229,8 @@ public class PurchaseReturnServiceImpl implements PurchaseReturnService {
 
                 if (request.getProducts() != null) {
                         for (UpdatePurchaseReturnRequest.PurchaseReturnProductRequest p : request.getProducts()) {
-                                Product product = productRepository.findById(p.getProductId())
+                                Product product = productRepository
+                                                .findByIdAndCompanyIdAndIsDeletedFalse(p.getProductId(), currentCompanyId)
                                                 .orElseThrow(() -> new RuntimeException(
                                                                 "Product not found: " + p.getProductId()));
 
@@ -237,7 +244,7 @@ public class PurchaseReturnServiceImpl implements PurchaseReturnService {
                                                 .mapToInt(PurchaseProduct::getQuantity)
                                                 .sum();
                                 int alreadyReturned = purchaseReturnRepository.sumReturnedQtyByPurchaseAndProduct(
-                                                originalPurchase.getId(), product.getId());
+                                                originalPurchase.getId(), product.getId(), currentCompanyId);
                                 int oldQty = pr.getProducts().stream()
                                                 .filter(pp -> pp.getProduct().getId().equals(product.getId()))
                                                 .mapToInt(PurchaseReturnProduct::getQuantity)
@@ -326,7 +333,7 @@ public class PurchaseReturnServiceImpl implements PurchaseReturnService {
                 Optional.ofNullable(request.getSource()).ifPresent(pr::setSource);
                 Optional.ofNullable(request.getNote()).ifPresent(pr::setNote);
                 if (request.getSupplierId() != null) {
-                        Supplier supplier = supplierRepository.findById(request.getSupplierId())
+                        Supplier supplier = supplierRepository.findByIdAndCompanyId(request.getSupplierId(), currentCompanyId)
                                         .orElseThrow(() -> new RuntimeException("Supplier not found"));
                         pr.setSupplier(supplier);
                 }
@@ -339,8 +346,10 @@ public class PurchaseReturnServiceImpl implements PurchaseReturnService {
                         pr.setExchangeRate(request.getExchangeRate());
                 }
                 if (request.getOriginalPurchaseId() != null) {
-                        Purchase newPurchase = purchaseRepository.findById(request.getOriginalPurchaseId())
+                        Purchase newPurchase = purchaseRepository
+                                        .findByIdAndCompanyId(request.getOriginalPurchaseId(), currentCompanyId)
                                         .orElseThrow(() -> new RuntimeException("Original purchase not found"));
+                        warehouseAccessService.requireAccessible(newPurchase.getWarehouse().getId());
                         pr.setOriginalPurchase(newPurchase);
                 }
 
@@ -368,11 +377,10 @@ public class PurchaseReturnServiceImpl implements PurchaseReturnService {
         @Override
         @Transactional
         public void deletePurchaseReturn(Long id) {
-                PurchaseReturn pr = purchaseReturnRepository.findById(id)
+                Long companyId = UserContext.getCurrentCompanyId();
+                PurchaseReturn pr = purchaseReturnRepository.findByIdAndCompanyId(id, companyId)
                                 .orElseThrow(() -> new RuntimeException("Purchase return not found"));
-                if (!pr.getCompanyId().equals(UserContext.getCurrentCompanyId())) {
-                        throw new SecurityException("Access denied");
-                }
+                warehouseAccessService.requireAccessible(pr.getWarehouse().getId());
                 for (PurchaseReturnProduct prp : pr.getProducts()) {
                         productStockService.adjustStock(prp.getProduct().getId(), pr.getWarehouse().getId(),
                                         prp.getQuantity());

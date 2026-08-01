@@ -16,15 +16,26 @@ public interface PurchaseReturnRepository extends JpaRepository<PurchaseReturn, 
         @NonNull
         Optional<PurchaseReturn> findById(@NonNull Long id);
 
+        @EntityGraph(attributePaths = { "products", "supplier", "warehouse", "currency" })
+        Optional<PurchaseReturn> findByIdAndCompanyId(Long id, Long companyId);
+
         @EntityGraph(attributePaths = { "products" })
         List<PurchaseReturn> findByCreatedBy(Long createdBy);
 
         @EntityGraph(attributePaths = { "products" })
+        List<PurchaseReturn> findByCreatedByAndCompanyIdAndWarehouse_IdIn(Long createdBy, Long companyId,
+                        List<Long> warehouseIds);
+
+        @EntityGraph(attributePaths = { "products" })
         List<PurchaseReturn> findByCompanyId(Long companyId);
+
+        @EntityGraph(attributePaths = { "products" })
+        List<PurchaseReturn> findByCompanyIdAndWarehouse_IdIn(Long companyId, List<Long> warehouseIds);
 
         @Query("SELECT COALESCE(SUM(prp.quantity), 0) " +
                         "FROM PurchaseReturn pr JOIN pr.products prp " +
-                        "WHERE pr.originalPurchase.id = :purchaseId AND prp.product.id = :productId")
+                        "WHERE pr.companyId = :companyId AND pr.originalPurchase.id = :purchaseId " +
+                        "AND prp.product.id = :productId")
         int sumReturnedQtyByPurchaseAndProduct(@Param("purchaseId") Long purchaseId,
-                        @Param("productId") Long productId);
+                        @Param("productId") Long productId, @Param("companyId") Long companyId);
 }
