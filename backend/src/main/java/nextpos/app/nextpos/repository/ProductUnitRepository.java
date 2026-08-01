@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Optional;
 
 public interface ProductUnitRepository extends JpaRepository<ProductUnit, Long> {
+    Optional<ProductUnit> findByIdAndCompanyId(Long id, Long companyId);
 
     // Load ProductUnit with creator info (optional, depending on use)
     @EntityGraph(attributePaths = "createdBy")

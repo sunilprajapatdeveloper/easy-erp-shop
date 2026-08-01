@@ -33,7 +33,7 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Override
     public CategoryResponse getCategoryById(Long id) {
-        return categoryRepository.findById(id)
+        return categoryRepository.findByIdAndCompanyId(id, UserContext.getCurrentCompanyId())
                 .map(CategoryResponse::new)
                 .orElseThrow(() -> new RuntimeException("Category not found"));
     }
@@ -48,14 +48,14 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Override
     public List<CategoryResponse> getAllCategories() {
-        return categoryRepository.findAll().stream()
+        return categoryRepository.findAllByCompanyId(UserContext.getCurrentCompanyId()).stream()
                 .map(CategoryResponse::new)
                 .collect(Collectors.toList());
     }
 
     @Override
     public CategoryResponse updateCategory(Long id, CreateCategoryRequest request) {
-        Category category = categoryRepository.findById(id)
+        Category category = categoryRepository.findByIdAndCompanyId(id, UserContext.getCurrentCompanyId())
                 .orElseThrow(() -> new RuntimeException("Category not found"));
 
         category.setName(request.getName());
@@ -68,6 +68,8 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Override
     public void deleteCategory(Long id) {
-        categoryRepository.deleteById(id);
+        Category category = categoryRepository.findByIdAndCompanyId(id, UserContext.getCurrentCompanyId())
+                .orElseThrow(() -> new RuntimeException("Category not found"));
+        categoryRepository.delete(category);
     }
 }

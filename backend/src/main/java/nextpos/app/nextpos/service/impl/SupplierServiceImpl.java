@@ -48,7 +48,7 @@ public class SupplierServiceImpl implements SupplierService {
         public SupplierResponse getSupplierById(Long id) {
                 Long currentCompanyId = UserContext.getCurrentCompanyId();
 
-                Supplier supplier = supplierRepository.findById(id)
+                Supplier supplier = supplierRepository.findByIdAndCompanyId(id, currentCompanyId)
                                 .orElseThrow(() -> new RuntimeException("Supplier not found with id: " + id));
 
                 // Ensure supplier belongs to the user's company
@@ -89,7 +89,7 @@ public class SupplierServiceImpl implements SupplierService {
                 Long currentUserId = UserContext.getCurrentUserId();
                 Long currentCompanyId = UserContext.getCurrentCompanyId();
 
-                Supplier supplier = supplierRepository.findById(id)
+                Supplier supplier = supplierRepository.findByIdAndCompanyId(id, currentCompanyId)
                                 .orElseThrow(() -> new RuntimeException("Supplier not found with id: " + id));
 
                 // Ensure supplier belongs to the user's company
@@ -126,7 +126,7 @@ public class SupplierServiceImpl implements SupplierService {
         public void deleteSupplier(Long id) {
                 Long currentCompanyId = UserContext.getCurrentCompanyId();
 
-                Supplier supplier = supplierRepository.findById(id)
+                Supplier supplier = supplierRepository.findByIdAndCompanyId(id, currentCompanyId)
                                 .orElseThrow(() -> new RuntimeException("Supplier not found with id: " + id));
 
                 // Ensure supplier belongs to the user's company

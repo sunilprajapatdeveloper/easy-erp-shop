@@ -27,27 +27,28 @@ public class CustomerServiceImpl implements CustomerService {
         customer.setCountry(request.getCountry());
         customer.setCity(request.getCity());
         customer.setCreatedBy(UserContext.getCurrentUserId());
+        customer.setCompanyId(UserContext.getCurrentCompanyId());
 
         return new CustomerResponse(customerRepository.save(customer));
     }
 
     @Override
     public CustomerResponse getCustomerById(Long id) {
-        return customerRepository.findById(id)
+        return customerRepository.findByIdAndCompanyId(id, UserContext.getCurrentCompanyId())
                 .map(CustomerResponse::new)
                 .orElseThrow(() -> new RuntimeException("Customer not found"));
     }
 
     @Override
     public CustomerResponse getCustomerByEmail(String email) {
-        return customerRepository.findByEmail(email)
+        return customerRepository.findByEmailAndCompanyId(email, UserContext.getCurrentCompanyId())
                 .map(CustomerResponse::new)
                 .orElseThrow(() -> new RuntimeException("Customer not found with email: " + email));
     }
 
     @Override
     public CustomerResponse getCustomerByPhone(String phone) {
-        return customerRepository.findByPhone(phone)
+        return customerRepository.findByPhoneAndCompanyId(phone, UserContext.getCurrentCompanyId())
                 .map(CustomerResponse::new)
                 .orElseThrow(() -> new RuntimeException("Customer not found with phone: " + phone));
     }
@@ -61,14 +62,14 @@ public class CustomerServiceImpl implements CustomerService {
 
     @Override
     public List<CustomerResponse> getAllCustomers() {
-        return customerRepository.findAll().stream()
+        return customerRepository.findAllByCompanyId(UserContext.getCurrentCompanyId()).stream()
                 .map(CustomerResponse::new)
                 .collect(Collectors.toList());
     }
 
     @Override
     public CustomerResponse updateCustomer(Long id, CreateCustomerRequest request) {
-        Customer customer = customerRepository.findById(id)
+        Customer customer = customerRepository.findByIdAndCompanyId(id, UserContext.getCurrentCompanyId())
                 .orElseThrow(() -> new RuntimeException("Customer not found"));
 
         customer.setName(request.getName());
@@ -83,6 +84,8 @@ public class CustomerServiceImpl implements CustomerService {
 
     @Override
     public void deleteCustomer(Long id) {
-        customerRepository.deleteById(id);
+        Customer customer = customerRepository.findByIdAndCompanyId(id, UserContext.getCurrentCompanyId())
+                .orElseThrow(() -> new RuntimeException("Customer not found"));
+        customerRepository.delete(customer);
     }
 }

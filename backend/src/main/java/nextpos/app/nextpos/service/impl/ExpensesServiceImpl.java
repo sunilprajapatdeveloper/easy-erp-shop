@@ -12,6 +12,7 @@ import nextpos.app.nextpos.repository.ExpensesRepository;
 import nextpos.app.nextpos.repository.WarehouseRepository;
 import nextpos.app.nextpos.security.context.UserContext;
 import nextpos.app.nextpos.service.interf.ExpensesService;
+import nextpos.app.nextpos.security.access.WarehouseAccessService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,15 +25,15 @@ public class ExpensesServiceImpl implements ExpensesService {
         private final ExpensesRepository expensesRepository;
         private final WarehouseRepository warehouseRepository;
         private final CategoryRepository categoryRepository;
+        private final WarehouseAccessService warehouseAccessService;
 
         @Override
         @Transactional
         public ExpensesResponse createExpenses(CreateExpensesRequest request) {
-                Warehouse warehouse = warehouseRepository.findById(request.getWarehouseId())
-                                .orElseThrow(() -> new RuntimeException(
-                                                "Warehouse not found with ID: " + request.getWarehouseId()));
+                Long companyId = UserContext.getCurrentCompanyId();
+                Warehouse warehouse = warehouseAccessService.requireAccessible(request.getWarehouseId());
 
-                Category category = categoryRepository.findById(request.getCategoryId())
+                Category category = categoryRepository.findByIdAndCompanyId(request.getCategoryId(), companyId)
                                 .orElseThrow(() -> new RuntimeException(
                                                 "Category not found with ID: " + request.getCategoryId()));
 
@@ -44,7 +45,7 @@ public class ExpensesServiceImpl implements ExpensesService {
                                 .details(request.getDetails())
                                 .createdBy(UserContext.getCurrentUserId())
                                 .createdAt(LocalDateTime.now())
-                                .companyId(UserContext.getCurrentCompanyId())
+                                .companyId(companyId)
                                 .build();
 
                 return new ExpensesResponse(expensesRepository.save(expenses));
@@ -52,26 +53,27 @@ public class ExpensesServiceImpl implements ExpensesService {
 
         @Override
         public ExpensesResponse getExpensesById(Long id) {
-                Expenses expenses = expensesRepository.findById(id)
+                Expenses expenses = expensesRepository.findByIdAndCompanyId(id, UserContext.getCurrentCompanyId())
                                 .orElseThrow(() -> new RuntimeException("Expenses not found with ID: " + id));
+                warehouseAccessService.requireAssignment(expenses.getWarehouse().getId());
                 return new ExpensesResponse(expenses);
         }
 
         @Override
         @Transactional
         public ExpensesResponse updateExpenses(Long id, UpdateExpensesRequest request) {
-                Expenses expenses = expensesRepository.findById(id)
+                Long companyId = UserContext.getCurrentCompanyId();
+                Expenses expenses = expensesRepository.findByIdAndCompanyId(id, companyId)
                                 .orElseThrow(() -> new RuntimeException("Expenses not found with ID: " + id));
+                warehouseAccessService.requireAssignment(expenses.getWarehouse().getId());
 
                 if (request.getWarehouseId() != null) {
-                        Warehouse warehouse = warehouseRepository.findById(request.getWarehouseId())
-                                        .orElseThrow(() -> new RuntimeException(
-                                                        "Warehouse not found with ID: " + request.getWarehouseId()));
+                        Warehouse warehouse = warehouseAccessService.requireAccessible(request.getWarehouseId());
                         expenses.setWarehouse(warehouse);
                 }
 
                 if (request.getCategoryId() != null) {
-                        Category category = categoryRepository.findById(request.getCategoryId())
+                        Category category = categoryRepository.findByIdAndCompanyId(request.getCategoryId(), companyId)
                                         .orElseThrow(() -> new RuntimeException(
                                                         "Category not found with ID: " + request.getCategoryId()));
                         expenses.setCategory(category);
@@ -95,8 +97,9 @@ public class ExpensesServiceImpl implements ExpensesService {
         @Override
         @Transactional
         public void deleteExpenses(Long id) {
-                Expenses expenses = expensesRepository.findById(id)
+                Expenses expenses = expensesRepository.findByIdAndCompanyId(id, UserContext.getCurrentCompanyId())
                                 .orElseThrow(() -> new RuntimeException("Expenses not found with ID: " + id));
+                warehouseAccessService.requireAssignment(expenses.getWarehouse().getId());
 
                 // Ensure the expense belongs to the user's company
                 if (!expenses.getCompanyId().equals(UserContext.getCurrentCompanyId())) {

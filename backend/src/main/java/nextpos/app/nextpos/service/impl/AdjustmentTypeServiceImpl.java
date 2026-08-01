@@ -39,14 +39,14 @@ public class AdjustmentTypeServiceImpl implements AdjustmentTypeService {
 
     @Override
     public AdjustmentTypeResponse getAdjustmentTypeById(Long id) {
-        AdjustmentType adjustmentType = adjustmentTypeRepository.findById(id)
+        AdjustmentType adjustmentType = adjustmentTypeRepository.findByIdAndCompanyId(id, UserContext.getCurrentCompanyId())
                 .orElseThrow(() -> new RuntimeException("Adjustment type not found with id: " + id));
         return toResponse(adjustmentType);
     }
 
     @Override
     public List<AdjustmentTypeResponse> findAllByCreatedBy(Long userId) {
-        return adjustmentTypeRepository.findAll().stream()
+        return adjustmentTypeRepository.findAllByCompanyId(UserContext.getCurrentCompanyId()).stream()
                 .filter(type -> type.getCreatedBy() != null && type.getCreatedBy().equals(userId))
                 .map(this::toResponse)
                 .collect(Collectors.toList());
@@ -54,14 +54,14 @@ public class AdjustmentTypeServiceImpl implements AdjustmentTypeService {
 
     @Override
     public List<AdjustmentTypeResponse> getAllAdjustmentTypes() {
-        return adjustmentTypeRepository.findAll().stream()
+        return adjustmentTypeRepository.findAllByCompanyId(UserContext.getCurrentCompanyId()).stream()
                 .map(this::toResponse)
                 .collect(Collectors.toList());
     }
 
     @Override
     public AdjustmentTypeResponse updateAdjustmentType(Long id, CreateAdjustmentTypeRequest request) {
-        AdjustmentType adjustmentType = adjustmentTypeRepository.findById(id)
+        AdjustmentType adjustmentType = adjustmentTypeRepository.findByIdAndCompanyId(id, UserContext.getCurrentCompanyId())
                 .orElseThrow(() -> new RuntimeException("Adjustment type not found with id: " + id));
 
         adjustmentType.setName(request.getName());
@@ -73,7 +73,9 @@ public class AdjustmentTypeServiceImpl implements AdjustmentTypeService {
 
     @Override
     public void deleteAdjustmentType(Long id) {
-        adjustmentTypeRepository.deleteById(id);
+        AdjustmentType adjustmentType = adjustmentTypeRepository.findByIdAndCompanyId(id, UserContext.getCurrentCompanyId())
+                .orElseThrow(() -> new RuntimeException("Adjustment type not found"));
+        adjustmentTypeRepository.delete(adjustmentType);
     }
 
     private AdjustmentTypeResponse toResponse(AdjustmentType adjustmentType) {

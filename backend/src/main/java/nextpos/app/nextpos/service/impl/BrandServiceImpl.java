@@ -34,7 +34,7 @@ public class BrandServiceImpl implements BrandService {
 
     @Override
     public BrandResponse getBrandById(Long id) {
-        return brandRepository.findById(id)
+        return brandRepository.findByIdAndCompanyId(id, UserContext.getCurrentCompanyId())
                 .map(BrandResponse::new)
                 .orElseThrow(() -> new RuntimeException("Brand not found"));
     }
@@ -49,14 +49,14 @@ public class BrandServiceImpl implements BrandService {
 
     @Override
     public List<BrandResponse> getAllBrands() {
-        return brandRepository.findAll().stream()
+        return brandRepository.findAllByCompanyId(UserContext.getCurrentCompanyId()).stream()
                 .map(BrandResponse::new)
                 .collect(Collectors.toList());
     }
 
     @Override
     public BrandResponse updateBrand(Long id, CreateBrandRequest request) {
-        Brand brand = brandRepository.findById(id)
+        Brand brand = brandRepository.findByIdAndCompanyId(id, UserContext.getCurrentCompanyId())
                 .orElseThrow(() -> new RuntimeException("Brand not found"));
 
         brand.setName(request.getName());
@@ -70,6 +70,8 @@ public class BrandServiceImpl implements BrandService {
 
     @Override
     public void deleteBrand(Long id) {
-        brandRepository.deleteById(id);
+        Brand brand = brandRepository.findByIdAndCompanyId(id, UserContext.getCurrentCompanyId())
+                .orElseThrow(() -> new RuntimeException("Brand not found"));
+        brandRepository.delete(brand);
     }
 }

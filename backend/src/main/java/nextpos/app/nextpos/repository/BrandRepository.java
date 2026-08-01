@@ -9,6 +9,8 @@ import java.util.List;
 import java.util.Optional;
 
 public interface BrandRepository extends JpaRepository<Brand, Long> {
+    Optional<Brand> findByIdAndCompanyId(Long id, Long companyId);
+    List<Brand> findAllByCompanyId(Long companyId);
 
     // Load Brand with creator info (optional, depending on use)
     @EntityGraph(attributePaths = "createdBy")

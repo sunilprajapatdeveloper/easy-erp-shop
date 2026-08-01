@@ -41,7 +41,7 @@ public class ProductUnitServiceImpl implements ProductUnitService {
 
     @Override
     public ProductUnitResponse getProductUnitById(Long id) {
-        return productUnitRepository.findById(id)
+        return productUnitRepository.findByIdAndCompanyId(id, UserContext.getCurrentCompanyId())
                 .map(ProductUnitResponse::new)
                 .orElseThrow(() -> new RuntimeException("Product unit not found"));
     }
@@ -55,7 +55,7 @@ public class ProductUnitServiceImpl implements ProductUnitService {
 
     @Override
     public List<ProductUnitResponse> getAllProductUnits() {
-        return productUnitRepository.findAll().stream()
+        return productUnitRepository.findByCompanyId(UserContext.getCurrentCompanyId()).stream()
                 .map(ProductUnitResponse::new)
                 .collect(Collectors.toList());
     }
@@ -65,7 +65,7 @@ public class ProductUnitServiceImpl implements ProductUnitService {
         // Get authenticated user ID using parameterless UserContext
         Long updatedById = UserContext.getCurrentUserId();
 
-        ProductUnit unit = productUnitRepository.findById(id)
+        ProductUnit unit = productUnitRepository.findByIdAndCompanyId(id, UserContext.getCurrentCompanyId())
                 .orElseThrow(() -> new RuntimeException("Product unit not found"));
 
         unit.setName(request.getName());
@@ -81,6 +81,8 @@ public class ProductUnitServiceImpl implements ProductUnitService {
 
     @Override
     public void deleteProductUnit(Long id) {
-        productUnitRepository.deleteById(id);
+        ProductUnit unit = productUnitRepository.findByIdAndCompanyId(id, UserContext.getCurrentCompanyId())
+                .orElseThrow(() -> new RuntimeException("Product unit not found"));
+        productUnitRepository.delete(unit);
     }
 }
