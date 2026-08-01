@@ -1,36 +1,36 @@
-import { PaymentType } from "@/enums/paymentType";
-import { PaymentSourceType } from "@/enums/paymentSourceType";
-import { PaymentStatus } from "@/enums/paymentStatus";
-import { PaymentGatewayProvider } from "@/enums/PaymentGatewayProvider";
 import { PaymentMethod } from "@/enums/paymentMethods";
+import { PaymentGatewayProvider } from "@/enums/PaymentGatewayProvider";
 import { ExchangeRateSource } from "@/enums/ExchangeRateSource";
+import { PaymentStatus } from "@/enums/paymentStatus";
+import { PaymentSourceType } from "@/enums/paymentSourceType";
+import { PaymentType } from "@/enums/paymentType";
 
 export interface PaymentResponse {
   id: number;
-  referenceNumber: string | null;
+  referenceNumber?: string;
   referenceType: PaymentSourceType;
   referenceId: number;
   paymentType: PaymentType;
   amountTxnCurrency: number;
   paymentMethod: PaymentMethod;
-  gatewayProvider: PaymentGatewayProvider | null;
-  transactionReference: string | null;
+  gatewayProvider?: PaymentGatewayProvider;
+  transactionReference?: string;
   status: PaymentStatus;
   paymentDate: string;
   currencyCode: string;
   exchangeRate: number;
   amountBaseCurrency: number;
   idempotencyKey: string;
-  paymentMetadata: Record<string, any> | null;
-  referenceCurrencyCode: string | null;
-  referenceAmount: number | null;
-  warehouseId: number | null;
-  posTerminalId: string | null;
-  exchangeRateSource: ExchangeRateSource | null;
+  paymentMetadata?: Record<string, any>;
+  referenceCurrencyCode?: string;
+  referenceAmount?: number;
+  warehouseId?: number;
+  posTerminalId?: string;
+  exchangeRateSource?: ExchangeRateSource;
   createdBy: number;
   createdAt: string;
-  updatedBy: number | null;
-  updatedAt: string | null;
+  updatedBy?: number;
+  updatedAt?: string;
   companyId: number;
 }
 

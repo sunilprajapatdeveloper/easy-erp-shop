@@ -10,10 +10,10 @@ export function calculateSubTotal(product: SelectedTransferProduct): string {
   const discountAmt = (base * discount) / 100;
   const discounted = base - discountAmt;
 
-  if (product.taxType === "INCLUSIVE") {
-    return discounted.toFixed(2);
-  } else {
-    const taxAmt = (discounted * tax) / 100;
-    return (discounted + taxAmt).toFixed(2);
-  }
+  return discounted.toFixed(2);
+  // if (product.taxType === "INCLUSIVE") {
+  // } else {
+  //   const taxAmt = (discounted * tax) / 100;
+  //   return (discounted + taxAmt).toFixed(2);
+  // }
 }

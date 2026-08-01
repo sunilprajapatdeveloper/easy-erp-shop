@@ -1,6 +1,6 @@
 import { defineStore } from "pinia";
 import { ref } from "vue";
-import type { Sale, CreateSaleRequest } from "@/types/Sale";
+import type { Sale, CreateSaleRequest, UpdateSaleRequest } from "@/types/Sale";
 import {
   getSales,
   getSaleById,
@@ -66,7 +66,7 @@ export const useSaleStore = defineStore("sales", () => {
     }
   };
 
-  const editSale = async (id: number, data: CreateSaleRequest) => {
+  const editSale = async (id: number, data: UpdateSaleRequest) => {
     isSubmitting.value = true;
     try {
       const res = await updateSale(id, data);

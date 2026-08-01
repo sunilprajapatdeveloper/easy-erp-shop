@@ -88,13 +88,17 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from "vue";
+import { ref, computed, watch, onMounted } from "vue";
 import { Offcanvas } from "bootstrap";
 import type { WarehouseListItem } from "@/types/Warehouse";
 import type { Customer } from "@/types/Customer";
 import type { Product } from "@/types/Product";
 import type { SelectedSaleProduct } from "@/types/Sale";
+import { TaxInclusionType } from "@/enums/TaxInclusionType";
+import { TaxApplicationOrder } from "@/enums/TaxApplicationOrder";
 import { useProductStore } from "@/stores/productStore";
+import { useTaxSettingStore } from "@/stores/taxSettingStore";
+import { TaxCategory } from "@/enums/TaxCategory";
 
 const props = defineProps<{
     warehouses: WarehouseListItem[];
@@ -102,14 +106,14 @@ const props = defineProps<{
     date: string;
     warehouseId: number | null;
     customerId: number | null;
-}>()
+}>();
 
 const emit = defineEmits<{
     (e: "update:date", value: string): void;
     (e: "update:warehouseId", value: number | null): void;
     (e: "update:customerId", value: number | null): void;
     (e: "add-product", value: SelectedSaleProduct): void;
-}>()
+}>();
 
 const searchQuery = ref("");
 const allProducts = ref<Product[]>([]);
@@ -117,62 +121,55 @@ const filteredProducts = ref<Product[]>([]);
 const errorMessage = ref("");
 
 const productStore = useProductStore();
+const taxSettingStore = useTaxSettingStore();
 
-// Watch warehouse change to fetch products
 watch(
     () => props.warehouseId,
     async (newId) => {
         if (!newId) return;
-
-        await productStore.fetchProducts({
-            warehouseId: newId,
-            includePrice: true,
-            includeStock: true,
-            includeTax: true
-        });
-
+        await Promise.all([
+            productStore.fetchProducts({
+                warehouseId: newId,
+                includePrice: true,
+                includeStock: true,
+                includeTax: true,
+            }),
+            taxSettingStore.fetchActive(newId),
+        ]);
         allProducts.value = productStore.products;
         updateFilteredProducts();
     }
 );
 
-// Initial fetch
 onMounted(async () => {
     await productStore.fetchProducts({
         warehouseId: props.warehouseId ?? undefined,
         includePrice: true,
         includeStock: true,
-        includeTax: true
+        includeTax: true,
     });
-
     allProducts.value = productStore.products;
 });
 
-// Computed models
 const modelDate = computed({
     get: () => props.date,
     set: (val) => emit("update:date", val),
 });
-
 const modelWarehouseId = computed({
     get: () => props.warehouseId,
     set: (val) => emit("update:warehouseId", val),
 });
-
 const modelCustomerId = computed({
     get: () => props.customerId,
     set: (val) => emit("update:customerId", val),
 });
 
-// Search filtering
 const updateFilteredProducts = () => {
     const query = searchQuery.value.trim().toLowerCase();
-
     if (!query) {
         filteredProducts.value = [];
         return;
     }
-
     filteredProducts.value = allProducts.value.filter(
         (p) =>
             p.code.toLowerCase().includes(query) ||
@@ -180,46 +177,53 @@ const updateFilteredProducts = () => {
     );
 };
 
-// Select product with validation
 const selectProduct = (product: Product) => {
     if (!product.id || !props.warehouseId) return;
 
-    // Get the warehouse name
-    const warehouse = props.warehouses.find(w => w.id === props.warehouseId);
+    const warehouse = props.warehouses.find((w) => w.id === props.warehouseId);
     const warehouseName = warehouse?.name ?? "selected warehouse";
 
-    // Check price, stock, and tax
     if (!product.price) {
-        showError(`Price for product "${product.name}" (${product.code}) is not configured for warehouse "${warehouseName}".`);
+        showError(
+            `Price for product "${product.name}" (${product.code}) is not configured for warehouse "${warehouseName}".`
+        );
         return;
     }
-
     if (!product.stock) {
-        showError(`Stock for product "${product.name}" (${product.code}) is not configured for warehouse "${warehouseName}".`);
+        showError(
+            `Stock for product "${product.name}" (${product.code}) is not configured for warehouse "${warehouseName}".`
+        );
         return;
     }
 
-    // if (!product.tax) {
-    //     showError(`Tax for product "${product.name}" (${product.code}) is not configured for warehouse "${warehouseName}".`);
-    //     return;
-    // }
+    const productTax = product.tax;
+    const activeTaxSetting = taxSettingStore.activeTaxSetting;
 
-    const selectedProduct: SelectedSaleProduct = {
+    const taxInclusionType: TaxInclusionType =
+        productTax?.overrideInclusionType ?? activeTaxSetting?.inclusionType ?? TaxInclusionType.EXCLUSIVE;
+    const taxApplicationOrder: TaxApplicationOrder =
+        productTax?.overrideApplicationOrder ?? activeTaxSetting?.applicationOrder ?? TaxApplicationOrder.AFTER_DISCOUNT;
+
+    // Emit raw product – NO calculated values
+    const selected: SelectedSaleProduct = {
         productId: product.id,
         productName: product.name,
         code: product.code,
+        productUnitPrice: Number(product.price.price),
+        quantity: 1,
         stock: product.stock.availableQuantity ?? product.stock.quantity ?? 0,
-        price: product.price.price.toString(),
-        discount: "0",
-        tax: '0',
-        taxType: 'EXCLUSIVE',
-        // taxType: product.tax.taxType ?? 'EXCLUSIVE',
-        saleQty: 1,
-        subTotal: product.price.price.toString(),
+        taxName: productTax?.taxName ?? "",
+        taxCategory: productTax?.taxCategory ?? activeTaxSetting?.taxCategory ?? TaxCategory.CUSTOM,
+        taxRate: productTax?.taxRate ?? 0,
+        taxInclusionType,
+        taxApplicationOrder,
+        lineDiscountAmount: 0,
+        lineNetAmount: 0,
+        lineTaxAmount: 0,
+        lineGrossAmount: 0,
     };
 
-    emit("add-product", selectedProduct);
-
+    emit("add-product", selected);
     searchQuery.value = "";
     filteredProducts.value = [];
 };
@@ -230,15 +234,11 @@ const handleSearch = () => {
     }
 };
 
-// Show error popup
 const showError = (message: string) => {
     errorMessage.value = message;
-    const trigger = document.getElementById("triggerErrorPopup");
-    trigger?.click();
-
+    document.getElementById("triggerErrorPopup")?.click();
     setTimeout(() => {
-        const instance = Offcanvas.getOrCreateInstance(document.getElementById("errorPopup")!);
-        instance.hide();
+        Offcanvas.getOrCreateInstance(document.getElementById("errorPopup")!).hide();
     }, 3000);
 };
 </script>

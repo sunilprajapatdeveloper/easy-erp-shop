@@ -1,46 +1,36 @@
+import { PaymentSourceType } from "@/enums/paymentSourceType";
 import api from "./api";
 import type {
-  Payment,
   CreatePaymentRequest,
   UpdatePaymentRequest,
+  PaymentResponse,
 } from "@/types/Payment";
 
-/**
- * Get all payments by reference
- * @param type PaymentSourceType (SALE, PURCHASE, etc.)
- * @param referenceId Entity ID (Sale.id, Purchase.id, etc.)
- */
-export const getPaymentsByReference = (type: string, referenceId: number) =>
-  api.get<Payment[]>(
-    `/payments/reference?type=${type}&referenceId=${referenceId}`
-  );
+export interface ApiResponse<T> {
+  success: boolean;
+  message: string | null;
+  data: T;
+}
 
-/**
- * Create a new payment
- */
 export const createPayment = (data: CreatePaymentRequest) =>
-  api.post<Payment>("/payments", data);
+  api.post<ApiResponse<PaymentResponse>>("/payments", data);
 
-/**
- * Update an existing payment
- */
 export const updatePayment = (id: number, data: UpdatePaymentRequest) =>
-  api.put<Payment>(`/payments/${id}`, data);
+  api.put<ApiResponse<PaymentResponse>>(`/payments/${id}`, data);
 
-/**
- * Delete a payment
- */
 export const deletePayment = (id: number) =>
   api.delete<void>(`/payments/${id}`);
 
-/**
- * Get payment by ID
- */
 export const getPaymentById = (id: number) =>
-  api.get<Payment>(`/payments/${id}`);
+  api.get<ApiResponse<PaymentResponse>>(`/payments/${id}`);
 
-/**
- * Get payment status only
- */
+export const getPaymentsByReference = (
+  type: PaymentSourceType,
+  referenceId: number,
+) =>
+  api.get<ApiResponse<PaymentResponse[]>>("/payments/reference", {
+    params: { type, referenceId },
+  });
+
 export const getPaymentStatus = (id: number) =>
-  api.get<{ status: string }>(`/payments/${id}/status`);
+  api.get<ApiResponse<{ status: string }>>(`/payments/${id}/status`);

@@ -59,6 +59,7 @@ import { PaymentStatus } from '@/enums/paymentStatus'
 import { PaymentMethod } from '@/enums/paymentMethods'
 import { PaymentGatewayProvider } from '@/enums/PaymentGatewayProvider'
 import { BillingCycle } from '@/enums/BillingCycle'
+import { CreatePaymentRequest } from '@/types/Payment'
 
 export default defineComponent({
     name: 'SetupWizard',
@@ -280,25 +281,26 @@ export default defineComponent({
                 const subscription = await companySubscriptionStore.create(subscriptionPayload, userId)
 
                 if (paymentRequired.value) {
-                    const paymentInfo = onboardingStore.paymentInfo
-                    if (!paymentInfo) throw new Error('Payment info missing')
+                    const paymentInfo = onboardingStore.paymentInfo;
+                    if (!paymentInfo) throw new Error('Payment info missing');
 
-                    const paymentPayload = {
+                    const paymentPayload: CreatePaymentRequest = {
                         referenceType: PaymentSourceType.SUBSCRIPTION,
                         referenceId: subscription.id,
                         paymentType: PaymentType.INCOMING,
-                        amount: plan.price,
+                        amountTxnCurrency: plan.price,
                         paymentMethod: PaymentMethod.CARD,
                         gatewayProvider: PaymentGatewayProvider.STRIPE,
                         status: PaymentStatus.PAID,
                         paymentDate: new Date().toISOString(),
                         currencyCode: 'USD',
                         exchangeRate: 1,
-                        createdBy: userId,
+                        amountBaseCurrency: plan.price,
                         transactionReference: 'onboarding_' + Date.now(),
-                    }
+                        idempotencyKey: `onboarding_sub_${subscription.id}_${Date.now()}`,
+                    };
 
-                    await paymentStore.addPayment(paymentPayload)
+                    await paymentStore.addPayment(paymentPayload);
                 }
 
                 await onboardingStore.completeOnboarding()

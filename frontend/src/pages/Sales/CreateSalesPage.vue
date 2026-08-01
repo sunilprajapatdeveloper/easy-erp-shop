@@ -9,9 +9,11 @@
 
     <SelectedProducts v-if="products.length > 0" v-model:products="products" />
 
-    <SubmitPurchase v-model:orderTax="orderTax" v-model:discount="discount" v-model:shippingCost="shippingCost"
-      v-model:saleStatus="saleStatusValue" v-model:paymentStatus="paymentStatus" v-model:paidAmount="paidAmount"
-      v-model:paymentMethod="paymentMethod" :products="products" v-model:note="note" @submit="handleSubmit" />
+    <SubmitSale v-model:manualDiscountValue="manualDiscountValue" v-model:manualDiscountType="manualDiscountType"
+      v-model:manualDiscountReason="manualDiscountReason" v-model:appliedDiscountId="appliedDiscountId"
+      v-model:couponCode="couponCode" v-model:shippingCost="shippingCost" v-model:paidAmount="paidAmount"
+      v-model:paymentStatus="paymentStatus" v-model:saleStatus="saleStatusValue" v-model:note="note"
+      :products="products" :availableDiscounts="availableDiscounts" @submit="handleSubmit" />
 
     <div class="flex-grow-1"></div>
     <MainFooter />
@@ -44,56 +46,64 @@
 import { ref, watch, onMounted } from "vue";
 import { Offcanvas } from "bootstrap";
 import type { SelectedSaleProduct, CreateSaleRequest } from "@/types/Sale";
-import type { CreatePaymentRequest } from "@/types/Payment";
 import type { Customer } from "@/types/Customer";
 import type { WarehouseListItem } from "@/types/Warehouse";
+import { DiscountType } from "@/enums/discountType";
+import { SaleStatus } from "@/enums/saleStatus";
+import { PaymentStatus } from "@/enums/paymentStatus";
+import { ShipmentStatus } from "@/enums/shipmentStatus";
+import { SaleSource } from "@/enums/SaleSource";
+import { calculateSaleLine } from "@/utils/saleCalculations";
 
 import { useWarehouseStore } from "@/stores/warehouseStore";
 import { useCustomerStore } from "@/stores/customerStore";
 import { useSaleStore } from "@/stores/saleStore";
 import { usePOSSettingsStore } from "@/stores/posSettingsStore";
 import { useWarehouseCurrencyStore } from "@/stores/warehouseCurrencyStore";
+import { useDiscountStore } from "@/stores/discountStore";
 
 import MainHeader from "@/components/Layouts/MainHeader.vue";
 import MainSidebar from "@/components/Layouts/MainSidebar.vue";
 import BreadcrumbMenu from "@/components/Common/BreadcrumbMenu.vue";
 import ChooseForm from "@/components/Sales/CreateSales/ChooseForm.vue";
 import SelectedProducts from "@/components/Sales/CreateSales/SelectedProducts.vue";
-import SubmitPurchase from "@/components/Sales/CreateSales/SubmitPurchase.vue";
+import SubmitSale from "@/components/Sales/CreateSales/SubmitSale.vue";
 import MainFooter from "@/components/Layouts/MainFooter.vue";
-import { SaleStatus } from "@/enums/saleStatus";
-import { PaymentStatus } from "@/enums/paymentStatus";
-import { ShipmentStatus } from "@/enums/shipmentStatus";
+import { DiscountItem } from "@/types/Discount";
 
 const warehouseStore = useWarehouseStore();
 const customerStore = useCustomerStore();
 const saleStore = useSaleStore();
 const posSettingsStore = usePOSSettingsStore();
 const warehouseCurrencyStore = useWarehouseCurrencyStore();
+const discountStore = useDiscountStore();
 
 // UI state
 const warehouses = ref<WarehouseListItem[]>([]);
 const customers = ref<Customer[]>([]);
 const products = ref<SelectedSaleProduct[]>([]);
+const availableDiscounts = ref<DiscountItem[]>([]);
 
 const date = ref<string>(new Date().toISOString().split("T")[0]);
 const warehouseId = ref<number | null>(null);
 const customerId = ref<number | null>(null);
 
-const orderTax = ref("0");
-const discount = ref("0");
+// New discount fields
+const manualDiscountValue = ref("0");
+const manualDiscountType = ref<DiscountType | null>(null);
+const manualDiscountReason = ref("");
+const appliedDiscountId = ref<number | null>(null);
+const couponCode = ref("");
+
 const shippingCost = ref("0");
+const paidAmount = ref("0");
+const paymentStatus = ref<PaymentStatus>(PaymentStatus.PENDING);
 const saleStatusValue = ref<SaleStatus>(SaleStatus.PENDING);
-const shipmentStatusValue = ref<ShipmentStatus>(ShipmentStatus.PENDING);
 const note = ref("");
 const errorMessage = ref("Something went wrong. Please try again.");
 
-const paymentStatus = ref<PaymentStatus>(PaymentStatus.PENDING);
-const paidAmount = ref("0");
-const paymentMethod = ref("CASH");
-
-// Currency state (from POS)
-const currencyId = ref<number>(1); // fallback
+// Currency state
+const currencyId = ref<number>(1);
 const exchangeRate = ref<string>("1.0");
 
 onMounted(async () => {
@@ -105,72 +115,62 @@ watch(warehouseId, async (newWarehouseId) => {
   if (!newWarehouseId) return;
 
   try {
-    // Load POS settings for this warehouse
     const posSettings = await posSettingsStore.loadPOSSettings(newWarehouseId);
-
-    // Set default customer
     if (posSettings.defaultCustomerId) customerId.value = posSettings.defaultCustomerId;
 
-    // Set currency from POS settings
     if (posSettings.defaultCurrencyId) {
       currencyId.value = posSettings.defaultCurrencyId;
-
-      // Fetch exchange rate using POS currencyId
       await warehouseCurrencyStore.fetchOne(currencyId.value, newWarehouseId);
 
-      // Safely access current.value
-      const currentCurrency = warehouseCurrencyStore.current.value;
+      const currentCurrency = warehouseCurrencyStore.current;
       if (currentCurrency) {
-        exchangeRate.value = currentCurrency.exchangeRate ?? "1.0";
+        exchangeRate.value = (currentCurrency as any)?.exchangeRate ?? "1.0";
       } else {
-        exchangeRate.value = "1.0"; // fallback
+        exchangeRate.value = "1.0";
       }
+
+      exchangeRate.value = (currentCurrency as any)?.exchangeRate ?? "1.0";
     } else {
       currencyId.value = 1;
       exchangeRate.value = "1.0";
     }
+
+    // Fetch available system discounts for this warehouse
+    availableDiscounts.value = await discountStore.fetchActiveOrderDiscounts(newWarehouseId);
   } catch (err) {
-    console.error("Failed to load POS currency or exchange rate", err);
+    console.error("Failed to load POS settings", err);
     currencyId.value = 1;
     exchangeRate.value = "1.0";
   }
 });
 
-// -------------------
-// Add product to sale
-// -------------------
+// Add product – compute preview locally, but only raw data is sent later
 const addProduct = (product: SelectedSaleProduct) => {
-  const existing = products.value.find(p => p.productId === product.productId);
-
+  const existing = products.value.find((p) => p.productId === product.productId);
   if (existing) {
-    existing.saleQty = (existing.saleQty ?? 1) + (product.saleQty ?? 1);
-    const price = parseFloat(existing.price ?? "0");
-    const discount = parseFloat(existing.discount ?? "0");
-    const tax = parseFloat(existing.tax ?? "0");
-    existing.subTotal = ((price - discount + tax) * existing.saleQty).toFixed(2);
-  } else {
-    const qty = product.saleQty ?? 1;
-    const price = parseFloat(product.price ?? "0");
-    const discount = parseFloat(product.discount ?? "0");
-    const tax = parseFloat(product.tax ?? "0");
-    const subTotal = ((price - discount + tax) * qty).toFixed(2);
-    products.value.push({ ...product, saleQty: qty, subTotal });
+    existing.quantity += 1;
+    const calc = calculateSaleLine(existing);
+    existing.lineNetAmount = calc.lineNetAmount;
+    existing.lineTaxAmount = calc.lineTaxAmount;
+    existing.lineGrossAmount = calc.lineGrossAmount;
+    return;
   }
+
+  const calc = calculateSaleLine(product);
+  product.lineNetAmount = calc.lineNetAmount;
+  product.lineTaxAmount = calc.lineTaxAmount;
+  product.lineGrossAmount = calc.lineGrossAmount;
+  products.value.push(product);
 };
 
-// -------------------
-// Submit sale
-// -------------------
-const handleSubmit = async (payment?: CreatePaymentRequest) => {
+// Submit – build request with ONLY user‑entered data
+const handleSubmit = async () => {
   if (!date.value || !warehouseId.value || products.value.length === 0) {
     errorMessage.value = !warehouseId.value
       ? "Please select a warehouse."
       : "Please add at least one product.";
     document.getElementById("triggerErrorPopup")?.click();
-    setTimeout(
-      () => Offcanvas.getOrCreateInstance(document.getElementById("errorPopup")!).hide(),
-      3000
-    );
+    setTimeout(() => Offcanvas.getOrCreateInstance(document.getElementById("errorPopup")!).hide(), 3000);
     return;
   }
 
@@ -178,61 +178,59 @@ const handleSubmit = async (payment?: CreatePaymentRequest) => {
     date: date.value,
     warehouseId: warehouseId.value,
     customerId: customerId.value ?? null,
-    products: products.value.map(p => ({
+    products: products.value.map((p) => ({
       productId: p.productId,
-      productUnitPrice: p.price,
-      saleQty: p.saleQty,
-      productDiscount: p.discount,
-      productTax: p.tax,
+      quantity: p.quantity,
+      // Send unitPriceOverride only if the user explicitly changed the price
+      unitPriceOverride: undefined, // or p.productUnitPrice if overridden
     })),
-    orderTax: orderTax.value,
-    discount: discount.value,
-    shippingCost: shippingCost.value,
+    currencyId: currencyId.value,
+    exchangeRate: parseFloat(exchangeRate.value || "1"),
+    // Manual discount
+    manualDiscountValue: parseFloat(manualDiscountValue.value || "0") || undefined,
+    manualDiscountType: manualDiscountType.value ?? undefined,
+    manualDiscountReason: manualDiscountReason.value || undefined,
+    // System discount
+    appliedDiscountId: appliedDiscountId.value ?? undefined,
+    // Coupon
+    couponCode: couponCode.value || undefined,
+    shippingCost: parseFloat(shippingCost.value || "0"),
+    roundingAmount: 0,
+    paidAmountTxnCurrency: parseFloat(paidAmount.value || "0"),
+    shipmentStatus: ShipmentStatus.PENDING,
     saleStatus: saleStatusValue.value,
-    shipmentStatus: shipmentStatusValue.value,
-    note: note.value,
-    currencyId: currencyId.value,       // ✅ from POS settings
-    exchangeRate: exchangeRate.value,   // ✅ loaded from warehouse currency store
-    payments: payment ? [payment] : [],
-    source: "WEB",
+    paymentStatus: paymentStatus.value,
+    source: SaleSource.WEB,
+    note: note.value || undefined,
   };
 
   try {
     await saleStore.addSale(payload);
     resetForm();
     document.getElementById("triggerSuccessPopup")?.click();
-    setTimeout(
-      () => Offcanvas.getOrCreateInstance(document.getElementById("successPopup")!).hide(),
-      3000
-    );
+    setTimeout(() => Offcanvas.getOrCreateInstance(document.getElementById("successPopup")!).hide(), 3000);
   } catch (error: any) {
     errorMessage.value = error?.response?.data?.message ?? "Failed to create sale.";
     document.getElementById("triggerErrorPopup")?.click();
-    setTimeout(
-      () => Offcanvas.getOrCreateInstance(document.getElementById("errorPopup")!).hide(),
-      3000
-    );
+    setTimeout(() => Offcanvas.getOrCreateInstance(document.getElementById("errorPopup")!).hide(), 3000);
   }
 };
 
-// -------------------
-// Reset form
-// -------------------
 const resetForm = () => {
   date.value = new Date().toISOString().split("T")[0];
   warehouseId.value = null;
   customerId.value = null;
   products.value = [];
-  orderTax.value = "0";
-  discount.value = "0";
+  manualDiscountValue.value = "0";
+  manualDiscountType.value = null;
+  manualDiscountReason.value = "";
+  appliedDiscountId.value = null;
+  couponCode.value = "";
   shippingCost.value = "0";
-  saleStatusValue.value = SaleStatus.PENDING;
-  shipmentStatusValue.value = ShipmentStatus.PENDING;
-  note.value = "";
-  paymentStatus.value = PaymentStatus.PENDING;
   paidAmount.value = "0";
-  paymentMethod.value = "CASH";
-
+  paymentStatus.value = PaymentStatus.PENDING;
+  saleStatusValue.value = SaleStatus.PENDING;
+  note.value = "";
   currencyId.value = 1;
   exchangeRate.value = "1.0";
 };

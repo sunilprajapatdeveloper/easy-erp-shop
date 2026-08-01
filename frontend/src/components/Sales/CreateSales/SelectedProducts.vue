@@ -11,9 +11,9 @@
               <th scope="col" class="text-title fw-normal fs-14 pt-0 ls-1">UNIT PRICE</th>
               <th scope="col" class="text-title fw-normal fs-14 pt-0 ls-1">STOCK</th>
               <th scope="col" class="text-title fw-normal fs-14 pt-0 ls-1">QUANTITY</th>
-              <th scope="col" class="text-title fw-normal fs-14 pt-0 ls-1">DISCOUNT</th>
               <th scope="col" class="text-title fw-normal fs-14 pt-0 ls-1">TAX</th>
-              <th scope="col" class="text-title fw-normal fs-14 pt-0 ls-1">SUBTOTAL</th>
+              <th scope="col" class="text-title fw-normal fs-14 pt-0 ls-1">NET</th>
+              <th scope="col" class="text-title fw-normal fs-14 pt-0 ls-1">GROSS</th>
               <th scope="col" class="text-title fw-normal fs-14 pt-0 ls-1 text-end pe-0">DELETE</th>
             </tr>
           </thead>
@@ -26,7 +26,7 @@
                 {{ product.code }}
               </td>
               <td class="shadow-none lh-1 fs-14 fw-normal text-paragraph">
-                {{ product.price }}
+                ${{ product.productUnitPrice.toFixed(2) }}
               </td>
               <td class="shadow-none lh-1 fs-14 fw-normal text-paragraph">
                 <span class="badge badge-success fw-semibold fs-14">
@@ -34,17 +34,17 @@
                 </span>
               </td>
               <td class="shadow-none lh-1 fs-14 fw-normal text-paragraph">
-                <QuantityCounter v-model="product.saleQty" :min="1" :max="product.stock"
-                  @update:modelValue="newQty => updateQuantity(index, newQty)" />
+                <QuantityCounter v-model="product.quantity" :min="1" :max="product.stock"
+                  @update:modelValue="(newQty) => updateQuantity(index, newQty)" />
               </td>
               <td class="shadow-none lh-1 fs-14 fw-normal text-paragraph">
-                {{ product.discount }}
+                ${{ (product.lineTaxAmount ?? 0).toFixed(2) }}
               </td>
               <td class="shadow-none lh-1 fs-14 fw-normal text-paragraph">
-                {{ product.tax }}
+                ${{ (product.lineNetAmount ?? 0).toFixed(2) }}
               </td>
               <td class="shadow-none lh-1 fs-14 fw-normal text-paragraph">
-                {{ product.subTotal }}
+                ${{ (product.lineGrossAmount ?? 0).toFixed(2) }}
               </td>
               <td class="shadow-none lh-1 text-end pe-0">
                 <div class="button-group style-two ms-auto d-flex flex-wrap align-items-center">
@@ -62,26 +62,28 @@
 </template>
 
 <script lang="ts" setup>
-import { defineProps, defineEmits } from "vue";
 import QuantityCounter from "./QuantityCounter.vue";
 import type { SelectedSaleProduct } from "@/types/Sale";
+import { calculateSaleLine } from "@/utils/saleCalculations";
 
 const props = defineProps<{ products: SelectedSaleProduct[] }>();
-
 const emit = defineEmits<{
   (e: "update:products", value: SelectedSaleProduct[]): void;
 }>();
 
 function updateQuantity(index: number, newQty: number) {
-  const updated = props.products.map((p, i) =>
-    i === index
-      ? {
-        ...p,
-        saleQty: newQty,
-        subTotal: calculateSubtotal(p.price, p.discount, p.tax, newQty),
-      }
-      : p
-  );
+  const updated = props.products.map((p, i) => {
+    if (i !== index) return p;
+    const calc = calculateSaleLine({ ...p, quantity: newQty });
+    return {
+      ...p,
+      quantity: newQty,
+      lineDiscountAmount: calc.lineDiscountAmount,
+      lineNetAmount: calc.lineNetAmount,
+      lineTaxAmount: calc.lineTaxAmount,
+      lineGrossAmount: calc.lineGrossAmount,
+    };
+  });
   emit("update:products", updated);
 }
 
@@ -89,18 +91,5 @@ function removeProduct(index: number) {
   const updated = [...props.products];
   updated.splice(index, 1);
   emit("update:products", updated);
-}
-
-function calculateSubtotal(
-  unitPrice: string,
-  discount: string,
-  tax: string,
-  qty: number
-): string {
-  const cost = parseFloat(unitPrice || "0");
-  const dis = parseFloat(discount || "0");
-  const tx = parseFloat(tax || "0");
-  const subtotal = (cost - dis + tx) * qty;
-  return subtotal.toFixed(2);
 }
 </script>

@@ -102,8 +102,8 @@
             <span>Showing data for warehouse: <strong>{{ warehouseName || warehouseId }}</strong></span>
           </div>
 
-          <!-- Tabs Navigation (responsive with scale underline) -->
-          <ul class="nav table-tablist mb-4" role="tablist">
+          <!-- Tabs Navigation (responsive) -->
+          <ul class="nav table-tablist mb-4 pb-2" role="tablist">
             <li class="nav-item" role="presentation">
               <button class="nav-link active" id="general-tab" data-bs-toggle="tab" data-bs-target="#general"
                 type="button" role="tab">
@@ -220,12 +220,12 @@
                         <tr>
                           <th>Created</th>
                           <td>{{ formatDate(product.createdAt) }} <span v-if="product.createdBy">(by User {{
-                              product.createdBy }})</span></td>
+                            product.createdBy }})</span></td>
                         </tr>
                         <tr>
                           <th>Last Updated</th>
                           <td>{{ formatDate(product.updatedAt) }} <span v-if="product.updatedBy">(by User {{
-                              product.updatedBy }})</span></td>
+                            product.updatedBy }})</span></td>
                         </tr>
                       </tbody>
                     </table>
@@ -269,7 +269,7 @@
                           <tr>
                             <th>Currency</th>
                             <td>{{ product.price.currencyCode }} ({{ product.price.currencySymbol }})</td>
-                          <tr>
+                          </tr>
                           <tr>
                             <th>Price List</th>
                             <td>{{ product.price.priceList || 'Default' }}</td>
@@ -388,7 +388,6 @@
                           <tr>
                             <th>Last Count Date</th>
                             <td>{{ product.stock.lastCountDate ? formatDate(product.stock.lastCountDate) : '—' }}</td>
-                            </td>
                           </tr>
                           <tr>
                             <th>Next Count Date</th>
@@ -433,7 +432,7 @@
                           </tr>
                           <tr>
                             <th>Tax Type</th>
-                            <td>{{ product.tax.taxType }}</td>
+                            <td>{{ product.tax.taxCategory }}</td>
                           </tr>
                           <tr>
                             <th>Tax Code</th>
@@ -445,7 +444,7 @@
                           </tr>
                           <tr>
                             <th>Is Inclusive</th>
-                            <td>{{ product.tax.isInclusive ? 'Yes' : 'No' }}</td>
+                            <td>{{ product.tax.overrideInclusionType ? 'Yes' : 'No' }}</td>
                           </tr>
                           <tr>
                             <th>Is Compound</th>
@@ -625,13 +624,13 @@ export default defineComponent({
 </script>
 
 <style scoped>
-/* ========== TABLIST (RESPONSIVE WITH SCALE UNDERLINE) ========== */
+/* ========== TABLIST (RESPONSIVE) ========== */
 .table-tablist {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
   border-bottom: 1px solid #dadada;
-  padding-bottom: 0;
+  padding-bottom: 8px;
   margin-bottom: 1.5rem;
 }
 
@@ -652,19 +651,6 @@ export default defineComponent({
   cursor: pointer;
   white-space: nowrap;
   transition: all 0.2s;
-  overflow: hidden;
-}
-
-.table-tablist .nav-link:after {
-  content: '';
-  position: absolute;
-  bottom: -1px;
-  left: 0;
-  width: 100%;
-  height: 3px;
-  background: #4f46e5;
-  transform: scaleX(0);
-  transition: transform 0.2s ease;
 }
 
 .table-tablist .nav-link.active {
@@ -673,8 +659,23 @@ export default defineComponent({
   box-shadow: 0px 4px 20px 0px rgba(79, 70, 229, 0.2);
 }
 
+.table-tablist .nav-link:after {
+  position: absolute;
+  bottom: -9px;
+  left: 0;
+  content: "";
+  width: 0%;
+  height: 3px;
+  background-color: #4f46e5;
+  transition: all 0.3s;
+  visibility: hidden;
+  opacity: 0;
+}
+
 .table-tablist .nav-link.active:after {
-  transform: scaleX(1);
+  width: 100%;
+  visibility: visible;
+  opacity: 1;
 }
 
 @media (min-width: 576px) {
@@ -684,7 +685,8 @@ export default defineComponent({
   }
 
   .table-tablist .nav-link:after {
-    height: 3px;
+    bottom: -12px;
+    height: 4px;
   }
 }
 
@@ -695,7 +697,8 @@ export default defineComponent({
   }
 
   .table-tablist .nav-link:after {
-    height: 4px;
+    bottom: -18px;
+    height: 5px;
   }
 }
 

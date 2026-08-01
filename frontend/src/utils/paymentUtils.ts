@@ -12,20 +12,19 @@ const getTodayDate = (): string => new Date().toISOString().split("T")[0];
  * Builds a CreatePaymentRequest for SALE payments.
  */
 export function buildSalePaymentRequest(params: {
-  amount: number;
+  amountTxnCurrency: number;
   paymentMethod: PaymentMethod;
   status?: PaymentStatus;
   currencyCode?: string;
   exchangeRate?: number;
-  baseCurrencyAmount?: number;
-  paymentData?: Record<string, any>;
-  note?: string;
+  amountBaseCurrency?: number;
+  paymentMetadata?: Record<string, any> | string;
   transactionReference?: string;
   idempotencyKey?: string;
 }): CreatePaymentRequest {
   const posStore = usePosStore();
 
-  // Prefer store data for faster access, fallback to localStorage
+  // Retrieve sale data (store or localStorage fallback)
   const saleData =
     posStore.temporarySale ??
     (() => {
@@ -36,9 +35,21 @@ export function buildSalePaymentRequest(params: {
   if (!saleData?.id) {
     throw new Error("Missing sale ID for payment request.");
   }
-
   if (!saleData?.referenceNumber) {
     throw new Error("Missing sale reference number for payment request.");
+  }
+
+  // Ensure idempotency key is present (required by backend)
+  const idempotencyKey =
+    params.idempotencyKey ?? `sale_${saleData.id}_${Date.now()}`;
+
+  // Serialize paymentMetadata if it's an object
+  let paymentMetadata: string | undefined;
+  if (params.paymentMetadata) {
+    paymentMetadata =
+      typeof params.paymentMetadata === "object"
+        ? JSON.stringify(params.paymentMetadata)
+        : params.paymentMetadata;
   }
 
   return {
@@ -46,17 +57,16 @@ export function buildSalePaymentRequest(params: {
     referenceId: saleData.id,
     referenceNumber: saleData.referenceNumber,
     paymentType: PaymentType.INCOMING,
-    amount: params.amount,
-    baseCurrencyAmount: params.baseCurrencyAmount ?? params.amount, // default to same as txn amount
+    amountTxnCurrency: params.amountTxnCurrency,
+    amountBaseCurrency: params.amountBaseCurrency ?? params.amountTxnCurrency,
     currencyCode: params.currencyCode ?? "INR",
     exchangeRate: params.exchangeRate ?? 1,
     paymentMethod: params.paymentMethod,
     gatewayProvider: undefined,
-    paymentData: params.paymentData,
+    paymentMetadata,
     status: params.status ?? PaymentStatus.PENDING,
     paymentDate: getTodayDate(),
-    note: params.note,
     transactionReference: params.transactionReference,
-    idempotencyKey: params.idempotencyKey,
+    idempotencyKey,
   };
 }

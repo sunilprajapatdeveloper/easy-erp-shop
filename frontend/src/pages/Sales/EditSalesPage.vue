@@ -9,8 +9,11 @@
 
     <SelectedProducts v-if="products.length" v-model:products="products" />
 
-    <SubmitPurchase v-model:orderTax="orderTax" v-model:discount="discount" v-model:shippingCost="shippingCost"
-      v-model:note="note" v-model:status="saleStatus" :products="products" @submit="handleSubmit" />
+    <SubmitSale v-model:manualDiscountValue="manualDiscountValue" v-model:manualDiscountType="manualDiscountType"
+      v-model:manualDiscountReason="manualDiscountReason" v-model:appliedDiscountId="appliedDiscountId"
+      v-model:couponCode="couponCode" v-model:shippingCost="shippingCost" v-model:paidAmount="paidAmount"
+      v-model:paymentStatus="paymentStatus" v-model:saleStatus="saleStatus" v-model:note="note" :products="products"
+      :availableDiscounts="availableDiscounts" @submit="handleSubmit" />
 
     <div class="flex-grow-1"></div>
     <MainFooter />
@@ -41,23 +44,28 @@
 import { ref, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { Offcanvas } from "bootstrap";
-import type { SelectedSaleProduct, CreateSaleRequest } from "@/types/Sale";
+import type { SelectedSaleProduct, UpdateSaleRequest } from "@/types/Sale";
 import type { Customer } from "@/types/Customer";
-import type { Warehouse } from "@/types/Warehouse";
+import type { WarehouseListItem } from "@/types/Warehouse";
+import { DiscountType } from "@/enums/discountType";
+import { SaleStatus } from "@/enums/saleStatus";
+import { PaymentStatus } from "@/enums/paymentStatus";
+import { SaleSource } from "@/enums/SaleSource";
 
 import { useSaleStore } from "@/stores/saleStore";
 import { useWarehouseStore } from "@/stores/warehouseStore";
 import { useCustomerStore } from "@/stores/customerStore";
 import { useProductStore } from "@/stores/productStore";
+import { useDiscountStore } from "@/stores/discountStore";
 
 import MainHeader from "@/components/Layouts/MainHeader.vue";
 import MainSidebar from "@/components/Layouts/MainSidebar.vue";
 import BreadcrumbMenu from "@/components/Common/BreadcrumbMenu.vue";
 import ChooseForm from "@/components/Sales/CreateSales/ChooseForm.vue";
 import SelectedProducts from "@/components/Sales/CreateSales/SelectedProducts.vue";
-import SubmitPurchase from "@/components/Sales/CreateSales/SubmitPurchase.vue";
+import SubmitSale from "@/components/Sales/CreateSales/SubmitSale.vue";
 import MainFooter from "@/components/Layouts/MainFooter.vue";
-import { SaleStatus } from "@/enums/saleStatus";
+import { DiscountItem } from "@/types/Discount";
 
 const route = useRoute();
 const router = useRouter();
@@ -67,20 +75,29 @@ const saleStore = useSaleStore();
 const warehouseStore = useWarehouseStore();
 const customerStore = useCustomerStore();
 const productStore = useProductStore();
+const discountStore = useDiscountStore();
 
 const date = ref<string>("");
 const warehouseId = ref<number | null>(null);
 const customerId = ref<number | null>(null);
-const orderTax = ref("0");
-const discount = ref("0");
+
+const manualDiscountValue = ref("0");
+const manualDiscountType = ref<DiscountType | null>(null);
+const manualDiscountReason = ref("");
+const appliedDiscountId = ref<number | null>(null);
+const couponCode = ref("");
+
 const shippingCost = ref("0");
+const paidAmount = ref("0");
+const paymentStatus = ref<PaymentStatus>(PaymentStatus.PENDING);
 const saleStatus = ref<SaleStatus>(SaleStatus.PENDING);
 const note = ref("");
 const errorMessage = ref("Something went wrong. Please try again.");
 
-const warehouses = ref<Warehouse[]>([]);
+const warehouses = ref<WarehouseListItem[]>([]);
 const customers = ref<Customer[]>([]);
 const products = ref<SelectedSaleProduct[]>([]);
+const availableDiscounts = ref<DiscountItem[]>([]);
 
 onMounted(async () => {
   warehouses.value = await warehouseStore.fetchWarehouses();
@@ -96,38 +113,49 @@ onMounted(async () => {
 
     date.value = sale.date;
     warehouseId.value = sale.warehouseId;
-    customerId.value = sale.customerId;
-    orderTax.value = sale.orderTax;
-    discount.value = sale.discount;
-    shippingCost.value = sale.shippingCost;
+    customerId.value = sale.customerId ?? null;
+
+    // Populate discount fields from loaded sale
+    if (sale.discountSource === "MANUAL") {
+      manualDiscountValue.value = String(sale.orderDiscountValue ?? sale.orderDiscount ?? 0);
+      manualDiscountType.value = sale.orderDiscountType ?? null;
+      manualDiscountReason.value = sale.discountDescription ?? "";
+    } else if (sale.discountSource === "SYSTEM") {
+      appliedDiscountId.value = sale.appliedDiscountId ?? null;
+    }
+    couponCode.value = sale.promotionCouponCode ?? "";
+    shippingCost.value = String(sale.shippingCost ?? 0);
+    paidAmount.value = String(sale.paidAmountTxnCurrency ?? 0);
+    paymentStatus.value = sale.paymentStatus ?? PaymentStatus.PENDING;
     saleStatus.value = sale.saleStatus;
     note.value = sale.note ?? "";
 
+    // Load available discounts for the warehouse
+    availableDiscounts.value = await discountStore.fetchActiveOrderDiscounts(sale.warehouseId);
+
+    // Map products
     products.value = await Promise.all(
       sale.products.map(async (p) => {
-        const unitPrice = parseFloat(p.productUnitPrice ?? "0");
-        const discount = parseFloat(p.productDiscount ?? "0");
-        const tax = parseFloat(p.productTax ?? "0");
-        const qty = p.saleQty ?? 0;
-
-        const subTotal = ((unitPrice - discount + tax) * qty).toFixed(2);
-
-        // Fetch real stock
         const realProduct = await productStore.fetchProductById(p.productId);
-        const stock = realProduct?.quantity ?? 0;
+        const stock = realProduct?.stock?.availableQuantity ?? realProduct?.stock?.quantity ?? 0;
 
         return {
           productId: p.productId,
-          productName: p.productName,
-          code: p.productCode,
-          price: p.productUnitPrice,
-          discount: p.productDiscount,
-          tax: p.productTax,
-          taxType: "EXCLUSIVE" as const,
-          saleQty: qty,
-          subTotal,
+          productName: p.productName ?? realProduct?.name ?? "",
+          code: p.productCode ?? realProduct?.code ?? "",
+          productUnitPrice: p.productUnitPrice,
+          quantity: p.quantity,
           stock,
-        };
+          taxName: p.taxName,
+          taxCategory: p.taxCategory,
+          taxRate: p.taxRate,
+          taxInclusionType: p.taxInclusionType,
+          taxApplicationOrder: p.taxApplicationOrder,
+          lineDiscountAmount: p.lineDiscountAmount,
+          lineNetAmount: p.lineNetAmount,
+          lineTaxAmount: p.lineTaxAmount,
+          lineGrossAmount: p.lineGrossAmount,
+        } satisfies SelectedSaleProduct;
       })
     );
   } catch (err) {
@@ -139,19 +167,8 @@ onMounted(async () => {
 });
 
 const addProduct = (product: SelectedSaleProduct) => {
-  if (!products.value.some(p => p.productId === product.productId)) {
-    const qty = product.saleQty ?? 1;
-    const price = parseFloat(product.price ?? "0");
-    const discount = parseFloat(product.discount ?? "0");
-    const tax = parseFloat(product.tax ?? "0");
-
-    const subTotal = ((price - discount + tax) * qty).toFixed(2);
-
-    products.value.push({
-      ...product,
-      saleQty: qty,
-      subTotal,
-    });
+  if (!products.value.some((p) => p.productId === product.productId)) {
+    products.value.push({ ...product, quantity: product.quantity ?? 1 });
   }
 };
 
@@ -160,31 +177,31 @@ const handleSubmit = async () => {
     errorMessage.value = !warehouseId.value
       ? "Please select a warehouse."
       : "Please add at least one product.";
-
     document.getElementById("triggerErrorPopup")?.click();
     setTimeout(() => Offcanvas.getOrCreateInstance(document.getElementById("errorPopup")!)?.hide(), 3000);
     return;
   }
 
-  const payload: CreateSaleRequest = {
+  const payload: UpdateSaleRequest = {
     date: date.value,
     warehouseId: warehouseId.value,
     customerId: customerId.value,
-    products: products.value.map(p => ({
+    products: products.value.map((p) => ({
       productId: p.productId,
-      productName: p.productName,
-      productCode: p.code,
-      productUnitPrice: p.price,
-      saleQty: p.saleQty,
-      productDiscount: p.discount,
-      productTax: p.tax,
-      subTotal: p.subTotal,
+      quantity: p.quantity,
+      unitPriceOverride: undefined,
     })),
-    orderTax: orderTax.value,
-    discount: discount.value,
-    shippingCost: shippingCost.value,
+    manualDiscountValue: parseFloat(manualDiscountValue.value || "0") || undefined,
+    manualDiscountType: manualDiscountType.value ?? undefined,
+    manualDiscountReason: manualDiscountReason.value || undefined,
+    appliedDiscountId: appliedDiscountId.value ?? undefined,
+    couponCode: couponCode.value || undefined,
+    shippingCost: parseFloat(shippingCost.value || "0"),
+    roundingAmount: 0,
     saleStatus: saleStatus.value,
-    note: note.value,
+    paymentStatus: paymentStatus.value,
+    source: SaleSource.WEB,
+    note: note.value || undefined,
   };
 
   try {
