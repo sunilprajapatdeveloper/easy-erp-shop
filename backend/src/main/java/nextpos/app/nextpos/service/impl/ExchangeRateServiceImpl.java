@@ -9,8 +9,9 @@ import nextpos.app.nextpos.model.enums.ExchangeRateLevel;
 import nextpos.app.nextpos.repository.CurrencyRepository;
 import nextpos.app.nextpos.repository.CompanyRepository;
 import nextpos.app.nextpos.repository.ExchangeRateRepository;
-import nextpos.app.nextpos.repository.WarehouseRepository;
 import nextpos.app.nextpos.service.interf.ExchangeRateService;
+import nextpos.app.nextpos.security.context.UserContext;
+import nextpos.app.nextpos.security.access.WarehouseAccessService;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,10 +27,17 @@ public class ExchangeRateServiceImpl implements ExchangeRateService {
     private final ExchangeRateRepository exchangeRateRepository;
     private final CurrencyRepository currencyRepository;
     private final CompanyRepository companyRepository;
-    private final WarehouseRepository warehouseRepository;
+    private final WarehouseAccessService warehouseAccessService;
 
     @Override
     public ExchangeRateResponse createExchangeRate(CreateExchangeRateRequest request) {
+        Long companyId = UserContext.getCurrentCompanyId();
+        if (request.getCompanyId() != null && !companyId.equals(request.getCompanyId())) {
+            throw new SecurityException("Company identifier does not match authenticated tenant");
+        }
+        if (request.getLevel() == ExchangeRateLevel.GLOBAL) {
+            throw new SecurityException("Global exchange rates are system-managed reference data");
+        }
 
         Currency base = currencyRepository.findById(request.getBaseCurrencyId())
                 .orElseThrow(() -> new IllegalArgumentException("Base currency not found"));
@@ -40,17 +48,14 @@ public class ExchangeRateServiceImpl implements ExchangeRateService {
         Warehouse warehouse = null;
 
         if (request.getLevel() == ExchangeRateLevel.COMPANY || request.getLevel() == ExchangeRateLevel.WAREHOUSE) {
-            if (request.getCompanyId() == null)
-                throw new IllegalArgumentException("Company ID required for this level");
-            company = companyRepository.findById(request.getCompanyId())
+            company = companyRepository.findById(companyId)
                     .orElseThrow(() -> new IllegalArgumentException("Company not found"));
         }
 
         if (request.getLevel() == ExchangeRateLevel.WAREHOUSE) {
             if (request.getWarehouseId() == null)
                 throw new IllegalArgumentException("Warehouse ID required for WAREHOUSE level");
-            warehouse = warehouseRepository.findById(request.getWarehouseId())
-                    .orElseThrow(() -> new IllegalArgumentException("Warehouse not found"));
+            warehouse = warehouseAccessService.requireAccessible(request.getWarehouseId());
         }
 
         // Prevent duplicate exchange rate for same scope
@@ -89,8 +94,10 @@ public class ExchangeRateServiceImpl implements ExchangeRateService {
 
     @Override
     public ExchangeRateResponse updateExchangeRate(Long id, UpdateExchangeRateRequest request) {
-        ExchangeRate entity = exchangeRateRepository.findById(id)
+        Long companyId = UserContext.getCurrentCompanyId();
+        ExchangeRate entity = exchangeRateRepository.findByIdAndCompany_Id(id, companyId)
                 .orElseThrow(() -> new IllegalArgumentException("Exchange rate not found"));
+        validateWarehouse(entity);
 
         if (request.getRate() != null)
             entity.setRate(request.getRate());
@@ -114,19 +121,20 @@ public class ExchangeRateServiceImpl implements ExchangeRateService {
             entity.setValidFrom(request.getValidFrom());
         if (request.getValidTo() != null)
             entity.setValidTo(request.getValidTo());
+        if (request.getLevel() == ExchangeRateLevel.GLOBAL)
+            throw new SecurityException("Global exchange rates are system-managed reference data");
         if (request.getLevel() != null)
             entity.setLevel(request.getLevel());
 
         // Optional: update company/warehouse scope
         if (request.getCompanyId() != null) {
-            Company company = companyRepository.findById(request.getCompanyId())
-                    .orElseThrow(() -> new IllegalArgumentException("Company not found"));
-            entity.setCompany(company);
+            if (!companyId.equals(request.getCompanyId())) {
+                throw new SecurityException("Company identifier does not match authenticated tenant");
+            }
         }
 
         if (request.getWarehouseId() != null) {
-            Warehouse warehouse = warehouseRepository.findById(request.getWarehouseId())
-                    .orElseThrow(() -> new IllegalArgumentException("Warehouse not found"));
+            Warehouse warehouse = warehouseAccessService.requireAccessible(request.getWarehouseId());
             entity.setWarehouse(warehouse);
         }
 
@@ -136,22 +144,28 @@ public class ExchangeRateServiceImpl implements ExchangeRateService {
 
     @Override
     public ExchangeRateResponse getExchangeRate(Long id) {
-        ExchangeRate entity = exchangeRateRepository.findById(id)
+        ExchangeRate entity = exchangeRateRepository.findAccessibleById(id, UserContext.getCurrentCompanyId())
                 .orElseThrow(() -> new IllegalArgumentException("Exchange rate not found"));
+        validateWarehouse(entity);
         return toResponse(entity);
     }
 
     @Override
     public void deleteExchangeRate(Long id) {
-        ExchangeRate entity = exchangeRateRepository.findById(id)
+        ExchangeRate entity = exchangeRateRepository.findByIdAndCompany_Id(id, UserContext.getCurrentCompanyId())
                 .orElseThrow(() -> new IllegalArgumentException("Exchange rate not found"));
+        validateWarehouse(entity);
         exchangeRateRepository.delete(entity);
     }
 
     @Override
     public List<ExchangeRateResponse> getAllExchangeRates() {
-        return exchangeRateRepository.findAll()
+        var accessibleWarehouseIds = warehouseAccessService.accessibleWarehouses().stream()
+                .map(Warehouse::getId).collect(Collectors.toSet());
+        return exchangeRateRepository.findTenantAndGlobal(UserContext.getCurrentCompanyId())
                 .stream()
+                .filter(rate -> rate.getWarehouse() == null
+                        || accessibleWarehouseIds.contains(rate.getWarehouse().getId()))
                 .map(this::toResponse)
                 .collect(Collectors.toList());
     }
@@ -159,6 +173,11 @@ public class ExchangeRateServiceImpl implements ExchangeRateService {
     @Override
     public ExchangeRateResponse findExchangeRate(Long baseCurrencyId, Long targetCurrencyId, Long companyId,
             Long warehouseId) {
+
+        Long authenticatedCompanyId = UserContext.getCurrentCompanyId();
+        if (companyId != null && !authenticatedCompanyId.equals(companyId)) {
+            throw new SecurityException("Company identifier does not match authenticated tenant");
+        }
 
         Currency base = currencyRepository.findById(baseCurrencyId)
                 .orElseThrow(() -> new IllegalArgumentException("Base currency not found"));
@@ -168,14 +187,13 @@ public class ExchangeRateServiceImpl implements ExchangeRateService {
         Company companyTemp = null;
         Warehouse warehouseTemp = null;
 
-        if (companyId != null) {
-            companyTemp = companyRepository.findById(companyId)
+        if (authenticatedCompanyId != null) {
+            companyTemp = companyRepository.findById(authenticatedCompanyId)
                     .orElseThrow(() -> new IllegalArgumentException("Company not found"));
         }
 
         if (warehouseId != null) {
-            warehouseTemp = warehouseRepository.findById(warehouseId)
-                    .orElseThrow(() -> new IllegalArgumentException("Warehouse not found"));
+            warehouseTemp = warehouseAccessService.requireAccessible(warehouseId);
         }
 
         // Make them final for lambda usage
@@ -236,5 +254,11 @@ public class ExchangeRateServiceImpl implements ExchangeRateService {
                 .updatedAt(entity.getUpdatedAt())
                 .version(entity.getVersion())
                 .build();
+    }
+
+    private void validateWarehouse(ExchangeRate entity) {
+        if (entity.getWarehouse() != null) {
+            warehouseAccessService.requireAccessible(entity.getWarehouse().getId());
+        }
     }
 }
