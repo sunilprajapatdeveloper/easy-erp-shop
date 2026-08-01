@@ -21,6 +21,9 @@ public interface SaleRepository extends JpaRepository<Sale, Long> {
     @NonNull
     Optional<Sale> findById(@NonNull Long id);
 
+    @EntityGraph(attributePaths = { "products", "appliedPromotion", "customer", "warehouse", "currency" })
+    Optional<Sale> findByIdAndCompanyId(Long id, Long companyId);
+
     @EntityGraph(attributePaths = { "products", "appliedPromotion" })
     @NonNull
     Optional<Sale> findByReferenceNumber(@NonNull String referenceNumber);

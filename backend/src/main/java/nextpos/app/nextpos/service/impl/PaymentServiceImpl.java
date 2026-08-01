@@ -17,6 +17,7 @@ import nextpos.app.nextpos.repository.SaleRepository;
 import nextpos.app.nextpos.security.context.UserContext;
 import nextpos.app.nextpos.service.interf.PaymentService;
 import nextpos.app.nextpos.strategy.PaymentStrategy;
+import nextpos.app.nextpos.security.access.WarehouseAccessService;
 import org.springframework.stereotype.Service;
 import org.json.JSONObject;
 
@@ -35,11 +36,20 @@ public class PaymentServiceImpl implements PaymentService {
     private final PaymentRepository paymentRepository;
     private final SaleRepository saleRepository;
     private final PaymentStrategyFactory strategyFactory;
+    private final WarehouseAccessService warehouseAccessService;
 
     @Override
     @Transactional
     public PaymentResponse createPayment(CreatePaymentRequest request) {
         Long companyId = UserContext.getCurrentCompanyId();
+        if (request.getWarehouseId() != null) {
+            warehouseAccessService.requireAccessible(request.getWarehouseId());
+        }
+        if (request.getReferenceType() == PaymentSourceType.SALE && request.getReferenceId() != null) {
+            Sale sale = saleRepository.findByIdAndCompanyId(request.getReferenceId(), companyId)
+                    .orElseThrow(() -> new PaymentProcessingException("Referenced sale not found"));
+            warehouseAccessService.requireAssignment(sale.getWarehouse().getId());
+        }
 
         // Check idempotency
         if (request.getIdempotencyKey() != null && !request.getIdempotencyKey().isBlank()) {
@@ -72,8 +82,9 @@ public class PaymentServiceImpl implements PaymentService {
     @Transactional
     public PaymentResponse processPayment(Long saleId, CreatePaymentRequest request) {
         // Fetch the associated Sale to get its reference number
-        Sale sale = saleRepository.findById(saleId)
+        Sale sale = saleRepository.findByIdAndCompanyId(saleId, UserContext.getCurrentCompanyId())
                 .orElseThrow(() -> new RuntimeException("Sale not found with ID: " + saleId));
+        warehouseAccessService.requireAssignment(sale.getWarehouse().getId());
 
         // Enrich the payment request with the actual sale reference info
         CreatePaymentRequest enrichedRequest = CreatePaymentRequest.builder()
@@ -105,8 +116,9 @@ public class PaymentServiceImpl implements PaymentService {
     @Transactional
     public PaymentResponse updatePayment(Long id, UpdatePaymentRequest request) {
         Long userId = UserContext.getCurrentUserId();
+        Long companyId = UserContext.getCurrentCompanyId();
 
-        Payment payment = paymentRepository.findById(id)
+        Payment payment = paymentRepository.findByIdAndCompanyId(id, companyId)
                 .orElseThrow(() -> new IllegalArgumentException("Payment not found"));
 
         boolean recalcBase = false;
@@ -164,6 +176,7 @@ public class PaymentServiceImpl implements PaymentService {
             payment.setReferenceAmount(scale4(request.getReferenceAmount()));
         }
         if (request.getWarehouseId() != null) {
+            warehouseAccessService.requireAccessible(request.getWarehouseId());
             payment.setWarehouseId(request.getWarehouseId());
         }
         if (request.getPosTerminalId() != null) {
@@ -183,23 +196,29 @@ public class PaymentServiceImpl implements PaymentService {
     @Override
     @Transactional
     public void deletePayment(Long id) {
-        if (!paymentRepository.existsById(id)) {
-            throw new IllegalArgumentException("Payment not found");
-        }
-        paymentRepository.deleteById(id);
+        Payment payment = paymentRepository.findByIdAndCompanyId(id, UserContext.getCurrentCompanyId())
+                .orElseThrow(() -> new IllegalArgumentException("Payment not found"));
+        if (payment.getWarehouseId() != null) warehouseAccessService.requireAssignment(payment.getWarehouseId());
+        paymentRepository.delete(payment);
     }
 
     @Override
     public PaymentResponse getPayment(Long id) {
-        Payment payment = paymentRepository.findById(id)
+        Payment payment = paymentRepository.findByIdAndCompanyId(id, UserContext.getCurrentCompanyId())
                 .orElseThrow(() -> new IllegalArgumentException("Payment not found"));
+        if (payment.getWarehouseId() != null) warehouseAccessService.requireAssignment(payment.getWarehouseId());
         return toResponse(payment);
     }
 
     @Override
     public List<PaymentResponse> getPaymentsByReference(PaymentSourceType referenceType, Long referenceId) {
-        return paymentRepository.findByReferenceTypeAndReferenceId(referenceType, referenceId)
+        return paymentRepository.findByReferenceTypeAndReferenceIdAndCompanyId(
+                        referenceType, referenceId, UserContext.getCurrentCompanyId())
                 .stream()
+                .filter(payment -> payment.getWarehouseId() == null
+                        || UserContext.canAccessWarehouse(payment.getWarehouseId())
+                        || UserContext.getAuthenticatedUser().getAuthorities().stream()
+                                .anyMatch(a -> "ROLE_COMPANY_OWNER".equals(a.getAuthority())))
                 .map(this::toResponse)
                 .collect(Collectors.toList());
     }

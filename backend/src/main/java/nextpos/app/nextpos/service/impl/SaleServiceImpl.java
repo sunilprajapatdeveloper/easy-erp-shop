@@ -14,6 +14,7 @@ import nextpos.app.nextpos.security.context.UserContext;
 import nextpos.app.nextpos.service.interf.SaleCalculationService;
 import nextpos.app.nextpos.service.interf.SaleService;
 import nextpos.app.nextpos.service.interf.StockValidationService;
+import nextpos.app.nextpos.security.access.WarehouseAccessService;
 import nextpos.app.nextpos.util.ReferenceNumberGenerator;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,6 +37,7 @@ public class SaleServiceImpl implements SaleService {
     private final DiscountRepository discountRepository;
     private final SaleCalculationService saleCalculationService;
     private final StockValidationService stockValidationService;
+    private final WarehouseAccessService warehouseAccessService;
 
     @Override
     @Transactional
@@ -43,11 +45,10 @@ public class SaleServiceImpl implements SaleService {
         Long userId = UserContext.getCurrentUserId();
         Long companyId = UserContext.getCurrentCompanyId();
 
-        Warehouse warehouse = warehouseRepository.findById(request.getWarehouseId())
-                .orElseThrow(() -> new ResourceNotFoundException("Warehouse not found"));
+        Warehouse warehouse = warehouseAccessService.requireAccessible(request.getWarehouseId());
         Customer customer = null;
         if (request.getCustomerId() != null) {
-            customer = customerRepository.findById(request.getCustomerId())
+            customer = customerRepository.findByIdAndCompanyId(request.getCustomerId(), companyId)
                     .orElseThrow(() -> new ResourceNotFoundException("Customer not found"));
         }
         Currency currency = currencyRepository.findById(request.getCurrencyId())
@@ -87,7 +88,7 @@ public class SaleServiceImpl implements SaleService {
 
         // Set system discount if provided
         if (request.getAppliedDiscountId() != null) {
-            Discount discount = discountRepository.findById(request.getAppliedDiscountId())
+            Discount discount = discountRepository.findByIdAndCompanyId(request.getAppliedDiscountId(), companyId)
                     .orElseThrow(() -> new ResourceNotFoundException("Discount not found"));
             sale.setAppliedDiscount(discount);
         }
@@ -99,7 +100,7 @@ public class SaleServiceImpl implements SaleService {
 
         // Build products
         List<SaleProduct> products = request.getProducts().stream().map(p -> {
-            Product product = productRepository.findById(p.getProductId())
+            Product product = productRepository.findByIdAndCompanyIdAndIsDeletedFalse(p.getProductId(), companyId)
                     .orElseThrow(() -> new ResourceNotFoundException("Product not found: " + p.getProductId()));
             return SaleProduct.builder()
                     .sale(sale)
@@ -132,11 +133,9 @@ public class SaleServiceImpl implements SaleService {
         Long userId = UserContext.getCurrentUserId();
         Long companyId = UserContext.getCurrentCompanyId();
 
-        Sale sale = saleRepository.findById(id)
+        Sale sale = saleRepository.findByIdAndCompanyId(id, companyId)
                 .orElseThrow(() -> new ResourceNotFoundException("Sale not found"));
-        if (!sale.getCompanyId().equals(companyId)) {
-            throw new SecurityException("Access denied");
-        }
+        warehouseAccessService.requireAssignment(sale.getWarehouse().getId());
 
         // Reverse old stock
         stockValidationService.reverseDeduction(sale);
@@ -145,12 +144,11 @@ public class SaleServiceImpl implements SaleService {
         if (request.getDate() != null)
             sale.setDate(request.getDate());
         if (request.getCustomerId() != null) {
-            sale.setCustomer(customerRepository.findById(request.getCustomerId())
+            sale.setCustomer(customerRepository.findByIdAndCompanyId(request.getCustomerId(), companyId)
                     .orElseThrow(() -> new ResourceNotFoundException("Customer not found")));
         }
         if (request.getWarehouseId() != null) {
-            sale.setWarehouse(warehouseRepository.findById(request.getWarehouseId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Warehouse not found")));
+            sale.setWarehouse(warehouseAccessService.requireAccessible(request.getWarehouseId()));
         }
         if (request.getCurrencyId() != null) {
             sale.setCurrency(currencyRepository.findById(request.getCurrencyId())
@@ -168,7 +166,7 @@ public class SaleServiceImpl implements SaleService {
             sale.setAppliedDiscount(null); // clear system discount
         }
         if (request.getAppliedDiscountId() != null) {
-            Discount discount = discountRepository.findById(request.getAppliedDiscountId())
+            Discount discount = discountRepository.findByIdAndCompanyId(request.getAppliedDiscountId(), companyId)
                     .orElseThrow(() -> new ResourceNotFoundException("Discount not found"));
             sale.setAppliedDiscount(discount);
             // clear manual discount
@@ -225,7 +223,7 @@ public class SaleServiceImpl implements SaleService {
                         existing.setProductUnitPrice(p.getUnitPriceOverride());
                     existing.setUpdatedBy(userId);
                 } else {
-                    Product product = productRepository.findById(p.getProductId())
+                    Product product = productRepository.findByIdAndCompanyIdAndIsDeletedFalse(p.getProductId(), companyId)
                             .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
                     SaleProduct newSp = SaleProduct.builder()
                             .sale(sale)
@@ -256,9 +254,9 @@ public class SaleServiceImpl implements SaleService {
     @Override
     @Transactional(readOnly = true)
     public SaleResponse getSaleById(Long id) {
-        Sale sale = saleRepository.findById(id)
+        Sale sale = saleRepository.findByIdAndCompanyId(id, UserContext.getCurrentCompanyId())
                 .orElseThrow(() -> new ResourceNotFoundException("Sale not found"));
-        checkCompanyAccess(sale);
+        warehouseAccessService.requireAssignment(sale.getWarehouse().getId());
         return SaleResponse.fromEntity(sale);
     }
 
@@ -267,6 +265,10 @@ public class SaleServiceImpl implements SaleService {
     public List<SaleResponse> getMySales() {
         Long userId = UserContext.getCurrentUserId();
         return saleRepository.findAllByCreatedBy(userId).stream()
+                .filter(sale -> UserContext.getCurrentCompanyId().equals(sale.getCompanyId()))
+                .filter(sale -> sale.getWarehouse() == null || UserContext.canAccessWarehouse(sale.getWarehouse().getId())
+                        || UserContext.getAuthenticatedUser().getAuthorities().stream()
+                                .anyMatch(a -> "ROLE_COMPANY_OWNER".equals(a.getAuthority())))
                 .map(SaleResponse::fromEntity).collect(Collectors.toList());
     }
 
@@ -275,34 +277,32 @@ public class SaleServiceImpl implements SaleService {
     public List<SaleResponse> getAllSales() {
         Long companyId = UserContext.getCurrentCompanyId();
         return saleRepository.findAllByCompanyId(companyId).stream()
+                .filter(sale -> sale.getWarehouse() == null || UserContext.canAccessWarehouse(sale.getWarehouse().getId())
+                        || UserContext.getAuthenticatedUser().getAuthorities().stream()
+                                .anyMatch(a -> "ROLE_COMPANY_OWNER".equals(a.getAuthority())))
                 .map(SaleResponse::fromEntity).collect(Collectors.toList());
     }
 
     @Override
     @Transactional
     public void deleteSale(Long id) {
-        Sale sale = saleRepository.findById(id)
+        Sale sale = saleRepository.findByIdAndCompanyId(id, UserContext.getCurrentCompanyId())
                 .orElseThrow(() -> new ResourceNotFoundException("Sale not found"));
-        checkCompanyAccess(sale);
+        warehouseAccessService.requireAssignment(sale.getWarehouse().getId());
         stockValidationService.reverseDeduction(sale);
         saleRepository.delete(sale);
     }
 
-    private void checkCompanyAccess(Sale sale) {
-        Long currentCompanyId = UserContext.getCurrentCompanyId();
-        if (!sale.getCompanyId().equals(currentCompanyId)) {
-            throw new SecurityException("Access denied to this sale");
-        }
-    }
-
     @Override
     public List<SaleResponse> findRecentSalesByTenant(Long tenantId, int limit) {
-        List<Sale> sales = saleRepository.findTop5ByCompanyIdOrderByCreatedAtDesc(tenantId);
+        Long companyId = UserContext.getCurrentCompanyId();
+        List<Sale> sales = saleRepository.findTop5ByCompanyIdOrderByCreatedAtDesc(companyId);
         return sales.stream().map(SaleResponse::fromEntity).collect(Collectors.toList());
     }
 
     @Override
     public Map<String, Object> getSalesSummary(String period, Long warehouseId) {
+        warehouseAccessService.requireAccessible(warehouseId);
         Map<String, Object> summary = new HashMap<>();
         summary.put("totalSales", 10000.0);
         summary.put("totalOrders", 50);

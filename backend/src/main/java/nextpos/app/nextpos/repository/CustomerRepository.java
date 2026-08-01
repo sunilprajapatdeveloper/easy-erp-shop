@@ -15,6 +15,10 @@ public interface CustomerRepository extends JpaRepository<Customer, Long> {
     @NonNull
     Optional<Customer> findById(@NonNull Long id);
 
+    Optional<Customer> findByIdAndCompanyId(Long id, Long companyId);
+
+    List<Customer> findAllByCompanyId(Long companyId);
+
     // Fetch all customers created by a specific user
     @NonNull
     List<Customer> findAllByCreatedBy(@NonNull Long createdBy);
