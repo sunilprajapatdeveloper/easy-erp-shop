@@ -53,6 +53,16 @@ class BusinessPermissionRulesTest {
                 .containsExactly("__DENY__");
     }
 
+    @Test
+    void actionEndpointsUseThePermissionForTheirBusinessEffect() {
+        assertThat(BusinessPermissionRules.requiredAuthorities(
+                "/api/v1/products/bulk-delete", "POST")).containsExactly("PRODUCT_DELETE");
+        assertThat(BusinessPermissionRules.requiredAuthorities(
+                "/api/v1/products/bulk-update-status", "POST")).containsExactly("PRODUCT_EDIT");
+        assertThat(BusinessPermissionRules.requiredAuthorities(
+                "/api/v1/import-export/export", "POST")).containsExactly("PRODUCT_LIST");
+    }
+
     private String mappedHttpMethod(Method method) {
         if (method.isAnnotationPresent(GetMapping.class)) return HttpMethod.GET.name();
         if (method.isAnnotationPresent(PostMapping.class)) return HttpMethod.POST.name();
