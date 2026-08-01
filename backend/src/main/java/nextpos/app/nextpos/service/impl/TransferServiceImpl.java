@@ -6,6 +6,7 @@ import nextpos.app.nextpos.model.dto.response.TransferResponse;
 import nextpos.app.nextpos.model.entity.*;
 import nextpos.app.nextpos.model.enums.ShipmentStatus;
 import nextpos.app.nextpos.repository.*;
+import nextpos.app.nextpos.security.access.WarehouseAccessService;
 import nextpos.app.nextpos.security.context.UserContext;
 import nextpos.app.nextpos.service.interf.ProductStockService;
 import nextpos.app.nextpos.service.interf.TransferService;
@@ -25,8 +26,8 @@ public class TransferServiceImpl implements TransferService {
 
         private final TransferRepository transferRepository;
         private final ProductRepository productRepository;
-        private final WarehouseRepository warehouseRepository;
         private final ProductStockService productStockService;
+        private final WarehouseAccessService warehouseAccessService;
 
         @Override
         @Transactional
@@ -34,11 +35,9 @@ public class TransferServiceImpl implements TransferService {
                 Long currentUserId = UserContext.getCurrentUserId();
                 Long currentCompanyId = UserContext.getCurrentCompanyId();
 
-                Warehouse from = warehouseRepository.findById(request.getFromWarehouse())
-                                .orElseThrow(() -> new RuntimeException("From warehouse not found"));
+                Warehouse from = warehouseAccessService.requireAccessible(request.getFromWarehouse());
 
-                Warehouse to = warehouseRepository.findById(request.getToWarehouse())
-                                .orElseThrow(() -> new RuntimeException("To warehouse not found"));
+                Warehouse to = warehouseAccessService.requireAccessible(request.getToWarehouse());
 
                 ShipmentStatus status = request.getStatus();
 
@@ -56,7 +55,8 @@ public class TransferServiceImpl implements TransferService {
                 transfer.setCompanyId(currentCompanyId);
 
                 List<TransferProduct> products = request.getProducts().stream().map(p -> {
-                        Product product = productRepository.findById(p.getProductId())
+                        Product product = productRepository
+                                        .findByIdAndCompanyIdAndIsDeletedFalse(p.getProductId(), currentCompanyId)
                                         .orElseThrow(() -> new RuntimeException(
                                                         "Product not found with ID: " + p.getProductId()));
 
@@ -115,22 +115,31 @@ public class TransferServiceImpl implements TransferService {
 
         @Override
         public TransferResponse getTransferById(Long id) {
-                Transfer transfer = transferRepository.findById(id)
+                Long companyId = UserContext.getCurrentCompanyId();
+                Transfer transfer = transferRepository.findByIdAndCompanyId(id, companyId)
                                 .orElseThrow(() -> new RuntimeException("Transfer not found"));
+                requireTransferWarehouses(transfer);
                 return new TransferResponse(transfer);
         }
 
         @Override
         public List<TransferResponse> getMyTransfer() {
                 Long currentUserId = UserContext.getCurrentUserId();
-                List<Transfer> transfers = transferRepository.findByCreatedBy(currentUserId);
+                Long companyId = UserContext.getCurrentCompanyId();
+                List<Long> warehouseIds = accessibleWarehouseIds();
+                List<Transfer> transfers = transferRepository
+                                .findByCreatedByAndCompanyIdAndFromWarehouse_IdInAndToWarehouse_IdIn(
+                                                currentUserId, companyId, warehouseIds, warehouseIds);
                 return transfers.stream().map(TransferResponse::new).collect(Collectors.toList());
         }
 
         @Override
         public List<TransferResponse> getAllTransfer() {
                 Long currentCompanyId = UserContext.getCurrentCompanyId();
-                List<Transfer> transfers = transferRepository.findByCompanyId(currentCompanyId);
+                List<Long> warehouseIds = accessibleWarehouseIds();
+                List<Transfer> transfers = transferRepository
+                                .findByCompanyIdAndFromWarehouse_IdInAndToWarehouse_IdIn(
+                                                currentCompanyId, warehouseIds, warehouseIds);
                 return transfers.stream().map(TransferResponse::new).collect(Collectors.toList());
         }
 
@@ -140,8 +149,9 @@ public class TransferServiceImpl implements TransferService {
                 Long currentUserId = UserContext.getCurrentUserId();
                 Long currentCompanyId = UserContext.getCurrentCompanyId();
 
-                Transfer transfer = transferRepository.findById(id)
+                Transfer transfer = transferRepository.findByIdAndCompanyId(id, currentCompanyId)
                                 .orElseThrow(() -> new RuntimeException("Transfer not found"));
+                requireTransferWarehouses(transfer);
 
                 // Revert stock from existing products
                 for (TransferProduct tp : transfer.getProducts()) {
@@ -151,13 +161,14 @@ public class TransferServiceImpl implements TransferService {
 
                 transfer.getProducts().clear();
 
-                Warehouse from = warehouseRepository.findById(request.getFromWarehouse())
-                                .orElseThrow(() -> new RuntimeException("From warehouse not found"));
+                Warehouse from = warehouseAccessService.requireAccessible(request.getFromWarehouse());
 
-                Warehouse to = warehouseRepository.findById(request.getToWarehouse())
-                                .orElseThrow(() -> new RuntimeException("To warehouse not found"));
+                Warehouse to = warehouseAccessService.requireAccessible(request.getToWarehouse());
 
                 List<TransferProduct> updatedProducts = request.getProducts().stream().map(p -> {
+                        productRepository.findByIdAndCompanyIdAndIsDeletedFalse(p.getProductId(), currentCompanyId)
+                                        .orElseThrow(() -> new RuntimeException(
+                                                        "Product not found with ID: " + p.getProductId()));
                         int transferredQty = Optional.ofNullable(p.getTransferredQty()).orElse(0);
                         int currentStock = productStockService.getStock(p.getProductId(), from.getId());
 
@@ -220,8 +231,10 @@ public class TransferServiceImpl implements TransferService {
         @Override
         @Transactional
         public void deleteTransfer(Long id) {
-                Transfer transfer = transferRepository.findById(id)
+                Long companyId = UserContext.getCurrentCompanyId();
+                Transfer transfer = transferRepository.findByIdAndCompanyId(id, companyId)
                                 .orElseThrow(() -> new RuntimeException("Transfer not found"));
+                requireTransferWarehouses(transfer);
 
                 for (TransferProduct tp : transfer.getProducts()) {
                         productStockService.adjustStock(tp.getProductId(), transfer.getFromWarehouse().getId(),
@@ -229,5 +242,14 @@ public class TransferServiceImpl implements TransferService {
                 }
 
                 transferRepository.delete(transfer);
+        }
+
+        private List<Long> accessibleWarehouseIds() {
+                return warehouseAccessService.accessibleWarehouses().stream().map(Warehouse::getId).toList();
+        }
+
+        private void requireTransferWarehouses(Transfer transfer) {
+                warehouseAccessService.requireAccessible(transfer.getFromWarehouse().getId());
+                warehouseAccessService.requireAccessible(transfer.getToWarehouse().getId());
         }
 }
