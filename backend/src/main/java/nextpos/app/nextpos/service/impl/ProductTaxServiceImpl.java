@@ -10,8 +10,8 @@ import nextpos.app.nextpos.model.entity.ProductTax;
 import nextpos.app.nextpos.model.entity.Warehouse;
 import nextpos.app.nextpos.repository.ProductRepository;
 import nextpos.app.nextpos.repository.ProductTaxRepository;
-import nextpos.app.nextpos.repository.WarehouseRepository;
 import nextpos.app.nextpos.security.context.UserContext;
+import nextpos.app.nextpos.security.access.WarehouseAccessService;
 import nextpos.app.nextpos.service.interf.ProductTaxService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,22 +28,19 @@ public class ProductTaxServiceImpl implements ProductTaxService {
 
     private final ProductTaxRepository productTaxRepository;
     private final ProductRepository productRepository;
-    private final WarehouseRepository warehouseRepository;
+    private final WarehouseAccessService warehouseAccessService;
 
     @Override
     public ProductTaxResponse createProductTax(CreateProductTaxRequest request) {
         Long companyId = UserContext.getCurrentCompanyId();
         Long currentUserId = UserContext.getCurrentUserId();
 
-        Product product = productRepository.findById(request.getProductId())
-                .filter(p -> companyId.equals(p.getCompanyId()) && !Boolean.TRUE.equals(p.getIsDeleted()))
+        Product product = productRepository.findByIdAndCompanyIdAndIsDeletedFalse(request.getProductId(), companyId)
                 .orElseThrow(() -> new EntityNotFoundException("Product not found with id: " + request.getProductId()));
 
         Warehouse warehouse = null;
         if (request.getWarehouseId() != null) {
-            warehouse = warehouseRepository.findByIdAndCompanyIdAndIsDeletedFalse(request.getWarehouseId(), companyId)
-                    .orElseThrow(() -> new EntityNotFoundException(
-                            "Warehouse not found with id: " + request.getWarehouseId()));
+            warehouse = warehouseAccessService.requireAccessible(request.getWarehouseId());
         }
 
         // Check uniqueness by tax code
@@ -89,8 +86,7 @@ public class ProductTaxServiceImpl implements ProductTaxService {
 
         // Update product if changed
         if (request.getProductId() != null && !request.getProductId().equals(existing.getProduct().getId())) {
-            Product newProduct = productRepository.findById(request.getProductId())
-                    .filter(p -> companyId.equals(p.getCompanyId()) && !Boolean.TRUE.equals(p.getIsDeleted()))
+            Product newProduct = productRepository.findByIdAndCompanyIdAndIsDeletedFalse(request.getProductId(), companyId)
                     .orElseThrow(
                             () -> new EntityNotFoundException("Product not found with id: " + request.getProductId()));
             existing.setProduct(newProduct);
@@ -99,10 +95,7 @@ public class ProductTaxServiceImpl implements ProductTaxService {
         // Update warehouse if changed
         if (request.getWarehouseId() != null) {
             if (existing.getWarehouse() == null || !request.getWarehouseId().equals(existing.getWarehouse().getId())) {
-                Warehouse newWarehouse = warehouseRepository
-                        .findByIdAndCompanyIdAndIsDeletedFalse(request.getWarehouseId(), companyId)
-                        .orElseThrow(() -> new EntityNotFoundException(
-                                "Warehouse not found with id: " + request.getWarehouseId()));
+                Warehouse newWarehouse = warehouseAccessService.requireAccessible(request.getWarehouseId());
                 existing.setWarehouse(newWarehouse);
             }
         }
@@ -154,6 +147,7 @@ public class ProductTaxServiceImpl implements ProductTaxService {
     @Transactional(readOnly = true)
     public List<ProductTaxResponse> listTaxesByWarehouse(Long warehouseId) {
         Long companyId = UserContext.getCurrentCompanyId();
+        warehouseAccessService.requireAccessible(warehouseId);
 
         return productTaxRepository.findAllByWarehouseIdAndCompanyId(warehouseId, companyId)
                 .stream().map(ProductTaxResponse::fromEntity).collect(Collectors.toList());
@@ -184,6 +178,7 @@ public class ProductTaxServiceImpl implements ProductTaxService {
 
         Optional<ProductTax> exact = Optional.empty();
         if (warehouseId != null) {
+            warehouseAccessService.requireAccessible(warehouseId);
             exact = productTaxRepository.findAllByProductIdAndCompanyId(productId, companyId)
                     .stream()
                     .filter(t -> warehouseId.equals(t.getWarehouse() != null ? t.getWarehouse().getId() : null)

@@ -10,6 +10,7 @@ import nextpos.app.nextpos.model.entity.Discount;
 import nextpos.app.nextpos.pagination.dto.PaginationResponse;
 import nextpos.app.nextpos.repository.DiscountRepository;
 import nextpos.app.nextpos.service.interf.DiscountAdminService;
+import nextpos.app.nextpos.security.access.WarehouseAccessService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -21,12 +22,14 @@ import org.springframework.transaction.annotation.Transactional;
 public class DiscountAdminServiceImpl implements DiscountAdminService {
 
     private final DiscountRepository discountRepository;
+    private final WarehouseAccessService warehouseAccessService;
 
     @Override
     @Transactional
     public DiscountResponse createDiscount(CreateDiscountRequest request,
             Long companyId,
             Long userId) {
+        validateWarehouse(request.getWarehouseId());
 
         Discount discount = Discount.builder()
                 .name(request.getName())
@@ -65,9 +68,9 @@ public class DiscountAdminServiceImpl implements DiscountAdminService {
             UpdateDiscountRequest request,
             Long companyId,
             Long userId) {
+        validateWarehouse(request.getWarehouseId());
 
-        Discount discount = discountRepository.findById(id)
-                .filter(d -> d.getCompanyId().equals(companyId))
+        Discount discount = discountRepository.findByIdAndCompanyId(id, companyId)
                 .orElseThrow(() -> new ResourceNotFoundException("Discount not found"));
 
         discount.setName(request.getName());
@@ -102,8 +105,7 @@ public class DiscountAdminServiceImpl implements DiscountAdminService {
     @Transactional
     public void deleteDiscount(Long id, Long companyId) {
 
-        Discount discount = discountRepository.findById(id)
-                .filter(d -> d.getCompanyId().equals(companyId))
+        Discount discount = discountRepository.findByIdAndCompanyId(id, companyId)
                 .orElseThrow(() -> new ResourceNotFoundException("Discount not found"));
 
         discountRepository.delete(discount);
@@ -113,8 +115,7 @@ public class DiscountAdminServiceImpl implements DiscountAdminService {
     @Transactional
     public void toggleActive(Long id, Long companyId) {
 
-        Discount discount = discountRepository.findById(id)
-                .filter(d -> d.getCompanyId().equals(companyId))
+        Discount discount = discountRepository.findByIdAndCompanyId(id, companyId)
                 .orElseThrow(() -> new ResourceNotFoundException("Discount not found"));
 
         discount.setIsActive(!discount.getIsActive());
@@ -125,8 +126,7 @@ public class DiscountAdminServiceImpl implements DiscountAdminService {
     @Override
     public DiscountResponse getDiscount(Long id, Long companyId) {
 
-        Discount discount = discountRepository.findById(id)
-                .filter(d -> d.getCompanyId().equals(companyId))
+        Discount discount = discountRepository.findByIdAndCompanyId(id, companyId)
                 .orElseThrow(() -> new ResourceNotFoundException("Discount not found"));
 
         return toResponse(discount);
@@ -173,5 +173,11 @@ public class DiscountAdminServiceImpl implements DiscountAdminService {
                 .updatedBy(d.getUpdatedBy())
                 .updatedAt(d.getUpdatedAt())
                 .build();
+    }
+
+    private void validateWarehouse(Long warehouseId) {
+        if (warehouseId != null) {
+            warehouseAccessService.requireAccessible(warehouseId);
+        }
     }
 }

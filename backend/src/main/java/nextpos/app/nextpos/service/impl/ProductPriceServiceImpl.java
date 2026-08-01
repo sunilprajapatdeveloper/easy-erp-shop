@@ -12,8 +12,8 @@ import nextpos.app.nextpos.model.entity.Warehouse;
 import nextpos.app.nextpos.repository.CurrencyRepository;
 import nextpos.app.nextpos.repository.ProductPriceRepository;
 import nextpos.app.nextpos.repository.ProductRepository;
-import nextpos.app.nextpos.repository.WarehouseRepository;
 import nextpos.app.nextpos.security.context.UserContext;
+import nextpos.app.nextpos.security.access.WarehouseAccessService;
 import nextpos.app.nextpos.service.interf.ProductPriceService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,8 +30,8 @@ public class ProductPriceServiceImpl implements ProductPriceService {
 
     private final ProductPriceRepository productPriceRepository;
     private final ProductRepository productRepository;
-    private final WarehouseRepository warehouseRepository;
     private final CurrencyRepository currencyRepository;
+    private final WarehouseAccessService warehouseAccessService;
 
     @Override
     public ProductPriceResponse createProductPrice(CreateProductPriceRequest request) {
@@ -39,16 +39,13 @@ public class ProductPriceServiceImpl implements ProductPriceService {
         Long currentUserId = UserContext.getCurrentUserId();
 
         // validate product
-        Product product = productRepository.findById(request.getProductId())
-                .filter(p -> companyId.equals(p.getCompanyId()) && !Boolean.TRUE.equals(p.getIsDeleted()))
+        Product product = productRepository.findByIdAndCompanyIdAndIsDeletedFalse(request.getProductId(), companyId)
                 .orElseThrow(() -> new EntityNotFoundException("Product not found with id: " + request.getProductId()));
 
         // optional warehouse
         Warehouse warehouse = null;
         if (request.getWarehouseId() != null) {
-            warehouse = warehouseRepository.findByIdAndCompanyIdAndIsDeletedFalse(request.getWarehouseId(), companyId)
-                    .orElseThrow(() -> new EntityNotFoundException(
-                            "Warehouse not found with id: " + request.getWarehouseId()));
+            warehouse = warehouseAccessService.requireAccessible(request.getWarehouseId());
         }
 
         // currency
@@ -106,8 +103,7 @@ public class ProductPriceServiceImpl implements ProductPriceService {
 
         // validate + update product
         if (request.getProductId() != null && !request.getProductId().equals(existing.getProduct().getId())) {
-            Product newProduct = productRepository.findById(request.getProductId())
-                    .filter(p -> companyId.equals(p.getCompanyId()) && !Boolean.TRUE.equals(p.getIsDeleted()))
+            Product newProduct = productRepository.findByIdAndCompanyIdAndIsDeletedFalse(request.getProductId(), companyId)
                     .orElseThrow(
                             () -> new EntityNotFoundException("Product not found with id: " + request.getProductId()));
             existing.setProduct(newProduct);
@@ -116,10 +112,7 @@ public class ProductPriceServiceImpl implements ProductPriceService {
         // validate + update warehouse
         if (request.getWarehouseId() != null) {
             if (existing.getWarehouse() == null || !request.getWarehouseId().equals(existing.getWarehouse().getId())) {
-                Warehouse newWarehouse = warehouseRepository
-                        .findByIdAndCompanyIdAndIsDeletedFalse(request.getWarehouseId(), companyId)
-                        .orElseThrow(() -> new EntityNotFoundException(
-                                "Warehouse not found with id: " + request.getWarehouseId()));
+                Warehouse newWarehouse = warehouseAccessService.requireAccessible(request.getWarehouseId());
                 existing.setWarehouse(newWarehouse);
             }
         }
@@ -196,6 +189,7 @@ public class ProductPriceServiceImpl implements ProductPriceService {
         String ch = channel != null ? channel.trim() : null;
 
         if (warehouseId != null) {
+            warehouseAccessService.requireAccessible(warehouseId);
             Optional<ProductPrice> exact = productPriceRepository
                     .findByProductIdAndWarehouseIdAndChannelAndCompanyId(productId, warehouseId, ch, companyId);
             if (exact.isPresent()) {
@@ -212,6 +206,7 @@ public class ProductPriceServiceImpl implements ProductPriceService {
     @Transactional(readOnly = true)
     public ProductPriceResponse getByProductAndWarehouse(Long productId, Long warehouseId) {
         Long companyId = UserContext.getCurrentCompanyId();
+        warehouseAccessService.requireAccessible(warehouseId);
 
         ProductPrice price = productPriceRepository
                 .findByProductIdAndWarehouseIdAndCompanyId(productId, warehouseId, companyId)
@@ -235,6 +230,7 @@ public class ProductPriceServiceImpl implements ProductPriceService {
     @Transactional(readOnly = true)
     public List<ProductPriceResponse> listPricesByWarehouse(Long warehouseId) {
         Long companyId = UserContext.getCurrentCompanyId();
+        warehouseAccessService.requireAccessible(warehouseId);
 
         return productPriceRepository.findAllByWarehouseIdAndCompanyId(warehouseId, companyId)
                 .stream()
