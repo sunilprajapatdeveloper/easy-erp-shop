@@ -49,6 +49,10 @@ public class PaymentServiceImpl implements PaymentService {
             Sale sale = saleRepository.findByIdAndCompanyId(request.getReferenceId(), companyId)
                     .orElseThrow(() -> new PaymentProcessingException("Referenced sale not found"));
             warehouseAccessService.requireAssignment(sale.getWarehouse().getId());
+            if (request.getWarehouseId() != null
+                    && !request.getWarehouseId().equals(sale.getWarehouse().getId())) {
+                throw new PaymentProcessingException("Payment warehouse does not match referenced sale");
+            }
         }
 
         // Check idempotency
@@ -120,6 +124,7 @@ public class PaymentServiceImpl implements PaymentService {
 
         Payment payment = paymentRepository.findByIdAndCompanyId(id, companyId)
                 .orElseThrow(() -> new IllegalArgumentException("Payment not found"));
+        if (payment.getWarehouseId() != null) warehouseAccessService.requireAssignment(payment.getWarehouseId());
 
         boolean recalcBase = false;
 

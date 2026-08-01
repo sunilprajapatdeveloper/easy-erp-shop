@@ -72,10 +72,11 @@ public class SecurityConfig {
                                 "/swagger-ui.html",
                                 "/swagger-resources/**",
                                 "/webjars/**",
+                                "/ws-scanner/**",
                                 "/api/v1/webhooks/razorpay")
                         .permitAll()
                         .requestMatchers("/api/**").access(businessApiAuthorizationManager)
-                        .anyRequest().permitAll())
+                        .anyRequest().denyAll())
                 .exceptionHandling(exception -> exception
                         .authenticationEntryPoint(this::handleUnauthorized))
                 .sessionManagement(session -> session
@@ -115,12 +116,13 @@ public class SecurityConfig {
                 "https://*.ngrok-free.dev"));
 
         config.setAllowedMethods(List.of(
-                "GET", "POST", "PUT", "DELETE", "OPTIONS"));
+                "GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
 
         config.setAllowedHeaders(List.of(
                 "Authorization",
                 "Content-Type",
                 "X-Company-Id",
+                "X-Onboarding-Token",
                 "ngrok-skip-browser-warning"));
 
         config.setExposedHeaders(List.of(
