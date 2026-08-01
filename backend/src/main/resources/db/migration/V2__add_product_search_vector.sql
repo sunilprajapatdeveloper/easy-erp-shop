@@ -1,5 +1,6 @@
+-- flyway:executeInTransaction=false
 -- Add tsvector column
-ALTER TABLE products ADD COLUMN search_vector tsvector
+ALTER TABLE products ADD COLUMN IF NOT EXISTS search_vector tsvector
 GENERATED ALWAYS AS (
   setweight(to_tsvector('simple', coalesce(name, '')), 'A') ||
   setweight(to_tsvector('simple', coalesce(code, '')), 'B') ||
