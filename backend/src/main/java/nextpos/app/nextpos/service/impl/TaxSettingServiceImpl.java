@@ -11,8 +11,8 @@ import nextpos.app.nextpos.model.entity.TaxSetting;
 import nextpos.app.nextpos.model.entity.Warehouse;
 import nextpos.app.nextpos.repository.CompanyRepository;
 import nextpos.app.nextpos.repository.TaxSettingRepository;
-import nextpos.app.nextpos.repository.WarehouseRepository;
 import nextpos.app.nextpos.security.context.UserContext;
+import nextpos.app.nextpos.security.access.WarehouseAccessService;
 import nextpos.app.nextpos.service.interf.TaxSettingService;
 
 import org.springframework.stereotype.Service;
@@ -29,7 +29,7 @@ public class TaxSettingServiceImpl implements TaxSettingService {
 
     private final TaxSettingRepository taxSettingRepository;
     private final CompanyRepository companyRepository;
-    private final WarehouseRepository warehouseRepository;
+    private final WarehouseAccessService warehouseAccessService;
 
     @Override
     public TaxSettingResponse createTaxSetting(CreateTaxSettingRequest request) {
@@ -42,8 +42,7 @@ public class TaxSettingServiceImpl implements TaxSettingService {
 
         Warehouse warehouse = null;
         if (request.getWarehouseId() != null) {
-            warehouse = warehouseRepository.findById(request.getWarehouseId())
-                    .orElseThrow(() -> new EntityNotFoundException("Warehouse not found: " + request.getWarehouseId()));
+            warehouse = warehouseAccessService.requireAccessible(request.getWarehouseId());
         }
 
         TaxSetting taxSetting = TaxSetting.builder()
@@ -89,6 +88,7 @@ public class TaxSettingServiceImpl implements TaxSettingService {
          * Warehouse-specific active tax setting
          */
         if (warehouseId != null) {
+            warehouseAccessService.requireAccessible(warehouseId);
             taxSetting = taxSettingRepository.findByCompanyIdAndWarehouseIdAndActiveTrue(companyId, warehouseId)
                     .orElse(null);
         }
@@ -142,8 +142,7 @@ public class TaxSettingServiceImpl implements TaxSettingService {
             taxSetting.setDescription(request.getDescription());
 
         if (request.getWarehouseId() != null) {
-            Warehouse warehouse = warehouseRepository.findById(request.getWarehouseId())
-                    .orElseThrow(() -> new EntityNotFoundException("Warehouse not found: " + request.getWarehouseId()));
+            Warehouse warehouse = warehouseAccessService.requireAccessible(request.getWarehouseId());
             taxSetting.setWarehouse(warehouse);
         }
 

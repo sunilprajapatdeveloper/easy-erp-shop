@@ -43,6 +43,10 @@ public class CompanySubscriptionServiceImpl implements CompanySubscriptionServic
 
     @Override
     public CompanySubscriptionResponse createCompanySubscription(CreateCompanySubscriptionRequest request) {
+        Long authenticatedCompanyId = UserContext.getCurrentCompanyId();
+        if (!authenticatedCompanyId.equals(request.getCompanyId())) {
+            throw new SecurityException("Company identifier does not match authenticated tenant");
+        }
         Long currentUserId = UserContext.getCurrentUserId();
         Long currentCompanyId = UserContext.getCurrentCompanyId();
 
@@ -155,8 +159,8 @@ public class CompanySubscriptionServiceImpl implements CompanySubscriptionServic
         Long currentUserId = UserContext.getCurrentUserId();
         Long currentCompanyId = UserContext.getCurrentCompanyId();
 
-        CompanySubscription subscription = companySubscriptionRepository.findById(subscriptionId)
-                .filter(sub -> !sub.isDeleted())
+        CompanySubscription subscription = companySubscriptionRepository
+                .findByIdAndCompanyIdAndIsDeletedFalse(subscriptionId, currentCompanyId)
                 .orElseThrow(
                         () -> new EntityNotFoundException("CompanySubscription not found with id: " + subscriptionId));
 
@@ -251,8 +255,8 @@ public class CompanySubscriptionServiceImpl implements CompanySubscriptionServic
         Long currentUserId = UserContext.getCurrentUserId();
         Long currentCompanyId = UserContext.getCurrentCompanyId();
 
-        CompanySubscription subscription = companySubscriptionRepository.findById(subscriptionId)
-                .filter(sub -> !sub.isDeleted())
+        CompanySubscription subscription = companySubscriptionRepository
+                .findByIdAndCompanyIdAndIsDeletedFalse(subscriptionId, currentCompanyId)
                 .orElseThrow(
                         () -> new EntityNotFoundException("CompanySubscription not found with id: " + subscriptionId));
 

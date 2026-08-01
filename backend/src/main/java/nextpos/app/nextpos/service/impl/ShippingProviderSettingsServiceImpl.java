@@ -10,8 +10,8 @@ import nextpos.app.nextpos.model.entity.ShippingProviderSettings;
 import nextpos.app.nextpos.model.entity.Warehouse;
 import nextpos.app.nextpos.repository.CompanyRepository;
 import nextpos.app.nextpos.repository.ShippingProviderSettingsRepository;
-import nextpos.app.nextpos.repository.WarehouseRepository;
 import nextpos.app.nextpos.security.context.UserContext;
+import nextpos.app.nextpos.security.access.WarehouseAccessService;
 import nextpos.app.nextpos.service.interf.ShippingProviderSettingsService;
 
 import org.springframework.stereotype.Service;
@@ -27,7 +27,7 @@ public class ShippingProviderSettingsServiceImpl implements ShippingProviderSett
 
     private final ShippingProviderSettingsRepository shippingProviderSettingsRepository;
     private final CompanyRepository companyRepository;
-    private final WarehouseRepository warehouseRepository;
+    private final WarehouseAccessService warehouseAccessService;
 
     @Override
     @Transactional
@@ -39,8 +39,7 @@ public class ShippingProviderSettingsServiceImpl implements ShippingProviderSett
         Company company = companyRepository.findById(companyId)
                 .orElseThrow(() -> new IllegalArgumentException("Company not found: " + companyId));
 
-        Warehouse warehouse = warehouseRepository.findById(request.getWarehouseId())
-                .orElseThrow(() -> new IllegalArgumentException("Warehouse not found: " + request.getWarehouseId()));
+        Warehouse warehouse = warehouseAccessService.requireAccessible(request.getWarehouseId());
 
         // Ensure warehouse belongs to the user's company
         if (!warehouse.getCompanyId().equals(companyId)) {
@@ -72,6 +71,7 @@ public class ShippingProviderSettingsServiceImpl implements ShippingProviderSett
             UpdateShippingProviderSettingsRequest request) {
         Long companyId = UserContext.getCurrentCompanyId();
         Long currentUserId = UserContext.getCurrentUserId();
+        warehouseAccessService.requireAccessible(warehouseId);
 
         ShippingProviderSettings settings = shippingProviderSettingsRepository
                 .findByCompanyIdAndWarehouseIdAndId(companyId, warehouseId, id)
@@ -104,6 +104,7 @@ public class ShippingProviderSettingsServiceImpl implements ShippingProviderSett
     @Override
     public ShippingProviderSettingsResponse getShippingProviderSettings(Long id, Long warehouseId) {
         Long companyId = UserContext.getCurrentCompanyId();
+        warehouseAccessService.requireAccessible(warehouseId);
 
         ShippingProviderSettings settings = shippingProviderSettingsRepository
                 .findByCompanyIdAndWarehouseIdAndId(companyId, warehouseId, id)
@@ -116,8 +117,11 @@ public class ShippingProviderSettingsServiceImpl implements ShippingProviderSett
     public List<ShippingProviderSettingsResponse> listShippingProviderSettingsByCompany() {
         Long companyId = UserContext.getCurrentCompanyId();
 
+        var accessibleIds = warehouseAccessService.accessibleWarehouses().stream()
+                .map(Warehouse::getId).collect(Collectors.toSet());
         return shippingProviderSettingsRepository.findByCompanyId(companyId)
                 .stream()
+                .filter(settings -> accessibleIds.contains(settings.getWarehouse().getId()))
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
@@ -125,6 +129,7 @@ public class ShippingProviderSettingsServiceImpl implements ShippingProviderSett
     @Override
     public List<ShippingProviderSettingsResponse> listShippingProviderSettingsByWarehouse(Long warehouseId) {
         Long companyId = UserContext.getCurrentCompanyId();
+        warehouseAccessService.requireAccessible(warehouseId);
 
         return shippingProviderSettingsRepository.findByCompanyIdAndWarehouseId(companyId, warehouseId)
                 .stream()

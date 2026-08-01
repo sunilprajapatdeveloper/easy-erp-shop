@@ -110,6 +110,7 @@ public class CompanyServiceImpl implements CompanyService {
 
     @Override
     public CompanyResponse updateCompany(Long companyId, UpdateCompanyRequest request) {
+        requireAuthenticatedCompany(companyId);
         Long updatedBy = UserContext.getCurrentUserId();
         log.info("Updating company id={} by user {}", companyId, updatedBy);
 
@@ -168,6 +169,7 @@ public class CompanyServiceImpl implements CompanyService {
     @Override
     @Transactional(readOnly = true)
     public CompanyResponse getCompany(Long companyId) {
+        requireAuthenticatedCompany(companyId);
         Company company = companyRepository.findById(companyId)
                 .orElseThrow(() -> new EntityNotFoundException("Company not found with id: " + companyId));
 
@@ -204,6 +206,7 @@ public class CompanyServiceImpl implements CompanyService {
 
     @Override
     public void deleteCompany(Long companyId) {
+        requireAuthenticatedCompany(companyId);
         Long deletedBy = UserContext.getCurrentUserId();
         log.info("Soft deleting company id={} by user {}", companyId, deletedBy);
 
@@ -216,6 +219,12 @@ public class CompanyServiceImpl implements CompanyService {
         company.setUpdatedAt(LocalDateTime.now());
 
         companyRepository.save(company);
+    }
+
+    private void requireAuthenticatedCompany(Long companyId) {
+        if (!UserContext.getCurrentCompanyId().equals(companyId)) {
+            throw new SecurityException("Company identifier does not match authenticated tenant");
+        }
     }
 
     private CompanyResponse mapToResponse(Company company) {

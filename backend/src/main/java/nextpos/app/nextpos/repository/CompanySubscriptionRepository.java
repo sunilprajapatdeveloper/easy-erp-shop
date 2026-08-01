@@ -12,6 +12,8 @@ import java.util.Optional;
 @Repository
 public interface CompanySubscriptionRepository extends JpaRepository<CompanySubscription, Long> {
 
+        Optional<CompanySubscription> findByIdAndCompanyIdAndIsDeletedFalse(Long id, Long companyId);
+
         @Query("SELECT cs FROM CompanySubscription cs " +
                         "WHERE cs.company.id = :companyId AND cs.status = nextpos.app.nextpos.model.enums.SubscriptionStatus.ACTIVE "
                         +
