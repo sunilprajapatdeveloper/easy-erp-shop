@@ -41,6 +41,8 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
      */
     List<Product> findAllByCompanyIdAndIsDeletedFalse(Long companyId);
 
+    List<Product> findAllByIdInAndCompanyIdAndIsDeletedFalse(List<Long> ids, Long companyId);
+
     List<Product> findAllByIsDeletedFalse();
 
     /**
@@ -68,8 +70,8 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 
     boolean existsBySkuAndCompanyIdAndIsDeletedFalse(String sku, Long companyId);
 
-    List<Product> findByNameContainingIgnoreCaseOrCodeContainingIgnoreCaseOrSkuContainingIgnoreCase(
-            String name, String code, String sku);
+    List<Product> findByCompanyIdAndIsDeletedFalseAndNameContainingIgnoreCaseOrCompanyIdAndIsDeletedFalseAndCodeContainingIgnoreCaseOrCompanyIdAndIsDeletedFalseAndSkuContainingIgnoreCase(
+            Long nameCompanyId, String name, Long codeCompanyId, String code, Long skuCompanyId, String sku);
 
     @Query(value = """
             SELECT p.* FROM products p

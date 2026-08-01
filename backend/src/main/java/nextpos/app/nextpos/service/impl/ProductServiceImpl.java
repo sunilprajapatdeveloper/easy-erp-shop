@@ -6,6 +6,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
@@ -34,6 +35,7 @@ import nextpos.app.nextpos.repository.ProductRepository;
 import nextpos.app.nextpos.repository.ProductStockRepository;
 import nextpos.app.nextpos.repository.ProductTaxRepository;
 import nextpos.app.nextpos.repository.ProductUnitRepository;
+import nextpos.app.nextpos.security.access.WarehouseAccessService;
 import nextpos.app.nextpos.security.context.UserContext;
 import nextpos.app.nextpos.service.helper.BarcodeHelper;
 import nextpos.app.nextpos.service.interf.MediaService;
@@ -52,6 +54,7 @@ public class ProductServiceImpl implements ProductService {
     private final ProductTaxRepository productTaxRepository;
     private final BarcodeHelper barcodeHelper;
     private final MediaService mediaService;
+    private final WarehouseAccessService warehouseAccessService;
 
     @Override
     @Transactional
@@ -91,33 +94,33 @@ public class ProductServiceImpl implements ProductService {
             product.setSku(request.getSku());
 
         if (request.getCategoryId() != null) {
-            Category category = categoryRepository.findById(request.getCategoryId())
+            Category category = categoryRepository.findByIdAndCompanyId(request.getCategoryId(), companyId)
                     .orElseThrow(() -> new IllegalArgumentException("Category not found: " + request.getCategoryId()));
             product.setCategory(category);
         }
 
         if (request.getBrandId() != null) {
-            Brand brand = brandRepository.findById(request.getBrandId())
+            Brand brand = brandRepository.findByIdAndCompanyId(request.getBrandId(), companyId)
                     .orElseThrow(() -> new IllegalArgumentException("Brand not found: " + request.getBrandId()));
             product.setBrand(brand);
         }
 
         if (request.getProductUnitId() != null) {
-            ProductUnit unit = productUnitRepository.findById(request.getProductUnitId())
+            ProductUnit unit = productUnitRepository.findByIdAndCompanyId(request.getProductUnitId(), companyId)
                     .orElseThrow(() -> new IllegalArgumentException(
                             "Product unit not found: " + request.getProductUnitId()));
             product.setProductUnit(unit);
         }
 
         if (request.getSalesUnitId() != null) {
-            ProductUnit salesUnit = productUnitRepository.findById(request.getSalesUnitId())
+            ProductUnit salesUnit = productUnitRepository.findByIdAndCompanyId(request.getSalesUnitId(), companyId)
                     .orElseThrow(
                             () -> new IllegalArgumentException("Sales unit not found: " + request.getSalesUnitId()));
             product.setSalesUnit(salesUnit);
         }
 
         if (request.getPurchaseUnitId() != null) {
-            ProductUnit purchaseUnit = productUnitRepository.findById(request.getPurchaseUnitId())
+            ProductUnit purchaseUnit = productUnitRepository.findByIdAndCompanyId(request.getPurchaseUnitId(), companyId)
                     .orElseThrow(() -> new IllegalArgumentException(
                             "Purchase unit not found: " + request.getPurchaseUnitId()));
             product.setPurchaseUnit(purchaseUnit);
@@ -194,33 +197,33 @@ public class ProductServiceImpl implements ProductService {
             product.setSku(request.getSku());
 
         if (request.getCategoryId() != null) {
-            Category category = categoryRepository.findById(request.getCategoryId())
+            Category category = categoryRepository.findByIdAndCompanyId(request.getCategoryId(), companyId)
                     .orElseThrow(() -> new IllegalArgumentException("Category not found: " + request.getCategoryId()));
             product.setCategory(category);
         }
 
         if (request.getBrandId() != null) {
-            Brand brand = brandRepository.findById(request.getBrandId())
+            Brand brand = brandRepository.findByIdAndCompanyId(request.getBrandId(), companyId)
                     .orElseThrow(() -> new IllegalArgumentException("Brand not found: " + request.getBrandId()));
             product.setBrand(brand);
         }
 
         if (request.getProductUnitId() != null) {
-            ProductUnit unit = productUnitRepository.findById(request.getProductUnitId())
+            ProductUnit unit = productUnitRepository.findByIdAndCompanyId(request.getProductUnitId(), companyId)
                     .orElseThrow(() -> new IllegalArgumentException(
                             "Product unit not found: " + request.getProductUnitId()));
             product.setProductUnit(unit);
         }
 
         if (request.getSalesUnitId() != null) {
-            ProductUnit salesUnit = productUnitRepository.findById(request.getSalesUnitId())
+            ProductUnit salesUnit = productUnitRepository.findByIdAndCompanyId(request.getSalesUnitId(), companyId)
                     .orElseThrow(
                             () -> new IllegalArgumentException("Sales unit not found: " + request.getSalesUnitId()));
             product.setSalesUnit(salesUnit);
         }
 
         if (request.getPurchaseUnitId() != null) {
-            ProductUnit purchaseUnit = productUnitRepository.findById(request.getPurchaseUnitId())
+            ProductUnit purchaseUnit = productUnitRepository.findByIdAndCompanyId(request.getPurchaseUnitId(), companyId)
                     .orElseThrow(() -> new IllegalArgumentException(
                             "Purchase unit not found: " + request.getPurchaseUnitId()));
             product.setPurchaseUnit(purchaseUnit);
@@ -278,6 +281,9 @@ public class ProductServiceImpl implements ProductService {
 
     private ProductResponse getProductById(Long id, Long warehouseId, boolean includePrice, boolean includeStock,
             boolean includeTax, Long companyId) {
+        if (warehouseId != null) {
+            warehouseAccessService.requireAccessible(warehouseId);
+        }
         Product product = productRepository.findByIdAndCompanyIdAndIsDeletedFalse(id, companyId)
                 .orElseThrow(() -> new IllegalArgumentException("Product not found with id: " + id));
 
@@ -399,29 +405,29 @@ public class ProductServiceImpl implements ProductService {
         if (request.getSku() != null)
             product.setSku(request.getSku());
         if (request.getCategoryId() != null) {
-            Category category = categoryRepository.findById(request.getCategoryId())
+            Category category = categoryRepository.findByIdAndCompanyId(request.getCategoryId(), companyId)
                     .orElseThrow(() -> new IllegalArgumentException("Category not found: " + request.getCategoryId()));
             product.setCategory(category);
         }
         if (request.getBrandId() != null) {
-            Brand brand = brandRepository.findById(request.getBrandId())
+            Brand brand = brandRepository.findByIdAndCompanyId(request.getBrandId(), companyId)
                     .orElseThrow(() -> new IllegalArgumentException("Brand not found: " + request.getBrandId()));
             product.setBrand(brand);
         }
         if (request.getProductUnitId() != null) {
-            ProductUnit unit = productUnitRepository.findById(request.getProductUnitId())
+            ProductUnit unit = productUnitRepository.findByIdAndCompanyId(request.getProductUnitId(), companyId)
                     .orElseThrow(() -> new IllegalArgumentException(
                             "Product unit not found: " + request.getProductUnitId()));
             product.setProductUnit(unit);
         }
         if (request.getSalesUnitId() != null) {
-            ProductUnit salesUnit = productUnitRepository.findById(request.getSalesUnitId())
+            ProductUnit salesUnit = productUnitRepository.findByIdAndCompanyId(request.getSalesUnitId(), companyId)
                     .orElseThrow(
                             () -> new IllegalArgumentException("Sales unit not found: " + request.getSalesUnitId()));
             product.setSalesUnit(salesUnit);
         }
         if (request.getPurchaseUnitId() != null) {
-            ProductUnit purchaseUnit = productUnitRepository.findById(request.getPurchaseUnitId())
+            ProductUnit purchaseUnit = productUnitRepository.findByIdAndCompanyId(request.getPurchaseUnitId(), companyId)
                     .orElseThrow(() -> new IllegalArgumentException(
                             "Purchase unit not found: " + request.getPurchaseUnitId()));
             product.setPurchaseUnit(purchaseUnit);
@@ -520,6 +526,7 @@ public class ProductServiceImpl implements ProductService {
         Map<Long, List<ProductTaxResponse>> multiTaxMap = new HashMap<>();
 
         if (warehouseId != null) {
+            warehouseAccessService.requireAccessible(warehouseId);
             // Single warehouse mode
             if (includePrice) {
                 productPriceRepository
@@ -541,10 +548,15 @@ public class ProductServiceImpl implements ProductService {
             }
         } else {
             // Multi-warehouse mode — using groupingBy
+            Set<Long> accessibleWarehouseIds = warehouseAccessService.accessibleWarehouses().stream()
+                    .map(warehouse -> warehouse.getId())
+                    .collect(Collectors.toSet());
             if (includePrice) {
                 Map<Long, List<ProductPriceResponse>> groupedPrices = productPriceRepository
                         .findAllByProductIdInAndCompanyId(productIds, companyId)
                         .stream()
+                        .filter(price -> price.getWarehouse() == null
+                                || accessibleWarehouseIds.contains(price.getWarehouse().getId()))
                         .collect(Collectors.groupingBy(
                                 price -> price.getProduct().getId(),
                                 Collectors.mapping(ProductPriceResponse::fromEntity, Collectors.toList())));
@@ -554,6 +566,7 @@ public class ProductServiceImpl implements ProductService {
                 Map<Long, List<ProductStockResponse>> groupedStocks = productStockRepository
                         .findAllByProductIdInAndCompanyId(productIds, companyId)
                         .stream()
+                        .filter(stock -> accessibleWarehouseIds.contains(stock.getWarehouse().getId()))
                         .collect(Collectors.groupingBy(
                                 stock -> stock.getProduct().getId(),
                                 Collectors.mapping(ProductStockResponse::fromEntity, Collectors.toList())));
@@ -563,6 +576,8 @@ public class ProductServiceImpl implements ProductService {
                 Map<Long, List<ProductTaxResponse>> groupedTaxes = productTaxRepository
                         .findAllByProductIdInAndCompanyId(productIds, companyId)
                         .stream()
+                        .filter(tax -> tax.getWarehouse() == null
+                                || accessibleWarehouseIds.contains(tax.getWarehouse().getId()))
                         .collect(Collectors.groupingBy(
                                 tax -> tax.getProduct().getId(),
                                 Collectors.mapping(ProductTaxResponse::fromEntity, Collectors.toList())));
@@ -604,9 +619,9 @@ public class ProductServiceImpl implements ProductService {
         Long companyId = UserContext.getCurrentCompanyId();
 
         List<Product> products = productRepository
-                .findByNameContainingIgnoreCaseOrCodeContainingIgnoreCaseOrSkuContainingIgnoreCase(query, query, query)
+                .findByCompanyIdAndIsDeletedFalseAndNameContainingIgnoreCaseOrCompanyIdAndIsDeletedFalseAndCodeContainingIgnoreCaseOrCompanyIdAndIsDeletedFalseAndSkuContainingIgnoreCase(
+                        companyId, query, companyId, query, companyId, query)
                 .stream()
-                .filter(p -> p.getCompanyId().equals(companyId) && !p.getIsDeleted())
                 .limit(limit)
                 .collect(Collectors.toList());
 
@@ -642,6 +657,9 @@ public class ProductServiceImpl implements ProductService {
     public PaginationResponse<ProductResponse> getProducts(PaginationRequest request) {
         Long companyId = UserContext.getCurrentCompanyId();
         Long warehouseId = request.getWarehouseId();
+        if (warehouseId != null) {
+            warehouseAccessService.requireAccessible(warehouseId);
+        }
         boolean includePrice = request.isIncludePrice();
         boolean includeStock = request.isIncludeStock();
         boolean includeTax = request.isIncludeTax();
@@ -729,11 +747,11 @@ public class ProductServiceImpl implements ProductService {
         Long companyId = UserContext.getCurrentCompanyId();
         Long currentUserId = UserContext.getCurrentUserId();
 
-        List<Product> products = productRepository.findAllById(ids);
+        List<Product> products = productRepository.findAllByIdInAndCompanyIdAndIsDeletedFalse(ids, companyId);
+        if (products.size() != ids.stream().distinct().count()) {
+            throw new IllegalArgumentException("One or more products were not found in the authenticated company");
+        }
         for (Product product : products) {
-            if (!product.getCompanyId().equals(companyId)) {
-                throw new IllegalArgumentException("Product not found in company: " + product.getId());
-            }
             product.setIsDeleted(true);
             product.setStatus(ProductStatus.INACTIVE);
             product.setUpdatedBy(currentUserId);
@@ -748,11 +766,11 @@ public class ProductServiceImpl implements ProductService {
         Long companyId = UserContext.getCurrentCompanyId();
         Long currentUserId = UserContext.getCurrentUserId();
 
-        List<Product> products = productRepository.findAllById(ids);
+        List<Product> products = productRepository.findAllByIdInAndCompanyIdAndIsDeletedFalse(ids, companyId);
+        if (products.size() != ids.stream().distinct().count()) {
+            throw new IllegalArgumentException("One or more products were not found in the authenticated company");
+        }
         for (Product product : products) {
-            if (!product.getCompanyId().equals(companyId)) {
-                throw new IllegalArgumentException("Product not found in company: " + product.getId());
-            }
             product.setStatus(status);
             product.setUpdatedBy(currentUserId);
             product.setUpdatedAt(LocalDateTime.now());
