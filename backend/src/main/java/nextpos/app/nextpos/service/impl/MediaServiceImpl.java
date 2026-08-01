@@ -8,6 +8,7 @@ import nextpos.app.nextpos.model.dto.response.MediaResponse;
 import nextpos.app.nextpos.model.entity.Media;
 import nextpos.app.nextpos.repository.MediaRepository;
 import nextpos.app.nextpos.security.context.UserContext;
+import nextpos.app.nextpos.security.access.WarehouseAccessService;
 import nextpos.app.nextpos.service.interf.MediaService;
 import nextpos.app.nextpos.service.storage.StorageContext;
 import nextpos.app.nextpos.service.storage.StorageService;
@@ -39,12 +40,15 @@ public class MediaServiceImpl implements MediaService {
     private final MediaRepository mediaRepository;
     private final StorageServiceFactory storageServiceFactory;
     private final ObjectMapper objectMapper;
+    private final WarehouseAccessService warehouseAccessService;
 
     @Override
     @Transactional
     public MediaResponse uploadFile(MultipartFile file, MediaUploadRequest request) throws IOException {
         Long companyId = UserContext.getCurrentCompanyId();
         Long userId = UserContext.getCurrentUserId();
+
+        validateWarehouseRequest(request);
 
         validateUploadRequest(request, companyId, userId);
 
@@ -104,6 +108,8 @@ public class MediaServiceImpl implements MediaService {
         Long companyId = UserContext.getCurrentCompanyId();
         Long userId = UserContext.getCurrentUserId();
 
+        validateWarehouseRequest(request);
+
         validateUploadRequest(request, companyId, userId);
 
         List<CompletableFuture<Media>> uploadFutures = new ArrayList<>();
@@ -157,10 +163,10 @@ public class MediaServiceImpl implements MediaService {
     public MediaResponse getMedia(String mediaId) {
         Long companyId = UserContext.getCurrentCompanyId();
 
-        Media media = mediaRepository.findById(mediaId)
+        Media media = mediaRepository.findByIdAndCompanyId(mediaId, companyId)
                 .orElseThrow(() -> new RuntimeException("Media not found: " + mediaId));
 
-        validateCompanyAccess(media, companyId);
+        validateWarehouseAccess(media);
 
         // Update accessed at
         media.setAccessedAt(LocalDateTime.now());
@@ -170,14 +176,17 @@ public class MediaServiceImpl implements MediaService {
     }
 
     @Override
-    @Cacheable(value = "entity-media", key = "#entityType + '_' + #entityId")
+    @Cacheable(value = "entity-media", key = "T(nextpos.app.nextpos.security.context.UserContext).getCurrentCompanyId() + '_' + #entityType + '_' + #entityId")
     public List<MediaResponse> getMediaByEntity(String entityType, Long entityId) {
         Long companyId = UserContext.getCurrentCompanyId();
 
         List<Media> mediaList = mediaRepository.findByCompanyIdAndEntityTypeAndEntityId(
                 companyId, entityType, entityId);
 
+        var accessibleWarehouses = warehouseAccessService.accessibleWarehouses().stream()
+                .map(warehouse -> warehouse.getId()).collect(Collectors.toSet());
         return mediaList.stream()
+                .filter(media -> media.getWarehouseId() == null || accessibleWarehouses.contains(media.getWarehouseId()))
                 .map(this::convertToResponse)
                 .collect(Collectors.toList());
     }
@@ -195,10 +204,10 @@ public class MediaServiceImpl implements MediaService {
     public String getPublicUrl(String mediaId) {
         Long companyId = UserContext.getCurrentCompanyId();
 
-        Media media = mediaRepository.findById(mediaId)
+        Media media = mediaRepository.findByIdAndCompanyId(mediaId, companyId)
                 .orElseThrow(() -> new RuntimeException("Media not found: " + mediaId));
 
-        validateCompanyAccess(media, companyId);
+        validateWarehouseAccess(media);
 
         StorageService storageService = storageServiceFactory.getStorageService(media.getStorageProvider());
         return storageService.getPublicUrl(media);
@@ -209,10 +218,10 @@ public class MediaServiceImpl implements MediaService {
     public String getSignedUrl(String mediaId, long expiryMinutes) {
         Long companyId = UserContext.getCurrentCompanyId();
 
-        Media media = mediaRepository.findById(mediaId)
+        Media media = mediaRepository.findByIdAndCompanyId(mediaId, companyId)
                 .orElseThrow(() -> new RuntimeException("Media not found: " + mediaId));
 
-        validateCompanyAccess(media, companyId);
+        validateWarehouseAccess(media);
 
         StorageService storageService = storageServiceFactory.getStorageService(media.getStorageProvider());
         return storageService.getSignedUrl(media, expiryMinutes);
@@ -225,10 +234,10 @@ public class MediaServiceImpl implements MediaService {
         Long companyId = UserContext.getCurrentCompanyId();
         Long userId = UserContext.getCurrentUserId();
 
-        Media media = mediaRepository.findById(mediaId)
+        Media media = mediaRepository.findByIdAndCompanyId(mediaId, companyId)
                 .orElseThrow(() -> new RuntimeException("Media not found: " + mediaId));
 
-        validateCompanyAccess(media, companyId);
+        validateWarehouseAccess(media);
 
         // Soft delete in database
         media.setDeletedAt(LocalDateTime.now());
@@ -271,10 +280,10 @@ public class MediaServiceImpl implements MediaService {
         Long companyId = UserContext.getCurrentCompanyId();
         Long userId = UserContext.getCurrentUserId();
 
-        Media media = mediaRepository.findById(mediaId)
+        Media media = mediaRepository.findByIdAndCompanyId(mediaId, companyId)
                 .orElseThrow(() -> new RuntimeException("Media not found: " + mediaId));
 
-        validateCompanyAccess(media, companyId);
+        validateWarehouseAccess(media);
 
         media.setEntityType(newEntityType);
         media.setEntityId(newEntityId);
@@ -316,10 +325,10 @@ public class MediaServiceImpl implements MediaService {
 
         List<MediaResponse> copiedMedia = new ArrayList<>();
         for (String mediaId : mediaIds) {
-            Media media = mediaRepository.findById(mediaId)
+            Media media = mediaRepository.findByIdAndCompanyId(mediaId, companyId)
                     .orElseThrow(() -> new RuntimeException("Media not found: " + mediaId));
 
-            validateCompanyAccess(media, companyId);
+            validateWarehouseAccess(media);
 
             // Create a copy (simplified - just linking to new entity)
             Media copy = Media.builder()
@@ -354,10 +363,10 @@ public class MediaServiceImpl implements MediaService {
         Long companyId = UserContext.getCurrentCompanyId();
         Long userId = UserContext.getCurrentUserId();
 
-        Media media = mediaRepository.findById(mediaId)
+        Media media = mediaRepository.findByIdAndCompanyId(mediaId, companyId)
                 .orElseThrow(() -> new RuntimeException("Media not found: " + mediaId));
 
-        validateCompanyAccess(media, companyId);
+        validateWarehouseAccess(media);
 
         try {
             media.setMetadata(objectMapper.writeValueAsString(metadata));
@@ -379,9 +388,15 @@ public class MediaServiceImpl implements MediaService {
         }
     }
 
-    private void validateCompanyAccess(Media media, Long companyId) {
-        if (!media.getCompanyId().equals(companyId)) {
-            throw new RuntimeException("Access denied to media");
+    private void validateWarehouseRequest(MediaUploadRequest request) {
+        if (request.getWarehouseId() != null) {
+            warehouseAccessService.requireAccessible(request.getWarehouseId());
+        }
+    }
+
+    private void validateWarehouseAccess(Media media) {
+        if (media.getWarehouseId() != null) {
+            warehouseAccessService.requireAccessible(media.getWarehouseId());
         }
     }
 
@@ -469,20 +484,17 @@ public class MediaServiceImpl implements MediaService {
     public Resource loadMediaResourceById(String mediaId, boolean thumbnail) throws IOException {
         Long companyId = UserContext.getCurrentCompanyId();
 
-        Media media = mediaRepository.findById(mediaId)
+        Media media = mediaRepository.findByIdAndCompanyId(mediaId, companyId)
                 .orElseThrow(() -> new IOException("Media not found: " + mediaId));
 
-        validateCompanyAccess(media, companyId);
+        validateWarehouseAccess(media);
         return loadMediaResourceInternal(media, thumbnail);
     }
 
     @Override
     public Resource loadMediaResourceById(String mediaId, boolean thumbnail, Long companyId) throws IOException {
-        Media media = mediaRepository.findById(mediaId)
+        Media media = mediaRepository.findByIdAndCompanyId(mediaId, companyId)
                 .orElseThrow(() -> new IOException("Media not found: " + mediaId));
-        if (!media.getCompanyId().equals(companyId)) {
-            throw new IOException("Access denied to media");
-        }
         return loadMediaResourceInternal(media, thumbnail);
     }
 

@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import nextpos.app.nextpos.model.dto.request.MediaUploadRequest;
 import nextpos.app.nextpos.model.dto.response.MediaResponse;
 import nextpos.app.nextpos.service.interf.MediaService;
+import nextpos.app.nextpos.security.context.UserContext;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
@@ -120,7 +121,7 @@ public class MediaController {
             @RequestParam(value = "thumb", required = false, defaultValue = "false") boolean thumb) {
 
         try {
-            Resource resource = mediaService.loadMediaResource(filename, companyId, thumb);
+            Resource resource = mediaService.loadMediaResource(filename, authenticatedCompany(companyId), thumb);
 
             if (resource == null || !resource.exists()) {
                 return ResponseEntity.notFound().build();
@@ -182,6 +183,7 @@ public class MediaController {
             @RequestParam(value = "thumb", required = false, defaultValue = "false") boolean thumb) {
 
         try {
+            authenticatedCompany(companyId);
             // Get media by entity to find the correct file
             List<MediaResponse> mediaList = mediaService.getMediaByEntity(entityType, entityId);
 
@@ -233,5 +235,13 @@ public class MediaController {
         } else {
             return "application/octet-stream";
         }
+    }
+
+    private Long authenticatedCompany(Long requestedCompanyId) {
+        Long companyId = UserContext.getCurrentCompanyId();
+        if (!companyId.equals(requestedCompanyId)) {
+            throw new SecurityException("Company identifier does not match authenticated tenant");
+        }
+        return companyId;
     }
 }

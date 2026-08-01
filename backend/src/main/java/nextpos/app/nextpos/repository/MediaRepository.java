@@ -16,6 +16,8 @@ import java.util.Optional;
 @Repository
 public interface MediaRepository extends JpaRepository<Media, String> {
 
+        Optional<Media> findByIdAndCompanyId(String id, Long companyId);
+
         List<Media> findByCompanyIdAndStoredFilename(Long companyId, String storedFilename);
 
         List<Media> findByCompanyIdAndEntityTypeAndEntityId(Long companyId,
