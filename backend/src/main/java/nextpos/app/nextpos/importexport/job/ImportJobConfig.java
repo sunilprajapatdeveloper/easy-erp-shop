@@ -75,7 +75,7 @@ public class ImportJobConfig {
     }
 
     private ItemReader<Map<String, Object>> createCsvReader(ImportExportJob job, Map<String, Object> options) {
-        Media media = mediaRepository.findById(job.getSourceMediaId())
+        Media media = mediaRepository.findByIdAndCompanyId(job.getSourceMediaId(), job.getCompanyId())
                 .orElseThrow(() -> new IllegalStateException("Media not found for job " + job.getId()));
 
         FileSystemResource resource = new FileSystemResource(media.getFilePath());

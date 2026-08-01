@@ -10,6 +10,7 @@ import nextpos.app.nextpos.model.dto.response.BarcodeScanResponse;
 import nextpos.app.nextpos.model.dto.response.ScannerRegistrationResponse;
 import nextpos.app.nextpos.repository.*;
 import nextpos.app.nextpos.security.context.UserContext;
+import nextpos.app.nextpos.security.access.WarehouseAccessService;
 import nextpos.app.nextpos.service.interf.BarcodeScannerService;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -33,8 +34,8 @@ public class BarcodeScannerServiceImpl implements BarcodeScannerService {
     private final ProductRepository productRepository;
     private final ProductPriceRepository productPriceRepository;
     private final ProductStockRepository productStockRepository;
-    private final WarehouseRepository warehouseRepository;
     private final UserRepository userRepository;
+    private final WarehouseAccessService warehouseAccessService;
     private final SimpMessagingTemplate messagingTemplate;
     private final RedisTemplate<String, Object> redisTemplate;
 
@@ -48,13 +49,11 @@ public class BarcodeScannerServiceImpl implements BarcodeScannerService {
         Long companyId = UserContext.getCurrentCompanyId();
 
         // Validate warehouse belongs to company
-        Warehouse warehouse = warehouseRepository.findByIdAndCompanyIdAndIsDeletedFalse(
-                request.getWarehouseId(), companyId)
-                .orElseThrow(() -> new RuntimeException("Warehouse not found or unauthorized"));
+        Warehouse warehouse = warehouseAccessService.requireAccessible(request.getWarehouseId());
 
         // Validate user exists
-        User assignedUser = userRepository.findById(request.getAssignedUserId())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        User assignedUser = userRepository.findByIdAndCompanyId(request.getAssignedUserId(), companyId)
+                .orElseThrow(() -> new RuntimeException("User not found or unauthorized"));
 
         String scannerId = generateScannerId(companyId);
 
@@ -188,8 +187,10 @@ public class BarcodeScannerServiceImpl implements BarcodeScannerService {
     }
 
     private BarcodeScanner validateScanner(String scannerId, Long companyId) {
-        return scannerRepository.findByScannerIdAndCompanyId(scannerId, companyId)
+        BarcodeScanner scanner = scannerRepository.findByScannerIdAndCompanyId(scannerId, companyId)
                 .orElseThrow(() -> new RuntimeException("Scanner not found or unauthorized"));
+        warehouseAccessService.requireAssignment(scanner.getWarehouse().getId());
+        return scanner;
     }
 
     private void broadcastScanToPOS(BarcodeScanner scanner, BarcodeScanResponse response) {
@@ -220,6 +221,7 @@ public class BarcodeScannerServiceImpl implements BarcodeScannerService {
 
         scannerRepository.findByScannerIdAndCompanyId(scannerId, companyId)
                 .ifPresent(scanner -> {
+                    warehouseAccessService.requireAssignment(scanner.getWarehouse().getId());
                     scanner.setStatus(ScannerStatus.valueOf(status.toUpperCase()));
                     scanner.setLastConnectedAt(LocalDateTime.now());
                     scannerRepository.save(scanner);
@@ -230,6 +232,7 @@ public class BarcodeScannerServiceImpl implements BarcodeScannerService {
     @Override
     public List<BarcodeScanner> getScannersByWarehouse(Long warehouseId) {
         Long companyId = UserContext.getCurrentCompanyId();
+        warehouseAccessService.requireAccessible(warehouseId);
 
         return scannerRepository.findByWarehouseIdAndCompanyId(warehouseId, companyId);
     }

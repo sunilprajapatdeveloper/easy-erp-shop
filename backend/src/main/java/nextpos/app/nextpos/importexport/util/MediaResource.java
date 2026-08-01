@@ -15,17 +15,19 @@ public class MediaResource implements Resource {
     private final MediaService mediaService;
     private final MediaRepository mediaRepository;
     private final String mediaId;
+    private final Long companyId;
 
-    public MediaResource(MediaService mediaService, MediaRepository mediaRepository, String mediaId) {
+    public MediaResource(MediaService mediaService, MediaRepository mediaRepository, String mediaId, Long companyId) {
         this.mediaService = mediaService;
         this.mediaRepository = mediaRepository;
         this.mediaId = mediaId;
+        this.companyId = companyId;
     }
 
     @Override
     public boolean exists() {
         try {
-            mediaService.loadMediaResourceById(mediaId, false).getInputStream().close();
+            mediaService.loadMediaResourceById(mediaId, false, companyId).getInputStream().close();
             return true;
         } catch (Exception e) {
             return false;
@@ -44,7 +46,7 @@ public class MediaResource implements Resource {
 
     @Override
     public InputStream getInputStream() throws IOException {
-        return mediaService.loadMediaResourceById(mediaId, false).getInputStream();
+        return mediaService.loadMediaResourceById(mediaId, false, companyId).getInputStream();
     }
 
     @Override
@@ -54,7 +56,7 @@ public class MediaResource implements Resource {
 
     @Override
     public long contentLength() throws IOException {
-        Media media = mediaRepository.findById(mediaId).orElse(null);
+        Media media = mediaRepository.findByIdAndCompanyId(mediaId, companyId).orElse(null);
         if (media != null && media.getFileSize() != null) {
             return media.getFileSize();
         }
@@ -91,7 +93,7 @@ public class MediaResource implements Resource {
 
     @Override
     public String getFilename() {
-        Media media = mediaRepository.findById(mediaId).orElse(null);
+        Media media = mediaRepository.findByIdAndCompanyId(mediaId, companyId).orElse(null);
         return media != null ? media.getOriginalFilename() : null;
     }
 }

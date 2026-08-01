@@ -65,7 +65,7 @@ public class ImportJobConsumer {
             options.put("headers", headers);
 
             // Determine file extension from the media record
-            Media media = mediaRepository.findById(job.getSourceMediaId()).orElse(null);
+            Media media = mediaRepository.findByIdAndCompanyId(job.getSourceMediaId(), job.getCompanyId()).orElse(null);
             if (media != null) {
                 String originalName = media.getOriginalFilename();
                 if (originalName != null && originalName.toLowerCase().endsWith(".csv")) {
