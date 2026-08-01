@@ -13,6 +13,7 @@ import nextpos.app.nextpos.model.entity.*;
 import nextpos.app.nextpos.model.entity.Currency;
 import nextpos.app.nextpos.model.enums.*;
 import nextpos.app.nextpos.repository.*;
+import nextpos.app.nextpos.security.access.WarehouseAccessService;
 import nextpos.app.nextpos.security.context.UserContext;
 import nextpos.app.nextpos.service.interf.ProductStockService;
 import nextpos.app.nextpos.service.interf.PromotionEngineService;
@@ -34,12 +35,12 @@ public class SaleReturnServiceImpl implements SaleReturnService {
         private final SaleReturnRepository saleReturnRepository;
         private final SaleRepository saleRepository;
         private final CustomerRepository customerRepository;
-        private final WarehouseRepository warehouseRepository;
         private final ProductRepository productRepository;
         private final CurrencyRepository currencyRepository;
         private final ProductStockService productStockService;
         private final PromotionEngineService promotionEngineService;
         private final PromotionRepository promotionRepository;
+        private final WarehouseAccessService warehouseAccessService;
 
         @Override
         @Transactional
@@ -47,14 +48,14 @@ public class SaleReturnServiceImpl implements SaleReturnService {
                 Long currentUserId = UserContext.getCurrentUserId();
                 Long currentCompanyId = UserContext.getCurrentCompanyId();
 
-                Sale originalSale = saleRepository.findById(request.getOriginalSaleId())
+                Sale originalSale = saleRepository.findByIdAndCompanyId(request.getOriginalSaleId(), currentCompanyId)
                                 .orElseThrow(() -> new RuntimeException("Original sale not found"));
+                warehouseAccessService.requireAccessible(originalSale.getWarehouse().getId());
 
-                Customer customer = customerRepository.findById(request.getCustomerId())
+                Customer customer = customerRepository.findByIdAndCompanyId(request.getCustomerId(), currentCompanyId)
                                 .orElseThrow(() -> new RuntimeException("Customer not found"));
 
-                Warehouse warehouse = warehouseRepository.findById(request.getWarehouseId())
-                                .orElseThrow(() -> new RuntimeException("Warehouse not found"));
+                Warehouse warehouse = warehouseAccessService.requireAccessible(request.getWarehouseId());
 
                 Currency currency = currencyRepository.findById(request.getCurrencyId())
                                 .orElseThrow(() -> new RuntimeException("Currency not found"));
@@ -95,7 +96,8 @@ public class SaleReturnServiceImpl implements SaleReturnService {
                 List<SaleReturnProduct> returnProducts = new ArrayList<>();
 
                 for (CreateSaleReturnRequest.SaleReturnProductRequest p : request.getProducts()) {
-                        Product product = productRepository.findById(p.getProductId())
+                        Product product = productRepository
+                                        .findByIdAndCompanyIdAndIsDeletedFalse(p.getProductId(), currentCompanyId)
                                         .orElseThrow(() -> new RuntimeException(
                                                         "Product not found: " + p.getProductId()));
 
@@ -188,7 +190,9 @@ public class SaleReturnServiceImpl implements SaleReturnService {
                 }
 
                 if (validation.getAppliedPromotionId() != null) {
-                        Promotion promo = promotionRepository.getReferenceById(validation.getAppliedPromotionId());
+                        Promotion promo = promotionRepository
+                                        .findByIdAndCompanyId(validation.getAppliedPromotionId(), companyId)
+                                        .orElseThrow(() -> new InvalidPromotionException("Promotion not found"));
                         saleReturn.setAppliedPromotion(promo);
                 }
                 saleReturn.setPromotionDiscountAmount(validation.getDiscountAmount());
@@ -224,11 +228,10 @@ public class SaleReturnServiceImpl implements SaleReturnService {
         @Override
         @Transactional(readOnly = true)
         public SaleReturnResponse getSaleReturnById(Long id) {
-                SaleReturn saleReturn = saleReturnRepository.findById(id)
+                Long companyId = UserContext.getCurrentCompanyId();
+                SaleReturn saleReturn = saleReturnRepository.findByIdAndCompanyId(id, companyId)
                                 .orElseThrow(() -> new RuntimeException("Sale return not found"));
-                if (!saleReturn.getCompanyId().equals(UserContext.getCurrentCompanyId())) {
-                        throw new SecurityException("Access denied");
-                }
+                warehouseAccessService.requireAccessible(saleReturn.getWarehouse().getId());
                 return SaleReturnResponse.fromEntity(saleReturn);
         }
 
@@ -236,7 +239,12 @@ public class SaleReturnServiceImpl implements SaleReturnService {
         @Transactional(readOnly = true)
         public List<SaleReturnResponse> getMySaleReturns() {
                 Long currentUserId = UserContext.getCurrentUserId();
-                return saleReturnRepository.findByCreatedBy(currentUserId).stream()
+                Long companyId = UserContext.getCurrentCompanyId();
+                List<Long> warehouseIds = warehouseAccessService.accessibleWarehouses().stream()
+                                .map(Warehouse::getId).toList();
+                return saleReturnRepository
+                                .findByCreatedByAndCompanyIdAndWarehouse_IdIn(currentUserId, companyId, warehouseIds)
+                                .stream()
                                 .map(SaleReturnResponse::fromEntity)
                                 .collect(Collectors.toList());
         }
@@ -245,7 +253,9 @@ public class SaleReturnServiceImpl implements SaleReturnService {
         @Transactional(readOnly = true)
         public List<SaleReturnResponse> getAllSaleReturns() {
                 Long currentCompanyId = UserContext.getCurrentCompanyId();
-                return saleReturnRepository.findByCompanyId(currentCompanyId).stream()
+                List<Long> warehouseIds = warehouseAccessService.accessibleWarehouses().stream()
+                                .map(Warehouse::getId).toList();
+                return saleReturnRepository.findByCompanyIdAndWarehouse_IdIn(currentCompanyId, warehouseIds).stream()
                                 .map(SaleReturnResponse::fromEntity)
                                 .collect(Collectors.toList());
         }
@@ -256,14 +266,12 @@ public class SaleReturnServiceImpl implements SaleReturnService {
                 Long currentUserId = UserContext.getCurrentUserId();
                 Long currentCompanyId = UserContext.getCurrentCompanyId();
 
-                SaleReturn saleReturn = saleReturnRepository.findById(id)
+                SaleReturn saleReturn = saleReturnRepository.findByIdAndCompanyId(id, currentCompanyId)
                                 .orElseThrow(() -> new RuntimeException("Sale return not found"));
-                if (!saleReturn.getCompanyId().equals(currentCompanyId)) {
-                        throw new SecurityException("Access denied");
-                }
 
                 // Restore stock for old products (since they were previously returned)
                 Warehouse oldWarehouse = saleReturn.getWarehouse();
+                warehouseAccessService.requireAccessible(oldWarehouse.getId());
                 for (SaleReturnProduct sp : saleReturn.getProducts()) {
                         productStockService.adjustStock(sp.getProduct().getId(), oldWarehouse.getId(),
                                         -sp.getQuantity());
@@ -271,8 +279,7 @@ public class SaleReturnServiceImpl implements SaleReturnService {
 
                 // Update warehouse if changed
                 if (request.getWarehouseId() != null && !request.getWarehouseId().equals(oldWarehouse.getId())) {
-                        Warehouse newWarehouse = warehouseRepository.findById(request.getWarehouseId())
-                                        .orElseThrow(() -> new RuntimeException("New warehouse not found"));
+                        Warehouse newWarehouse = warehouseAccessService.requireAccessible(request.getWarehouseId());
                         saleReturn.setWarehouse(newWarehouse);
                         oldWarehouse = saleReturn.getWarehouse();
                 }
@@ -289,7 +296,8 @@ public class SaleReturnServiceImpl implements SaleReturnService {
 
                 if (request.getProducts() != null) {
                         for (UpdateSaleReturnRequest.SaleReturnProductUpdateRequest p : request.getProducts()) {
-                                Product product = productRepository.findById(p.getProductId())
+                                Product product = productRepository
+                                                .findByIdAndCompanyIdAndIsDeletedFalse(p.getProductId(), currentCompanyId)
                                                 .orElseThrow(() -> new RuntimeException(
                                                                 "Product not found: " + p.getProductId()));
                                 int qty = Optional.ofNullable(p.getQuantity()).orElse(0);
@@ -372,7 +380,7 @@ public class SaleReturnServiceImpl implements SaleReturnService {
                 Optional.ofNullable(request.getSource()).ifPresent(saleReturn::setSource);
                 Optional.ofNullable(request.getNote()).ifPresent(saleReturn::setNote);
                 if (request.getCustomerId() != null) {
-                        Customer customer = customerRepository.findById(request.getCustomerId())
+                        Customer customer = customerRepository.findByIdAndCompanyId(request.getCustomerId(), currentCompanyId)
                                         .orElseThrow(() -> new RuntimeException("Customer not found"));
                         saleReturn.setCustomer(customer);
                 }
@@ -420,11 +428,10 @@ public class SaleReturnServiceImpl implements SaleReturnService {
         @Override
         @Transactional
         public void deleteSaleReturn(Long id) {
-                SaleReturn saleReturn = saleReturnRepository.findById(id)
+                Long companyId = UserContext.getCurrentCompanyId();
+                SaleReturn saleReturn = saleReturnRepository.findByIdAndCompanyId(id, companyId)
                                 .orElseThrow(() -> new RuntimeException("Sale return not found"));
-                if (!saleReturn.getCompanyId().equals(UserContext.getCurrentCompanyId())) {
-                        throw new SecurityException("Access denied");
-                }
+                warehouseAccessService.requireAccessible(saleReturn.getWarehouse().getId());
                 // Reverse stock adjustments (decrease stock back since the return is undone)
                 for (SaleReturnProduct sp : saleReturn.getProducts()) {
                         productStockService.adjustStock(sp.getProduct().getId(), saleReturn.getWarehouse().getId(),

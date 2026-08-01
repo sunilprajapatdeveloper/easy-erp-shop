@@ -16,6 +16,8 @@ import java.util.Optional;
 @Repository
 public interface PromotionRepository extends JpaRepository<Promotion, Long> {
 
+    Optional<Promotion> findByIdAndCompanyId(Long id, Long companyId);
+
     Optional<Promotion> findByCompanyIdAndCodeAndIsActiveTrue(Long companyId, String code);
 
     @Query("SELECT p FROM Promotion p WHERE p.companyId = :companyId " +
