@@ -11,6 +11,10 @@ public interface LoyaltySettingsRepository extends JpaRepository<LoyaltySettings
 
     Optional<LoyaltySettings> findByCompanyId(Long companyId);
 
+    Optional<LoyaltySettings> findByIdAndCompanyId(Long id, Long companyId);
+
+    List<LoyaltySettings> findAllByCompanyId(Long companyId);
+
     Optional<LoyaltySettings> findByIdAndCompany(Long id, Company company);
 
     List<LoyaltySettings> findAllByCompany(Company company);

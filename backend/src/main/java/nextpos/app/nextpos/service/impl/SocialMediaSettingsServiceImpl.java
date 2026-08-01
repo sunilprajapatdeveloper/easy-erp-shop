@@ -59,8 +59,7 @@ public class SocialMediaSettingsServiceImpl implements SocialMediaSettingsServic
         Long companyId = UserContext.getCurrentCompanyId();
         Long currentUserId = UserContext.getCurrentUserId();
 
-        SocialMediaSettings entity = repository.findById(id)
-                .filter(s -> s.getCompany().getId().equals(companyId))
+        SocialMediaSettings entity = repository.findByIdAndCompanyId(id, companyId)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Social media settings not found with id " + id + " for company " + companyId));
 
@@ -90,8 +89,7 @@ public class SocialMediaSettingsServiceImpl implements SocialMediaSettingsServic
     public SocialMediaSettingsResponse getSocialMediaSettings(Long id) {
         Long companyId = UserContext.getCurrentCompanyId();
 
-        SocialMediaSettings entity = repository.findById(id)
-                .filter(s -> s.getCompany().getId().equals(companyId))
+        SocialMediaSettings entity = repository.findByIdAndCompanyId(id, companyId)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Social media settings not found with id " + id + " for company " + companyId));
         return mapToResponse(entity);
@@ -102,10 +100,7 @@ public class SocialMediaSettingsServiceImpl implements SocialMediaSettingsServic
     public List<SocialMediaSettingsResponse> listSocialMediaSettings() {
         Long companyId = UserContext.getCurrentCompanyId();
 
-        Company company = companyRepository.findById(companyId)
-                .orElseThrow(() -> new ResourceNotFoundException("Company not found with id " + companyId));
-
-        return repository.findAllByCompany(company)
+        return repository.findAllByCompanyId(companyId)
                 .stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());

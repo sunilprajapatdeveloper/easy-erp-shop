@@ -12,6 +12,10 @@ public interface OnlineOrderingSettingsRepository extends JpaRepository<OnlineOr
 
     Optional<OnlineOrderingSettings> findByCompanyId(Long companyId);
 
+    Optional<OnlineOrderingSettings> findByCompanyIdAndIsDeletedFalse(Long companyId);
+
+    boolean existsByCompanyIdAndIsDeletedFalse(Long companyId);
+
     Optional<OnlineOrderingSettings> findByCompanyAndIsDeletedFalse(Company company);
 
     boolean existsByCompanyAndIsDeletedFalse(Company company);

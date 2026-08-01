@@ -12,6 +12,10 @@ public interface SocialMediaSettingsRepository extends JpaRepository<SocialMedia
 
     Optional<SocialMediaSettings> findByCompanyId(Long companyId);
 
+    Optional<SocialMediaSettings> findByIdAndCompanyId(Long id, Long companyId);
+
+    List<SocialMediaSettings> findAllByCompanyId(Long companyId);
+
     Optional<SocialMediaSettings> findByCompanyAndPlatform(Company company, SocialMediaPlatform platform);
 
     List<SocialMediaSettings> findAllByCompany(Company company);

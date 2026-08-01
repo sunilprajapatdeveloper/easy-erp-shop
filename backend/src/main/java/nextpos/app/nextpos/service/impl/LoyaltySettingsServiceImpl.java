@@ -61,10 +61,7 @@ public class LoyaltySettingsServiceImpl implements LoyaltySettingsService {
         Long companyId = UserContext.getCurrentCompanyId();
         Long currentUserId = UserContext.getCurrentUserId();
 
-        Company company = companyRepository.findById(companyId)
-                .orElseThrow(() -> new IllegalArgumentException("Company not found with id: " + companyId));
-
-        LoyaltySettings settings = repository.findByIdAndCompany(id, company)
+        LoyaltySettings settings = repository.findByIdAndCompanyId(id, companyId)
                 .orElseThrow(() -> new IllegalArgumentException(
                         "LoyaltySettings not found for company id: " + companyId + " and id: " + id));
 
@@ -106,10 +103,7 @@ public class LoyaltySettingsServiceImpl implements LoyaltySettingsService {
     public LoyaltySettingsResponse getLoyaltySettings(Long id) {
         Long companyId = UserContext.getCurrentCompanyId();
 
-        Company company = companyRepository.findById(companyId)
-                .orElseThrow(() -> new IllegalArgumentException("Company not found with id: " + companyId));
-
-        LoyaltySettings settings = repository.findByIdAndCompany(id, company)
+        LoyaltySettings settings = repository.findByIdAndCompanyId(id, companyId)
                 .orElseThrow(() -> new IllegalArgumentException(
                         "LoyaltySettings not found for company id: " + companyId + " and id: " + id));
 
@@ -120,10 +114,7 @@ public class LoyaltySettingsServiceImpl implements LoyaltySettingsService {
     public List<LoyaltySettingsResponse> listLoyaltySettings() {
         Long companyId = UserContext.getCurrentCompanyId();
 
-        Company company = companyRepository.findById(companyId)
-                .orElseThrow(() -> new IllegalArgumentException("Company not found with id: " + companyId));
-
-        return repository.findAllByCompany(company)
+        return repository.findAllByCompanyId(companyId)
                 .stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());

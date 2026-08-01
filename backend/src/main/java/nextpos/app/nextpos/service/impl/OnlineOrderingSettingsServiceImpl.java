@@ -36,7 +36,7 @@ public class OnlineOrderingSettingsServiceImpl implements OnlineOrderingSettings
                                 .orElseThrow(() -> new NoSuchElementException(
                                                 "Company not found with id: " + companyId));
 
-                if (settingsRepository.existsByCompanyAndIsDeletedFalse(company)) {
+                if (settingsRepository.existsByCompanyIdAndIsDeletedFalse(companyId)) {
                         throw new IllegalStateException(
                                         "OnlineOrderingSettings already exists for company: " + companyId);
                 }
@@ -66,11 +66,7 @@ public class OnlineOrderingSettingsServiceImpl implements OnlineOrderingSettings
                 Long companyId = UserContext.getCurrentCompanyId();
                 Long currentUserId = UserContext.getCurrentUserId();
 
-                Company company = companyRepository.findById(companyId)
-                                .orElseThrow(() -> new NoSuchElementException(
-                                                "Company not found with id: " + companyId));
-
-                OnlineOrderingSettings settings = settingsRepository.findByCompanyAndIsDeletedFalse(company)
+                OnlineOrderingSettings settings = settingsRepository.findByCompanyIdAndIsDeletedFalse(companyId)
                                 .orElseThrow(() -> new NoSuchElementException(
                                                 "OnlineOrderingSettings not found for companyId="
                                                                 + companyId));
@@ -87,7 +83,7 @@ public class OnlineOrderingSettingsServiceImpl implements OnlineOrderingSettings
                 settings.setUpdatedBy(currentUserId);
 
                 OnlineOrderingSettings saved = settingsRepository.save(settings);
-                log.info("Updated OnlineOrderingSettings for companyId={}", company.getId());
+                log.info("Updated OnlineOrderingSettings for companyId={}", companyId);
                 return mapToResponse(saved);
         }
 
@@ -96,11 +92,7 @@ public class OnlineOrderingSettingsServiceImpl implements OnlineOrderingSettings
         public OnlineOrderingSettingsResponse getOnlineOrderingSettings() {
                 Long companyId = UserContext.getCurrentCompanyId();
 
-                Company company = companyRepository.findById(companyId)
-                                .orElseThrow(() -> new NoSuchElementException(
-                                                "Company not found with id: " + companyId));
-
-                OnlineOrderingSettings settings = settingsRepository.findByCompanyAndIsDeletedFalse(company)
+                OnlineOrderingSettings settings = settingsRepository.findByCompanyIdAndIsDeletedFalse(companyId)
                                 .orElseThrow(() -> new NoSuchElementException(
                                                 "OnlineOrderingSettings not found for companyId=" + companyId));
 
@@ -112,11 +104,7 @@ public class OnlineOrderingSettingsServiceImpl implements OnlineOrderingSettings
                 Long companyId = UserContext.getCurrentCompanyId();
                 Long currentUserId = UserContext.getCurrentUserId();
 
-                Company company = companyRepository.findById(companyId)
-                                .orElseThrow(() -> new NoSuchElementException(
-                                                "Company not found with id: " + companyId));
-
-                OnlineOrderingSettings settings = settingsRepository.findByCompanyAndIsDeletedFalse(company)
+                OnlineOrderingSettings settings = settingsRepository.findByCompanyIdAndIsDeletedFalse(companyId)
                                 .orElseThrow(() -> new NoSuchElementException(
                                                 "OnlineOrderingSettings not found for companyId=" + companyId));
 
