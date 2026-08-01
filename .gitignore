@@ -1,0 +1,69 @@
+# Environment and local overrides
+.env
+.env.*
+!.env.example
+!*.example
+docker-compose.yml
+
+# Gradle caches and generated JVM output
+.gradle/
+.gradle-cache/
+**/.gradle/
+**/.gradle-cache/
+backend/build/
+**/build/
+**/out/
+**/target/
+*.class
+
+# Frontend dependencies and generated output
+frontend/node_modules/
+frontend/dist/
+**/node_modules/
+**/dist/
+**/.cache/
+**/.vite/
+**/.parcel-cache/
+**/coverage/
+
+# Test output and reports
+**/test-results/
+**/test-reports/
+**/reports/tests/
+**/reports/problems/
+*.exec
+*.lcov
+
+# Temporary files
+**/tmp/
+**/temp/
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Logs and runtime artifacts
+*.log
+logs/
+**/logs/
+*.pid
+*.hprof
+hs_err_pid*
+
+# IDE and editor metadata
+.idea/
+.vscode/
+*.iml
+.classpath
+.project
+.settings/
+
+# Generated/local project utilities
+project_structure.txt
+generate-full-structure.js
+
+# Runtime uploads
+uploads/
