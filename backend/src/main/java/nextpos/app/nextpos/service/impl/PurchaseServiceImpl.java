@@ -8,6 +8,7 @@ import nextpos.app.nextpos.model.entity.*;
 import nextpos.app.nextpos.model.entity.Currency;
 import nextpos.app.nextpos.model.enums.*;
 import nextpos.app.nextpos.repository.*;
+import nextpos.app.nextpos.security.access.WarehouseAccessService;
 import nextpos.app.nextpos.security.context.UserContext;
 import nextpos.app.nextpos.service.interf.ProductStockService;
 import nextpos.app.nextpos.service.interf.PurchaseService;
@@ -26,11 +27,11 @@ public class PurchaseServiceImpl implements PurchaseService {
 
         private final PurchaseRepository purchaseRepository;
         private final SupplierRepository supplierRepository;
-        private final WarehouseRepository warehouseRepository;
         private final ProductRepository productRepository;
         private final CurrencyRepository currencyRepository;
         private final ProductPriceRepository productPriceRepository;
         private final ProductStockService productStockService;
+        private final WarehouseAccessService warehouseAccessService;
 
         @Override
         @Transactional
@@ -38,10 +39,9 @@ public class PurchaseServiceImpl implements PurchaseService {
                 Long currentUserId = UserContext.getCurrentUserId();
                 Long currentCompanyId = UserContext.getCurrentCompanyId();
 
-                Supplier supplier = supplierRepository.findById(request.getSupplierId())
+                Supplier supplier = supplierRepository.findByIdAndCompanyId(request.getSupplierId(), currentCompanyId)
                                 .orElseThrow(() -> new RuntimeException("Supplier not found"));
-                Warehouse warehouse = warehouseRepository.findById(request.getWarehouseId())
-                                .orElseThrow(() -> new RuntimeException("Warehouse not found"));
+                Warehouse warehouse = warehouseAccessService.requireAccessible(request.getWarehouseId());
                 Currency currency = currencyRepository.findById(request.getCurrencyId())
                                 .orElseThrow(() -> new RuntimeException("Currency not found"));
                 BigDecimal exchangeRate = request.getExchangeRate();
@@ -83,7 +83,8 @@ public class PurchaseServiceImpl implements PurchaseService {
                 List<PurchaseProduct> purchaseProducts = new ArrayList<>();
 
                 for (CreatePurchaseRequest.PurchaseProductRequest p : request.getProducts()) {
-                        Product product = productRepository.findById(p.getProductId())
+                        Product product = productRepository
+                                        .findByIdAndCompanyIdAndIsDeletedFalse(p.getProductId(), currentCompanyId)
                                         .orElseThrow(() -> new RuntimeException(
                                                         "Product not found: " + p.getProductId()));
 
@@ -152,17 +153,22 @@ public class PurchaseServiceImpl implements PurchaseService {
         @Override
         @Transactional(readOnly = true)
         public PurchaseResponse getPurchaseById(Long id) {
-                Purchase purchase = purchaseRepository.findById(id)
+                Long companyId = UserContext.getCurrentCompanyId();
+                Purchase purchase = purchaseRepository.findByIdAndCompanyId(id, companyId)
                                 .orElseThrow(() -> new RuntimeException("Purchase not found"));
-                if (!purchase.getCompanyId().equals(UserContext.getCurrentCompanyId()))
-                        throw new SecurityException("Access denied");
+                warehouseAccessService.requireAccessible(purchase.getWarehouse().getId());
                 return PurchaseResponse.fromEntity(purchase);
         }
 
         @Override
         public List<PurchaseResponse> getMyPurchases() {
                 Long currentUserId = UserContext.getCurrentUserId();
-                return purchaseRepository.findByCreatedBy(currentUserId).stream()
+                Long companyId = UserContext.getCurrentCompanyId();
+                List<Long> warehouseIds = warehouseAccessService.accessibleWarehouses().stream()
+                                .map(Warehouse::getId).toList();
+                return purchaseRepository
+                                .findByCreatedByAndCompanyIdAndWarehouse_IdIn(currentUserId, companyId, warehouseIds)
+                                .stream()
                                 .map(PurchaseResponse::fromEntity)
                                 .collect(Collectors.toList());
         }
@@ -170,7 +176,9 @@ public class PurchaseServiceImpl implements PurchaseService {
         @Override
         public List<PurchaseResponse> getAllPurchases() {
                 Long currentCompanyId = UserContext.getCurrentCompanyId();
-                return purchaseRepository.findByCompanyId(currentCompanyId).stream()
+                List<Long> warehouseIds = warehouseAccessService.accessibleWarehouses().stream()
+                                .map(Warehouse::getId).toList();
+                return purchaseRepository.findByCompanyIdAndWarehouse_IdIn(currentCompanyId, warehouseIds).stream()
                                 .map(PurchaseResponse::fromEntity)
                                 .collect(Collectors.toList());
         }
@@ -181,21 +189,19 @@ public class PurchaseServiceImpl implements PurchaseService {
                 Long currentUserId = UserContext.getCurrentUserId();
                 Long currentCompanyId = UserContext.getCurrentCompanyId();
 
-                Purchase purchase = purchaseRepository.findById(id)
+                Purchase purchase = purchaseRepository.findByIdAndCompanyId(id, currentCompanyId)
                                 .orElseThrow(() -> new RuntimeException("Purchase not found"));
-                if (!purchase.getCompanyId().equals(currentCompanyId))
-                        throw new SecurityException("Access denied");
 
                 // Rollback old stock
                 Warehouse warehouse = purchase.getWarehouse();
+                warehouseAccessService.requireAccessible(warehouse.getId());
                 for (PurchaseProduct pp : purchase.getProducts()) {
                         productStockService.adjustStock(pp.getProduct().getId(), warehouse.getId(), -pp.getQuantity());
                 }
 
                 // Update warehouse if changed
                 if (request.getWarehouseId() != null && !request.getWarehouseId().equals(warehouse.getId())) {
-                        Warehouse newWarehouse = warehouseRepository.findById(request.getWarehouseId())
-                                        .orElseThrow(() -> new RuntimeException("New warehouse not found"));
+                        Warehouse newWarehouse = warehouseAccessService.requireAccessible(request.getWarehouseId());
                         purchase.setWarehouse(newWarehouse);
                         warehouse = newWarehouse;
                 }
@@ -211,7 +217,8 @@ public class PurchaseServiceImpl implements PurchaseService {
 
                 if (request.getProducts() != null) {
                         for (UpdatePurchaseRequest.PurchaseProductRequest p : request.getProducts()) {
-                                Product product = productRepository.findById(p.getProductId())
+                                Product product = productRepository
+                                                .findByIdAndCompanyIdAndIsDeletedFalse(p.getProductId(), currentCompanyId)
                                                 .orElseThrow(() -> new RuntimeException(
                                                                 "Product not found: " + p.getProductId()));
                                 int qty = Optional.ofNullable(p.getQuantity()).orElse(0);
@@ -304,7 +311,7 @@ public class PurchaseServiceImpl implements PurchaseService {
                 Optional.ofNullable(request.getNote()).ifPresent(purchase::setNote);
                 Optional.ofNullable(request.getExpectedDeliveryDate()).ifPresent(purchase::setExpectedDeliveryDate);
                 if (request.getSupplierId() != null) {
-                        Supplier supplier = supplierRepository.findById(request.getSupplierId())
+                        Supplier supplier = supplierRepository.findByIdAndCompanyId(request.getSupplierId(), currentCompanyId)
                                         .orElseThrow(() -> new RuntimeException("Supplier not found"));
                         purchase.setSupplier(supplier);
                 }
@@ -341,12 +348,12 @@ public class PurchaseServiceImpl implements PurchaseService {
         @Override
         @Transactional
         public void deletePurchase(Long id) {
-                Purchase purchase = purchaseRepository.findById(id)
+                Long companyId = UserContext.getCurrentCompanyId();
+                Purchase purchase = purchaseRepository.findByIdAndCompanyId(id, companyId)
                                 .orElseThrow(() -> new RuntimeException("Purchase not found"));
-                if (!purchase.getCompanyId().equals(UserContext.getCurrentCompanyId()))
-                        throw new SecurityException("Access denied");
 
                 Warehouse warehouse = purchase.getWarehouse();
+                warehouseAccessService.requireAccessible(warehouse.getId());
                 for (PurchaseProduct pp : purchase.getProducts()) {
                         productStockService.adjustStock(pp.getProduct().getId(), warehouse.getId(), -pp.getQuantity());
                 }
