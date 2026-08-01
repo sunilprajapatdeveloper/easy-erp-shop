@@ -7,6 +7,7 @@ import nextpos.app.nextpos.model.dto.response.QuotationResponse.ProductDetail;
 import nextpos.app.nextpos.model.entity.*;
 import nextpos.app.nextpos.model.enums.ShipmentStatus;
 import nextpos.app.nextpos.repository.*;
+import nextpos.app.nextpos.security.access.WarehouseAccessService;
 import nextpos.app.nextpos.security.context.UserContext;
 import nextpos.app.nextpos.service.interf.QuotationService;
 import org.springframework.stereotype.Service;
@@ -23,19 +24,19 @@ public class QuotationServiceImpl implements QuotationService {
 
         private final QuotationRepository quotationRepository;
         private final CustomerRepository customerRepository;
-        private final WarehouseRepository warehouseRepository;
         private final ProductRepository productRepository;
+        private final WarehouseAccessService warehouseAccessService;
 
         @Override
         @Transactional
         public QuotationResponse createQuotation(CreateQuotationRequest request) {
                 Long currentUserId = UserContext.getCurrentUserId();
+                Long companyId = UserContext.getCurrentCompanyId();
 
-                Customer customer = customerRepository.findById(request.getCustomerId())
+                Customer customer = customerRepository.findByIdAndCompanyId(request.getCustomerId(), companyId)
                                 .orElseThrow(() -> new RuntimeException("Customer not found"));
 
-                Warehouse warehouse = warehouseRepository.findById(request.getWarehouseId())
-                                .orElseThrow(() -> new RuntimeException("Warehouse not found"));
+                Warehouse warehouse = warehouseAccessService.requireAccessible(request.getWarehouseId());
 
                 ShipmentStatus status = request.getStatus();
 
@@ -48,11 +49,13 @@ public class QuotationServiceImpl implements QuotationService {
                 quotation.setShippingCost(Optional.ofNullable(request.getShippingCost()).orElse(BigDecimal.ZERO));
                 quotation.setStatus(status);
                 quotation.setCreatedBy(currentUserId);
+                quotation.setCompanyId(companyId);
 
                 List<QuotationProduct> products = request.getProducts().stream().map(p -> {
                         QuotationProduct qp = new QuotationProduct();
 
-                        Product product = productRepository.findById(p.getProductId())
+                        Product product = productRepository
+                                        .findByIdAndCompanyIdAndIsDeletedFalse(p.getProductId(), companyId)
                                         .orElseThrow(() -> new RuntimeException(
                                                         "Product not found with ID: " + p.getProductId()));
 
@@ -80,8 +83,10 @@ public class QuotationServiceImpl implements QuotationService {
 
         @Override
         public QuotationResponse getQuotationById(Long id) {
-                Quotation quotation = quotationRepository.findById(id)
+                Long companyId = UserContext.getCurrentCompanyId();
+                Quotation quotation = quotationRepository.findByIdAndCompanyId(id, companyId)
                                 .orElseThrow(() -> new RuntimeException("Quotation not found"));
+                warehouseAccessService.requireAccessible(quotation.getWarehouseId());
 
                 List<ProductDetail> productDetails = quotation.getProducts().stream()
                                 .map(ProductDetail::new)
@@ -93,15 +98,18 @@ public class QuotationServiceImpl implements QuotationService {
         @Override
         @Transactional
         public QuotationResponse updateQuotation(Long id, CreateQuotationRequest request) {
-                Quotation quotation = quotationRepository.findById(id)
+                Long companyId = UserContext.getCurrentCompanyId();
+                Quotation quotation = quotationRepository.findByIdAndCompanyId(id, companyId)
                                 .orElseThrow(() -> new RuntimeException("Quotation not found"));
+                warehouseAccessService.requireAccessible(quotation.getWarehouseId());
 
                 quotation.getProducts().clear();
 
                 List<QuotationProduct> updatedProducts = request.getProducts().stream().map(p -> {
                         QuotationProduct qp = new QuotationProduct();
 
-                        Product product = productRepository.findById(p.getProductId())
+                        Product product = productRepository
+                                        .findByIdAndCompanyIdAndIsDeletedFalse(p.getProductId(), companyId)
                                         .orElseThrow(() -> new RuntimeException(
                                                         "Product not found with ID: " + p.getProductId()));
 
@@ -127,14 +135,13 @@ public class QuotationServiceImpl implements QuotationService {
                 quotation.setShippingCost(Optional.ofNullable(request.getShippingCost()).orElse(BigDecimal.ZERO));
 
                 if (request.getCustomerId() != null) {
-                        Customer customer = customerRepository.findById(request.getCustomerId())
+                        Customer customer = customerRepository.findByIdAndCompanyId(request.getCustomerId(), companyId)
                                         .orElseThrow(() -> new RuntimeException("Customer not found"));
                         quotation.setCustomerId(customer.getId());
                 }
 
                 if (request.getWarehouseId() != null) {
-                        Warehouse warehouse = warehouseRepository.findById(request.getWarehouseId())
-                                        .orElseThrow(() -> new RuntimeException("Warehouse not found"));
+                        Warehouse warehouse = warehouseAccessService.requireAccessible(request.getWarehouseId());
                         quotation.setWarehouseId(warehouse.getId());
                 }
 
@@ -153,8 +160,10 @@ public class QuotationServiceImpl implements QuotationService {
         @Override
         @Transactional
         public void deleteQuotation(Long id) {
-                Quotation quotation = quotationRepository.findById(id)
+                Long companyId = UserContext.getCurrentCompanyId();
+                Quotation quotation = quotationRepository.findByIdAndCompanyId(id, companyId)
                                 .orElseThrow(() -> new RuntimeException("Quotation not found"));
+                warehouseAccessService.requireAccessible(quotation.getWarehouseId());
                 quotationRepository.delete(quotation);
         }
 }
