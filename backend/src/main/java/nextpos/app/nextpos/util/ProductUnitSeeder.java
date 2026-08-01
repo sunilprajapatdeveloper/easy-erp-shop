@@ -25,9 +25,8 @@ public class ProductUnitSeeder implements CommandLineRunner {
 
         for (DefaultUnit defaultUnit : DefaultUnit.values()) {
             // Check if unit already exists by name and company
-            boolean exists = productUnitRepository.findByName(defaultUnit.getName())
-                    .stream()
-                    .anyMatch(unit -> unit.getCompanyId().equals(defaultCompanyId));
+            boolean exists = productUnitRepository.findByNameAndCompanyId(defaultUnit.getName(), defaultCompanyId)
+                    .isPresent();
 
             if (!exists) {
                 ProductUnit productUnit = ProductUnit.builder()

@@ -42,6 +42,7 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final UserProfileRepository userProfileRepository;
     private final RoleRepository roleRepository;
+    private final PermissionRepository permissionRepository;
     private final CompanyRepository companyRepository;
     private final WarehouseRepository warehouseRepository;
     private final UserWarehouseRepository userWarehouseRepository;
@@ -223,8 +224,15 @@ public class UserServiceImpl implements UserService {
         }
 
         // Assign default role: COMPANY_OWNER
-        Role defaultRole = roleRepository.findByName(UserRole.COMPANY_OWNER.name())
-                .orElseThrow(() -> new RuntimeException("Default COMPANY_OWNER role not found"));
+        Role defaultRole = roleRepository
+                .findByNameIgnoreCaseAndCompanyId(UserRole.COMPANY_OWNER.name(), companyId)
+                .orElseGet(() -> roleRepository.save(Role.builder()
+                        .name(UserRole.COMPANY_OWNER.name())
+                        .description("Company Owner with full tenant permissions")
+                        .companyId(companyId)
+                        .createdAt(LocalDateTime.now())
+                        .permissions(new HashSet<>(permissionRepository.findAll()))
+                        .build()));
 
         // Generate random password
         String rawPassword = generateStrongPassword(12);

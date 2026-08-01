@@ -25,9 +25,8 @@ public class BrandSeeder implements CommandLineRunner {
 
         for (DefaultBrand defaultBrand : DefaultBrand.values()) {
             // Check if brand already exists by name and company
-            boolean exists = brandRepository.findByName(defaultBrand.getName())
-                    .stream()
-                    .anyMatch(brand -> brand.getCompanyId().equals(defaultCompanyId));
+            boolean exists = brandRepository.findByNameAndCompanyId(defaultBrand.getName(), defaultCompanyId)
+                    .isPresent();
 
             if (!exists) {
                 Brand brand = Brand.builder()

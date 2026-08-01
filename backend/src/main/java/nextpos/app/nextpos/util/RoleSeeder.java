@@ -31,7 +31,7 @@ public class RoleSeeder implements CommandLineRunner {
         // Seed only the COMPANY_OWNER role
         String roleName = UserRole.COMPANY_OWNER.name();
 
-        if (roleRepository.findByName(roleName).isEmpty()) {
+        if (roleRepository.findByNameIgnoreCaseAndCompanyId(roleName, defaultCompanyId).isEmpty()) {
             List<Permission> allPermissions = permissionRepository.findAll();
 
             if (allPermissions.isEmpty()) {
