@@ -113,11 +113,11 @@ export const useUserStore = defineStore("user", {
       }
     },
 
-    async register(payload: UserRegisterRequest, companyId: number) {
+    async register(payload: UserRegisterRequest, onboardingToken: string) {
       this.loading = true;
       this.error = null;
       try {
-        const jwt: JwtResponse = await userService.register(payload, companyId);
+        const jwt: JwtResponse = await userService.register(payload, onboardingToken);
         this.token = jwt.token;
         this.currentUser = jwt.user;
         const expiry = Date.now() + jwt.expiresIn * 1000;

@@ -42,6 +42,7 @@ export interface CompanyDetail {
 
   isActive: boolean;
   isDeleted: boolean;
+  onboardingToken?: string;
 
   exchangeRateMode: ExchangeRateMode;
 

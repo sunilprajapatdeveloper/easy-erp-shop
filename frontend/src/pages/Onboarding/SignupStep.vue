@@ -137,8 +137,8 @@ export default defineComponent({
                 throw new Error('Form validation failed')
             }
 
-            const companyId = onboardingStore.companyId
-            if (!companyId) {
+            const onboardingToken = onboardingStore.onboardingToken
+            if (!onboardingToken) {
                 errors.value.general = 'Company information missing. Please go back.'
                 throw new Error('Company information missing')
             }
@@ -151,7 +151,7 @@ export default defineComponent({
                     lastname: form.value.lastName,
                     email: verifiedEmail.value,
                     phone: fullPhone
-                }, companyId)
+                }, onboardingToken)
 
                 onboardingStore.setUserData({
                     name: `${form.value.firstName} ${form.value.lastName}`,

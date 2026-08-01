@@ -11,6 +11,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import nextpos.app.nextpos.security.context.UserContext;
+import nextpos.app.nextpos.security.onboarding.OnboardingTokenService;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 @RestController
 @RequestMapping("/api/v1/company-currencies")
@@ -18,6 +21,16 @@ import java.util.List;
 public class CompanyCurrencyController {
 
     private final CompanyCurrencyService companyCurrencyService;
+    private final OnboardingTokenService onboardingTokenService;
+
+    private Long resolveCompanyId(String onboardingToken) {
+        if (SecurityContextHolder.getContext().getAuthentication() != null
+                && SecurityContextHolder.getContext().getAuthentication().isAuthenticated()
+                && !"anonymousUser".equals(SecurityContextHolder.getContext().getAuthentication().getPrincipal())) {
+            return UserContext.getCurrentCompanyId();
+        }
+        return onboardingTokenService.verify(onboardingToken).companyId();
+    }
 
     /**
      * Create a new Company Currency
@@ -25,9 +38,9 @@ public class CompanyCurrencyController {
      */
     @PostMapping
     public ResponseEntity<CompanyCurrencyResponse> createCompanyCurrency(
-            @RequestHeader("X-Company-Id") Long companyId,
+            @RequestHeader(value = "X-Onboarding-Token", required = false) String onboardingToken,
             @Valid @RequestBody CreateCompanyCurrencyRequest request) {
-
+        Long companyId = resolveCompanyId(onboardingToken);
         CompanyCurrencyResponse response = companyCurrencyService.createCompanyCurrency(companyId, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
@@ -38,9 +51,9 @@ public class CompanyCurrencyController {
      */
     @GetMapping("/{id}")
     public ResponseEntity<CompanyCurrencyResponse> getCompanyCurrency(
-            @RequestHeader("X-Company-Id") Long companyId,
+            @RequestHeader(value = "X-Onboarding-Token", required = false) String onboardingToken,
             @PathVariable Long id) {
-
+        Long companyId = resolveCompanyId(onboardingToken);
         CompanyCurrencyResponse response = companyCurrencyService.getCompanyCurrency(id, companyId);
         return ResponseEntity.ok(response);
     }
@@ -51,8 +64,8 @@ public class CompanyCurrencyController {
      */
     @GetMapping
     public ResponseEntity<List<CompanyCurrencyResponse>> listCompanyCurrencies(
-            @RequestHeader("X-Company-Id") Long companyId) {
-
+            @RequestHeader(value = "X-Onboarding-Token", required = false) String onboardingToken) {
+        Long companyId = resolveCompanyId(onboardingToken);
         List<CompanyCurrencyResponse> response = companyCurrencyService.listCompanyCurrencies(companyId);
         return ResponseEntity.ok(response);
     }
@@ -63,10 +76,10 @@ public class CompanyCurrencyController {
      */
     @PutMapping("/{id}")
     public ResponseEntity<CompanyCurrencyResponse> updateCompanyCurrency(
-            @RequestHeader("X-Company-Id") Long companyId,
+            @RequestHeader(value = "X-Onboarding-Token", required = false) String onboardingToken,
             @PathVariable Long id,
             @Valid @RequestBody UpdateCompanyCurrencyRequest request) {
-
+        Long companyId = resolveCompanyId(onboardingToken);
         CompanyCurrencyResponse response = companyCurrencyService.updateCompanyCurrency(id, companyId, request);
         return ResponseEntity.ok(response);
     }
@@ -77,9 +90,9 @@ public class CompanyCurrencyController {
      */
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteCompanyCurrency(
-            @RequestHeader("X-Company-Id") Long companyId,
+            @RequestHeader(value = "X-Onboarding-Token", required = false) String onboardingToken,
             @PathVariable Long id) {
-
+        Long companyId = resolveCompanyId(onboardingToken);
         companyCurrencyService.deleteCompanyCurrency(id, companyId);
         return ResponseEntity.noContent().build();
     }

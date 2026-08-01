@@ -32,9 +32,10 @@ export const useCompanyCurrencyStore = defineStore("companyCurrency", () => {
    */
   const create = async (
     companyId: number,
-    payload: CreateCompanyCurrencyRequest
+    payload: CreateCompanyCurrencyRequest,
+    onboardingToken?: string,
   ) => {
-    const response = await companyCurrencyService.create(companyId, payload);
+    const response = await companyCurrencyService.create(companyId, payload, onboardingToken);
     list.value.push(response.data);
     return response.data;
   };

@@ -27,6 +27,7 @@ export const useOnboardingStore = defineStore("onboarding", () => {
   const currentStep = ref(1);
   const userId = ref<number | null>(null);
   const companyId = ref<number | null>(null);
+  const onboardingToken = ref<string | null>(null);
   const userData = ref<UserData | null>(null);
   const companyData = ref<CompanyData | null>(null);
   const planData = ref<PlanData | null>(null);
@@ -53,6 +54,7 @@ export const useOnboardingStore = defineStore("onboarding", () => {
   // Actions
   const setUserId = (id: number) => (userId.value = id);
   const setCompanyId = (id: number) => (companyId.value = id);
+  const setOnboardingToken = (token: string) => (onboardingToken.value = token);
 
   const setUserData = (data: UserData) => {
     userData.value = data;
@@ -188,6 +190,7 @@ export const useOnboardingStore = defineStore("onboarding", () => {
       currentStep: currentStep.value,
       userId: userId.value,
       companyId: companyId.value,
+      onboardingToken: onboardingToken.value,
       userData: userData.value,
       companyData: companyData.value,
       planData: planData.value,
@@ -208,6 +211,7 @@ export const useOnboardingStore = defineStore("onboarding", () => {
       currentStep.value = data.currentStep || 1;
       userId.value = data.userId || null;
       companyId.value = data.companyId || null;
+      onboardingToken.value = data.onboardingToken || null;
       userData.value = data.userData || null;
       companyData.value = data.companyData || null;
       planData.value = data.planData || null;
@@ -226,6 +230,7 @@ export const useOnboardingStore = defineStore("onboarding", () => {
     currentStep.value = 1;
     userId.value = null;
     companyId.value = null;
+    onboardingToken.value = null;
     userData.value = null;
     companyData.value = null;
     planData.value = null;
@@ -261,6 +266,7 @@ export const useOnboardingStore = defineStore("onboarding", () => {
     currentStep,
     userId,
     companyId,
+    onboardingToken,
     userData,
     companyData,
     planData,
@@ -281,6 +287,7 @@ export const useOnboardingStore = defineStore("onboarding", () => {
     // Actions
     setUserId,
     setCompanyId,
+    setOnboardingToken,
     setUserData,
     setCompanyData,
     setPlanData,

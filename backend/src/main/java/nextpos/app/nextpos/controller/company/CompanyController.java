@@ -4,6 +4,7 @@ import nextpos.app.nextpos.model.dto.request.CreateRequest.CreateCompanyRequest;
 import nextpos.app.nextpos.model.dto.request.UpdateRequest.UpdateCompanyRequest;
 import nextpos.app.nextpos.model.dto.response.CompanyResponse;
 import nextpos.app.nextpos.service.interf.CompanyService;
+import nextpos.app.nextpos.security.onboarding.OnboardingTokenService;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -16,9 +17,11 @@ import org.springframework.web.bind.annotation.*;
 public class CompanyController {
 
     private final CompanyService companyService;
+    private final OnboardingTokenService onboardingTokenService;
 
-    public CompanyController(CompanyService companyService) {
+    public CompanyController(CompanyService companyService, OnboardingTokenService onboardingTokenService) {
         this.companyService = companyService;
+        this.onboardingTokenService = onboardingTokenService;
     }
 
     /**
@@ -28,6 +31,7 @@ public class CompanyController {
     public ResponseEntity<CompanyResponse> createCompany(
             @RequestBody @Validated CreateCompanyRequest request) {
         CompanyResponse response = companyService.createCompany(request);
+        response.setOnboardingToken(onboardingTokenService.issue(response.getId(), response.getEmail()));
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 

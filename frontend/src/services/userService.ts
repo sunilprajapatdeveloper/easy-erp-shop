@@ -22,9 +22,9 @@ const getHeaders = () => {
   return { headers };
 };
 
-const getCompanyHeaders = (companyId: number) => ({
+const getOnboardingHeaders = (onboardingToken: string) => ({
   headers: {
-    "X-Company-Id": String(companyId),
+    "X-Onboarding-Token": onboardingToken,
   },
 });
 
@@ -62,12 +62,12 @@ export const userService = {
 
   register: async (
     payload: UserRegisterRequest,
-    companyId: number,
+    onboardingToken: string,
   ): Promise<JwtResponse> => {
     const res = await api.post<JwtResponse>(
       "/users/register",
       payload,
-      getCompanyHeaders(companyId),
+      getOnboardingHeaders(onboardingToken),
     );
     return res.data;
   },

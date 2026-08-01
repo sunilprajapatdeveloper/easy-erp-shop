@@ -20,6 +20,9 @@ import lombok.RequiredArgsConstructor;
 import java.util.List;
 import jakarta.validation.Valid;
 import org.springframework.security.access.prepost.PreAuthorize;
+import nextpos.app.nextpos.security.onboarding.OnboardingContext;
+import nextpos.app.nextpos.security.onboarding.OnboardingTokenService;
+import org.springframework.security.authentication.BadCredentialsException;
 
 @RestController
 @RequestMapping("/api/v1/users")
@@ -28,6 +31,7 @@ public class UserController {
 
     private final UserService userService;
     private final MediaService mediaService;
+    private final OnboardingTokenService onboardingTokenService;
 
     @PostMapping
     @PreAuthorize("hasAuthority('USER_CREATE')")
@@ -63,8 +67,12 @@ public class UserController {
 
     @PostMapping("/register")
     public ResponseEntity<JwtResponse> signup(@Valid @RequestBody UserRegisterRequest request,
-            @RequestHeader("X-Company-Id") Long companyId) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(userService.signup(request, companyId));
+            @RequestHeader("X-Onboarding-Token") String onboardingToken) {
+        OnboardingContext context = onboardingTokenService.verify(onboardingToken);
+        if (!context.email().equalsIgnoreCase(request.getEmail())) {
+            throw new BadCredentialsException("Onboarding context does not match registration email");
+        }
+        return ResponseEntity.status(HttpStatus.CREATED).body(userService.signup(request, context.companyId()));
     }
 
     @PostMapping("/login")

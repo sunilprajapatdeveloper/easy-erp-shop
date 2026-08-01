@@ -235,19 +235,23 @@ export default defineComponent({
 
                 const companyId = createdCompany.id
                 onboardingStore.setCompanyId(companyId)
+                if (!createdCompany.onboardingToken) {
+                    throw new Error('Secure onboarding context missing')
+                }
+                onboardingStore.setOnboardingToken(createdCompany.onboardingToken)
 
                 await companyCurrencyStore.create(companyId, {
                     currencyId: primaryCurrencyObj.value.id,
                     defaultCurrency: true,
                     status: CurrencyStatus.ACTIVE
-                })
+                }, createdCompany.onboardingToken)
 
                 for (const curr of additionalCurrencyObjs.value) {
                     await companyCurrencyStore.create(companyId, {
                         currencyId: curr.id,
                         defaultCurrency: false,
                         status: CurrencyStatus.ACTIVE
-                    })
+                    }, createdCompany.onboardingToken)
                 }
 
                 onboardingStore.setCompanyData({

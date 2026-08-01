@@ -9,49 +9,43 @@ export const companyCurrencyService = {
   /**
    * List all company currencies
    */
-  list(companyId: number) {
+  list(_companyId: number, onboardingToken?: string) {
     return api.get<CompanyCurrency[]>("/company-currencies", {
-      headers: { "X-Company-Id": companyId },
+      headers: onboardingToken ? { "X-Onboarding-Token": onboardingToken } : {},
     });
   },
 
   /**
    * Get a single company currency by ID
    */
-  get(id: number, companyId: number) {
-    return api.get<CompanyCurrency>(`/company-currencies/${id}`, {
-      headers: { "X-Company-Id": companyId },
-    });
+  get(id: number, _companyId: number) {
+    return api.get<CompanyCurrency>(`/company-currencies/${id}`);
   },
 
   /**
    * Create a new company currency
    */
-  create(companyId: number, payload: CreateCompanyCurrencyRequest) {
+  create(_companyId: number, payload: CreateCompanyCurrencyRequest, onboardingToken?: string) {
     return api.post<CompanyCurrency>("/company-currencies", payload, {
-      headers: { "X-Company-Id": companyId },
+      headers: onboardingToken ? { "X-Onboarding-Token": onboardingToken } : {},
     });
   },
 
   /**
    * Update an existing company currency
    */
-  update(id: number, companyId: number, payload: UpdateCompanyCurrencyRequest) {
+  update(id: number, _companyId: number, payload: UpdateCompanyCurrencyRequest) {
     return api.put<CompanyCurrency>(
       `/company-currencies/${id}`,
       payload,
-      {
-        headers: { "X-Company-Id": companyId },
-      }
+      {}
     );
   },
 
   /**
    * Delete a company currency
    */
-  delete(id: number, companyId: number) {
-    return api.delete(`/company-currencies/${id}`, {
-      headers: { "X-Company-Id": companyId },
-    });
+  delete(id: number, _companyId: number) {
+    return api.delete(`/company-currencies/${id}`);
   },
 };

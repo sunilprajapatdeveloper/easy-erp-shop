@@ -32,6 +32,7 @@ public class CompanyResponse {
     private LocalDateTime updatedAt;
     private Boolean isActive;
     private Boolean isDeleted;
+    private String onboardingToken;
 
     // Exchange rate mode
     private ExchangeRateMode exchangeRateMode;
