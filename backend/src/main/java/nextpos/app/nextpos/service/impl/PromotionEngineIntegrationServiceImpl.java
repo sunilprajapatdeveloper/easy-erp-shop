@@ -52,7 +52,7 @@ public class PromotionEngineIntegrationServiceImpl implements PromotionEngineInt
         sale.setPromotionCouponCode(sale.getPromotionCouponCode());
 
         if (validation.getAppliedPromotionId() != null) {
-            Promotion promo = promotionRepository.findById(validation.getAppliedPromotionId())
+            Promotion promo = promotionRepository.findByIdAndCompanyId(validation.getAppliedPromotionId(), sale.getCompanyId())
                     .orElseThrow(() -> new RuntimeException("Promotion not found"));
             sale.setAppliedPromotion(promo);
             sale.setPromotionName(promo.getName());

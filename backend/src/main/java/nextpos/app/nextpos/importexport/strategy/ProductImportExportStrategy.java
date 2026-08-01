@@ -221,7 +221,7 @@ public class ProductImportExportStrategy implements ImportExportStrategy {
 
     private void validateReferences(CreateProductRequest request, Long companyId) {
         if (request.getCategoryId() != null) {
-            Category category = categoryRepository.findById(request.getCategoryId())
+            Category category = categoryRepository.findByIdAndCompanyId(request.getCategoryId(), companyId)
                     .orElseThrow(() -> new IllegalArgumentException("Category not found: " + request.getCategoryId()));
             if (!category.getCompanyId().equals(companyId)) {
                 throw new IllegalArgumentException("Category not found in company: " + request.getCategoryId());
@@ -230,14 +230,14 @@ public class ProductImportExportStrategy implements ImportExportStrategy {
             throw new IllegalArgumentException("Category ID is required");
         }
         if (request.getBrandId() != null) {
-            Brand brand = brandRepository.findById(request.getBrandId())
+            Brand brand = brandRepository.findByIdAndCompanyId(request.getBrandId(), companyId)
                     .orElseThrow(() -> new IllegalArgumentException("Brand not found: " + request.getBrandId()));
             if (!brand.getCompanyId().equals(companyId)) {
                 throw new IllegalArgumentException("Brand not found in company: " + request.getBrandId());
             }
         }
         if (request.getProductUnitId() != null) {
-            ProductUnit unit = productUnitRepository.findById(request.getProductUnitId())
+            ProductUnit unit = productUnitRepository.findByIdAndCompanyId(request.getProductUnitId(), companyId)
                     .orElseThrow(() -> new IllegalArgumentException(
                             "Product unit not found: " + request.getProductUnitId()));
             if (!unit.getCompanyId().equals(companyId)) {
@@ -245,7 +245,7 @@ public class ProductImportExportStrategy implements ImportExportStrategy {
             }
         }
         if (request.getSalesUnitId() != null) {
-            ProductUnit unit = productUnitRepository.findById(request.getSalesUnitId())
+            ProductUnit unit = productUnitRepository.findByIdAndCompanyId(request.getSalesUnitId(), companyId)
                     .orElseThrow(
                             () -> new IllegalArgumentException("Sales unit not found: " + request.getSalesUnitId()));
             if (!unit.getCompanyId().equals(companyId)) {
@@ -253,7 +253,7 @@ public class ProductImportExportStrategy implements ImportExportStrategy {
             }
         }
         if (request.getPurchaseUnitId() != null) {
-            ProductUnit unit = productUnitRepository.findById(request.getPurchaseUnitId())
+            ProductUnit unit = productUnitRepository.findByIdAndCompanyId(request.getPurchaseUnitId(), companyId)
                     .orElseThrow(() -> new IllegalArgumentException(
                             "Purchase unit not found: " + request.getPurchaseUnitId()));
             if (!unit.getCompanyId().equals(companyId)) {

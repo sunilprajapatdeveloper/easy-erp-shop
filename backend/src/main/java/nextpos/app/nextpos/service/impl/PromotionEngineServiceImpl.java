@@ -35,7 +35,7 @@ public class PromotionEngineServiceImpl implements PromotionEngineService {
     private final CompanyCurrencyRepository companyCurrencyRepository;
 
     @Override
-    @Cacheable(value = "promotionValidation", key = "#request.couponCode + '_' + #request.customerId + '_' + #request.warehouseId", cacheManager = "promotionCacheManager")
+    @Cacheable(value = "promotionValidation", key = "#request.companyId + '_' + #request.couponCode + '_' + #request.customerId + '_' + #request.warehouseId", cacheManager = "promotionCacheManager")
     public CouponValidationResponse validateCoupon(CouponValidationRequest request) {
         Promotion promotion = promotionRepository.findByCompanyIdAndCodeAndIsActiveTrue(
                 request.getCompanyId(), request.getCouponCode()).orElse(null);
@@ -77,7 +77,8 @@ public class PromotionEngineServiceImpl implements PromotionEngineService {
     @Transactional
     public void recordPromotionUsage(Long promotionId, Long saleId, Long customerId, Long companyId) {
         PromotionUsage usage = PromotionUsage.builder()
-                .promotion(promotionRepository.getReferenceById(promotionId))
+                .promotion(promotionRepository.findByIdAndCompanyId(promotionId, companyId)
+                        .orElseThrow(() -> new IllegalArgumentException("Promotion not found")))
                 .companyId(companyId)
                 .customerId(customerId)
                 .saleId(saleId)
@@ -104,7 +105,7 @@ public class PromotionEngineServiceImpl implements PromotionEngineService {
         if (request.getCustomerId() != null) {
             List<CustomerGroup> allowedGroups = customerGroupRepository.findGroupsByPromotionId(promotion.getId());
             if (!allowedGroups.isEmpty()) {
-                CustomerGroup customerGroup = getCustomerGroup(request.getCustomerId());
+                CustomerGroup customerGroup = getCustomerGroup(request.getCustomerId(), request.getCompanyId());
                 if (!allowedGroups.contains(customerGroup)) {
                     return "Promotion not eligible for this customer group";
                 }
@@ -252,8 +253,8 @@ public class PromotionEngineServiceImpl implements PromotionEngineService {
                 .orElse(applicable.get(0)));
     }
 
-    private CustomerGroup getCustomerGroup(Long customerId) {
-        return customerRepository.findById(customerId)
+    private CustomerGroup getCustomerGroup(Long customerId, Long companyId) {
+        return customerRepository.findByIdAndCompanyId(customerId, companyId)
                 .map(Customer::getCustomerGroup)
                 .orElse(CustomerGroup.RETAIL);
     }

@@ -11,6 +11,7 @@ import nextpos.app.nextpos.model.enums.CustomerGroup;
 import nextpos.app.nextpos.pagination.dto.PaginationResponse;
 import nextpos.app.nextpos.repository.*;
 import nextpos.app.nextpos.service.interf.PromotionAdminService;
+import nextpos.app.nextpos.security.access.WarehouseAccessService;
 
 import java.time.LocalDateTime;
 
@@ -31,11 +32,13 @@ public class PromotionAdminServiceImpl implements PromotionAdminService {
     private final PromotionCustomerGroupRepository customerGroupRepository;
     private final ProductRepository productJpaRepository;
     private final CategoryRepository categoryJpaRepository;
+    private final WarehouseAccessService warehouseAccessService;
 
     @Override
     @Transactional
     @CacheEvict(value = "activePromotions", allEntries = true, cacheManager = "promotionCacheManager")
     public PromotionResponse createPromotion(CreatePromotionRequest request, Long companyId, Long userId) {
+        validateWarehouse(request.getWarehouseId());
         Promotion promotion = Promotion.builder()
                 .name(request.getName())
                 .code(request.getCode())
@@ -56,10 +59,10 @@ public class PromotionAdminServiceImpl implements PromotionAdminService {
                 .getQuantity(request.getGetQuantity())
                 .getDiscountPercent(request.getGetDiscountPercent())
                 .buyProduct(request.getBuyProductId() != null
-                        ? productJpaRepository.findById(request.getBuyProductId()).orElse(null)
+                        ? requireProduct(request.getBuyProductId(), companyId)
                         : null)
                 .getProduct(request.getGetProductId() != null
-                        ? productJpaRepository.findById(request.getGetProductId()).orElse(null)
+                        ? requireProduct(request.getGetProductId(), companyId)
                         : null)
                 .warehouseId(request.getWarehouseId())
                 .companyId(companyId)
@@ -72,7 +75,7 @@ public class PromotionAdminServiceImpl implements PromotionAdminService {
         // Save mappings
         if (request.getProductIds() != null) {
             for (Long productId : request.getProductIds()) {
-                Product product = productJpaRepository.getReferenceById(productId);
+                Product product = requireProduct(productId, companyId);
                 PromotionProduct pp = PromotionProduct.builder()
                         .id(new PromotionProduct.PromotionProductId(promotion.getId(), productId))
                         .promotion(promotion)
@@ -83,7 +86,7 @@ public class PromotionAdminServiceImpl implements PromotionAdminService {
         }
         if (request.getCategoryIds() != null) {
             for (Long categoryId : request.getCategoryIds()) {
-                Category category = categoryJpaRepository.getReferenceById(categoryId);
+                Category category = requireCategory(categoryId, companyId);
                 PromotionCategory pc = PromotionCategory.builder()
                         .id(new PromotionCategory.PromotionCategoryId(promotion.getId(), categoryId))
                         .promotion(promotion)
@@ -109,8 +112,8 @@ public class PromotionAdminServiceImpl implements PromotionAdminService {
     @Transactional
     @CacheEvict(value = "activePromotions", allEntries = true, cacheManager = "promotionCacheManager")
     public PromotionResponse updatePromotion(Long id, UpdatePromotionRequest request, Long companyId, Long userId) {
-        Promotion promotion = promotionRepository.findById(id)
-                .filter(p -> p.getCompanyId().equals(companyId))
+        validateWarehouse(request.getWarehouseId());
+        Promotion promotion = promotionRepository.findByIdAndCompanyId(id, companyId)
                 .orElseThrow(() -> new ResourceNotFoundException("Promotion not found"));
 
         promotion.setName(request.getName());
@@ -133,9 +136,9 @@ public class PromotionAdminServiceImpl implements PromotionAdminService {
         promotion.setGetQuantity(request.getGetQuantity());
         promotion.setGetDiscountPercent(request.getGetDiscountPercent());
         if (request.getBuyProductId() != null)
-            promotion.setBuyProduct(productJpaRepository.getReferenceById(request.getBuyProductId()));
+            promotion.setBuyProduct(requireProduct(request.getBuyProductId(), companyId));
         if (request.getGetProductId() != null)
-            promotion.setGetProduct(productJpaRepository.getReferenceById(request.getGetProductId()));
+            promotion.setGetProduct(requireProduct(request.getGetProductId(), companyId));
         promotion.setWarehouseId(request.getWarehouseId());
         promotion.setUpdatedBy(userId);
         promotion.setUpdatedAt(LocalDateTime.now());
@@ -145,7 +148,7 @@ public class PromotionAdminServiceImpl implements PromotionAdminService {
         productRepository.deleteByIdPromotionId(promotion.getId());
         if (request.getProductIds() != null) {
             for (Long productId : request.getProductIds()) {
-                Product product = productJpaRepository.getReferenceById(productId);
+                Product product = requireProduct(productId, companyId);
                 PromotionProduct pp = PromotionProduct.builder()
                         .id(new PromotionProduct.PromotionProductId(promotion.getId(), productId))
                         .promotion(promotion)
@@ -157,7 +160,7 @@ public class PromotionAdminServiceImpl implements PromotionAdminService {
         categoryRepository.deleteByIdPromotionId(promotion.getId());
         if (request.getCategoryIds() != null) {
             for (Long categoryId : request.getCategoryIds()) {
-                Category category = categoryJpaRepository.getReferenceById(categoryId);
+                Category category = requireCategory(categoryId, companyId);
                 PromotionCategory pc = PromotionCategory.builder()
                         .id(new PromotionCategory.PromotionCategoryId(promotion.getId(), categoryId))
                         .promotion(promotion)
@@ -184,8 +187,7 @@ public class PromotionAdminServiceImpl implements PromotionAdminService {
     @Transactional
     @CacheEvict(value = "activePromotions", allEntries = true, cacheManager = "promotionCacheManager")
     public void deletePromotion(Long id, Long companyId) {
-        Promotion promotion = promotionRepository.findById(id)
-                .filter(p -> p.getCompanyId().equals(companyId))
+        Promotion promotion = promotionRepository.findByIdAndCompanyId(id, companyId)
                 .orElseThrow(() -> new ResourceNotFoundException("Promotion not found"));
         promotionRepository.delete(promotion);
     }
@@ -194,8 +196,7 @@ public class PromotionAdminServiceImpl implements PromotionAdminService {
     @Transactional
     @CacheEvict(value = "activePromotions", allEntries = true, cacheManager = "promotionCacheManager")
     public void toggleActive(Long id, Long companyId) {
-        Promotion promotion = promotionRepository.findById(id)
-                .filter(p -> p.getCompanyId().equals(companyId))
+        Promotion promotion = promotionRepository.findByIdAndCompanyId(id, companyId)
                 .orElseThrow(() -> new ResourceNotFoundException("Promotion not found"));
         promotion.setIsActive(!promotion.getIsActive());
         promotionRepository.save(promotion);
@@ -203,8 +204,7 @@ public class PromotionAdminServiceImpl implements PromotionAdminService {
 
     @Override
     public PromotionResponse getPromotion(Long id, Long companyId) {
-        Promotion promotion = promotionRepository.findById(id)
-                .filter(p -> p.getCompanyId().equals(companyId))
+        Promotion promotion = promotionRepository.findByIdAndCompanyId(id, companyId)
                 .orElseThrow(() -> new ResourceNotFoundException("Promotion not found"));
         return toResponse(promotion);
     }
@@ -213,6 +213,22 @@ public class PromotionAdminServiceImpl implements PromotionAdminService {
     public PaginationResponse<PromotionResponse> getPromotions(Long companyId, Pageable pageable) {
         Page<Promotion> page = promotionRepository.findByCompanyId(companyId, pageable);
         return PaginationResponse.of(page.map(this::toResponse));
+    }
+
+    private Product requireProduct(Long id, Long companyId) {
+        return productJpaRepository.findByIdAndCompanyIdAndIsDeletedFalse(id, companyId)
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
+    }
+
+    private Category requireCategory(Long id, Long companyId) {
+        return categoryJpaRepository.findByIdAndCompanyId(id, companyId)
+                .orElseThrow(() -> new ResourceNotFoundException("Category not found"));
+    }
+
+    private void validateWarehouse(Long warehouseId) {
+        if (warehouseId != null) {
+            warehouseAccessService.requireAccessible(warehouseId);
+        }
     }
 
     private PromotionResponse toResponse(Promotion p) {

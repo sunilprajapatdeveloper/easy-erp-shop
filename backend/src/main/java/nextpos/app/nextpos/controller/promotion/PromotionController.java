@@ -12,6 +12,7 @@ import nextpos.app.nextpos.model.dto.response.PromotionResponse;
 import nextpos.app.nextpos.pagination.dto.ApiResponse;
 import nextpos.app.nextpos.pagination.dto.PaginationResponse;
 import nextpos.app.nextpos.security.context.UserContext;
+import nextpos.app.nextpos.security.access.WarehouseAccessService;
 import nextpos.app.nextpos.service.interf.PromotionAdminService;
 import nextpos.app.nextpos.service.interf.PromotionEngineService;
 import org.springframework.data.domain.PageRequest;
@@ -28,10 +29,15 @@ public class PromotionController {
 
     private final PromotionAdminService adminService;
     private final PromotionEngineService engineService;
+    private final WarehouseAccessService warehouseAccessService;
 
     @PostMapping("/validate")
     @Operation(summary = "Validate a coupon code and get discount details")
     public ResponseEntity<ApiResponse<CouponValidationResponse>> validateCoupon(@Valid @RequestBody CouponValidationRequest request) {
+        request.setCompanyId(UserContext.getCurrentCompanyId());
+        if (request.getWarehouseId() != null) {
+            warehouseAccessService.requireAccessible(request.getWarehouseId());
+        }
         CouponValidationResponse response = engineService.validateCoupon(request);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
