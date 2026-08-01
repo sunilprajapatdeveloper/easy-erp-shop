@@ -77,6 +77,7 @@ public class SecurityConfig {
                                 "/ws-scanner/**")
                         .permitAll()
                         .requestMatchers("/api/ai/**").authenticated()
+                        .requestMatchers("/api/permissions/**").authenticated()
                         .requestMatchers("/api/v1/**").authenticated()
                         .anyRequest().permitAll())
                 .exceptionHandling(exception -> exception

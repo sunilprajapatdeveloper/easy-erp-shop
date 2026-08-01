@@ -19,6 +19,7 @@ import lombok.RequiredArgsConstructor;
 
 import java.util.List;
 import jakarta.validation.Valid;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping("/api/v1/users")
@@ -29,27 +30,32 @@ public class UserController {
     private final MediaService mediaService;
 
     @PostMapping
+    @PreAuthorize("hasAuthority('USER_CREATE')")
     public ResponseEntity<UserResponse> createUser(@Valid @RequestBody CreateUserRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(userService.createUser(request));
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasAuthority('USER_VIEW')")
     public ResponseEntity<UserResponse> getUserById(@PathVariable Long id) {
         return ResponseEntity.ok(userService.getUserById(id));
     }
 
     @GetMapping
+    @PreAuthorize("hasAuthority('USER_LIST')")
     public ResponseEntity<List<UserResponse>> getAllUsers() {
         return ResponseEntity.ok(userService.getAllUsers());
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAuthority('USER_EDIT')")
     public ResponseEntity<UserResponse> updateUser(@PathVariable Long id,
             @Valid @RequestBody UpdateUserRequest request) {
         return ResponseEntity.ok(userService.updateUser(id, request));
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAuthority('USER_DELETE')")
     public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
         userService.deleteUser(id);
         return ResponseEntity.noContent().build();
@@ -73,6 +79,7 @@ public class UserController {
     }
 
     @GetMapping("/{userId}/profile-image")
+    @PreAuthorize("hasAuthority('USER_VIEW') or #userId == principal.userId")
     public ResponseEntity<MediaResponse> getProfileImage(@PathVariable Long userId) {
 
         List<MediaResponse> mediaList = mediaService.getMediaByEntity("USER", userId);

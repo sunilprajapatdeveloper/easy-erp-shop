@@ -32,5 +32,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     Optional<User> findByIdAndCompanyId(Long id, Long companyId);
 
+    @EntityGraph(attributePaths = { "role", "role.permissions", "profile", "defaultWarehouse", "userWarehouses", "userWarehouses.warehouse" })
+    List<User> findAllByCompanyId(Long companyId);
+
     boolean existsByCompanyId(Long companyId);
 }

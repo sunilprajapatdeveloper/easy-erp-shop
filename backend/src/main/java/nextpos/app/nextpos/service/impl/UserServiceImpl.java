@@ -21,6 +21,7 @@ import nextpos.app.nextpos.model.entity.*;
 import nextpos.app.nextpos.model.enums.UserRole;
 import nextpos.app.nextpos.repository.*;
 import nextpos.app.nextpos.security.jwt.JwtUtils;
+import nextpos.app.nextpos.security.context.UserContext;
 import nextpos.app.nextpos.service.email.MailService;
 import nextpos.app.nextpos.service.interf.MediaService;
 import nextpos.app.nextpos.service.interf.UserService;
@@ -67,16 +68,12 @@ public class UserServiceImpl implements UserService {
             throw new RuntimeException("Phone number already in use");
         }
 
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !authentication.isAuthenticated()
-                || "anonymousUser".equals(authentication.getPrincipal())) {
-            throw new RuntimeException("Unauthenticated creation is not allowed.");
-        }
-
-        User currentUser = userRepository.findByEmail(authentication.getName())
+        Long currentUserId = UserContext.getCurrentUserId();
+        Long companyId = UserContext.getCurrentCompanyId();
+        User currentUser = userRepository.findByIdAndCompanyId(currentUserId, companyId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        Role role = roleRepository.findById(request.getRoleId())
+        Role role = roleRepository.findByIdAndCompanyId(request.getRoleId(), companyId)
                 .orElseThrow(() -> new RuntimeException("Role not found"));
 
         // Create core User
@@ -89,8 +86,8 @@ public class UserServiceImpl implements UserService {
         user.setPassword(passwordEncoder.encode(rawPassword));
         user.setStatus(Boolean.TRUE);
         user.setRole(role);
-        user.setCompanyId(currentUser.getCompanyId());
-        user.setCreatedBy(currentUser.getId());
+        user.setCompanyId(companyId);
+        user.setCreatedBy(currentUserId);
 
         User savedUser = userRepository.save(user);
 
@@ -118,7 +115,7 @@ public class UserServiceImpl implements UserService {
         if (request.getWarehouseIds() != null && !request.getWarehouseIds().isEmpty()) {
             Set<UserWarehouse> assignments = new HashSet<>();
             for (Long whId : request.getWarehouseIds()) {
-                Warehouse wh = warehouseRepository.findById(whId)
+                Warehouse wh = warehouseRepository.findByIdAndCompanyIdAndIsDeletedFalse(whId, companyId)
                         .orElseThrow(() -> new RuntimeException("Warehouse not found: " + whId));
 
                 // Avoid duplicate assignment
@@ -128,7 +125,7 @@ public class UserServiceImpl implements UserService {
                     uw.setWarehouse(wh);
                     uw.setActive(true);
                     uw.setCreatedAt(LocalDateTime.now());
-                    uw.setCreatedBy(currentUser.getId());
+                    uw.setCreatedBy(currentUserId);
                     assignments.add(uw);
                 }
             }
@@ -139,7 +136,8 @@ public class UserServiceImpl implements UserService {
         Warehouse defaultWarehouse = null;
 
         if (request.getDefaultWarehouseId() != null) {
-            Warehouse requestedWh = warehouseRepository.findById(request.getDefaultWarehouseId())
+            Warehouse requestedWh = warehouseRepository.findByIdAndCompanyIdAndIsDeletedFalse(
+                    request.getDefaultWarehouseId(), companyId)
                     .orElseThrow(() -> new RuntimeException(
                             "Default warehouse not found: " + request.getDefaultWarehouseId()));
 
@@ -165,8 +163,8 @@ public class UserServiceImpl implements UserService {
         // Send password email asynchronously
         if (!isBlank(request.getEmail())) {
             String companyName = "EasyErpShop";
-            if (currentUser.getCompanyId() != null) {
-                Company company = companyRepository.findById(currentUser.getCompanyId()).orElse(null);
+            if (companyId != null) {
+                Company company = companyRepository.findById(companyId).orElse(null);
                 if (company != null && StringUtils.hasText(company.getCompanyName())) {
                     companyName = company.getCompanyName();
                 }
@@ -230,7 +228,7 @@ public class UserServiceImpl implements UserService {
 
         // Generate random password
         String rawPassword = generateStrongPassword(12);
-        log.info("Generated password for user {} : {}", request.getEmail(), rawPassword);
+        log.info("Generated initial password for new company owner account {}", request.getEmail());
         String encodedPassword = passwordEncoder.encode(rawPassword);
 
         // Create user
@@ -285,7 +283,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserResponse getUserById(final Long userId) {
-        User user = userRepository.findById(userId)
+        User user = userRepository.findByIdAndCompanyId(userId, UserContext.getCurrentCompanyId())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         // Ensure profile is loaded (optional, but response needs it)
@@ -304,19 +302,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public List<UserResponse> getAllUsers() {
-        final Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getPrincipal())) {
-            throw new RuntimeException("Unauthorized");
-        }
-        final String email = auth.getName();
-        final User currentUser = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Logged-in user not found"));
-
-        // Include all associated users + self
-        final List<User> users = userRepository.findAllAssociatedUsers(currentUser.getId());
-        if (users.stream().noneMatch(u -> u.getId().equals(currentUser.getId()))) {
-            users.add(currentUser);
-        }
+        final List<User> users = userRepository.findAllByCompanyId(UserContext.getCurrentCompanyId());
 
         // Get all user IDs
         List<Long> userIds = users.stream().map(User::getId).collect(Collectors.toList());
@@ -346,17 +332,13 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public UserResponse updateUser(final Long userId, final UpdateUserRequest request) {
         // Authenticate
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !authentication.isAuthenticated()
-                || "anonymousUser".equals(authentication.getPrincipal())) {
-            throw new RuntimeException("Unauthorized");
-        }
-
-        User currentUser = userRepository.findByEmail(authentication.getName())
+        Long companyId = UserContext.getCurrentCompanyId();
+        Long currentUserId = UserContext.getCurrentUserId();
+        User currentUser = userRepository.findByIdAndCompanyId(currentUserId, companyId)
                 .orElseThrow(() -> new RuntimeException("Authenticated user not found"));
 
         // Load target user
-        User user = userRepository.findById(userId)
+        User user = userRepository.findByIdAndCompanyId(userId, companyId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         // Uniqueness checks
@@ -377,7 +359,7 @@ public class UserServiceImpl implements UserService {
 
         // Role update
         if (request.getRoleId() != null) {
-            Role role = roleRepository.findById(request.getRoleId())
+            Role role = roleRepository.findByIdAndCompanyId(request.getRoleId(), companyId)
                     .orElseThrow(() -> new RuntimeException("Role not found"));
             user.setRole(role);
         }
@@ -444,7 +426,7 @@ public class UserServiceImpl implements UserService {
             // Assign new warehouses safely
             for (Long whId : newWarehouseIds) {
                 if (savedUser.getUserWarehouses().stream().noneMatch(uw -> uw.getWarehouse().getId().equals(whId))) {
-                    Warehouse wh = warehouseRepository.findById(whId)
+                    Warehouse wh = warehouseRepository.findByIdAndCompanyIdAndIsDeletedFalse(whId, companyId)
                             .orElseThrow(() -> new RuntimeException("Warehouse not found: " + whId));
                     UserWarehouse uw = new UserWarehouse();
                     uw.setUser(savedUser);
@@ -461,7 +443,8 @@ public class UserServiceImpl implements UserService {
         Warehouse defaultWarehouse = null;
 
         if (request.getDefaultWarehouseId() != null) {
-            Warehouse requestedWh = warehouseRepository.findById(request.getDefaultWarehouseId())
+            Warehouse requestedWh = warehouseRepository.findByIdAndCompanyIdAndIsDeletedFalse(
+                    request.getDefaultWarehouseId(), companyId)
                     .orElseThrow(() -> new RuntimeException(
                             "Default warehouse not found: " + request.getDefaultWarehouseId()));
 
@@ -519,9 +502,16 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public void deleteUser(final Long userId) {
-        // Get user to get companyId before deleting
-        userRepository.findById(userId)
+        Long currentUserId = UserContext.getCurrentUserId();
+        if (currentUserId.equals(userId)) {
+            throw new IllegalArgumentException("Users cannot delete their own account");
+        }
+        User user = userRepository.findByIdAndCompanyId(userId, UserContext.getCurrentCompanyId())
                 .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (user.getRole() != null && UserRole.COMPANY_OWNER.name().equalsIgnoreCase(user.getRole().getName())) {
+            throw new IllegalArgumentException("The company owner account cannot be deleted");
+        }
 
         // Delete user's media
         try {
@@ -535,7 +525,7 @@ public class UserServiceImpl implements UserService {
 
         // The profile will be deleted automatically due to cascade = ALL, orphanRemoval
         // = true
-        userRepository.deleteById(userId);
+        userRepository.delete(user);
     }
 
     @Override

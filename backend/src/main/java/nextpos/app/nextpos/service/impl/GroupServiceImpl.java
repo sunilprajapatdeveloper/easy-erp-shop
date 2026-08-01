@@ -14,6 +14,7 @@ import nextpos.app.nextpos.model.entity.Permission;
 import java.util.Set;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -25,8 +26,10 @@ public class GroupServiceImpl implements GroupService {
     private static final String PROTECTED_ROLE = "COMPANY_OWNER";
 
     @Override
+    @Transactional
     public RoleResponse createRole(CreateRoleRequest request) {
-        if (roleRepository.findByName(request.getName()).isPresent()) {
+        Long companyId = UserContext.getCurrentCompanyId();
+        if (roleRepository.findByNameIgnoreCaseAndCompanyId(request.getName(), companyId).isPresent()) {
             throw new RuntimeException("Role already in use: " + request.getName());
         }
 
@@ -41,7 +44,7 @@ public class GroupServiceImpl implements GroupService {
                 .description(request.getDescription())
                 .permissions(permissions)
                 .createdBy(UserContext.getCurrentUserId())
-                .companyId(UserContext.getCurrentCompanyId())
+                .companyId(companyId)
                 .createdAt(java.time.LocalDateTime.now())
                 .build();
 
@@ -50,7 +53,7 @@ public class GroupServiceImpl implements GroupService {
 
     @Override
     public RoleResponse getRoleById(Long id) {
-        Role role = roleRepository.findById(id)
+        Role role = roleRepository.findByIdAndCompanyId(id, UserContext.getCurrentCompanyId())
                 .orElseThrow(() -> new RuntimeException("Group not found"));
 
         if (PROTECTED_ROLE.equalsIgnoreCase(role.getName())) {
@@ -62,20 +65,28 @@ public class GroupServiceImpl implements GroupService {
 
     @Override
     public List<RoleResponse> getAllRoles() {
-        return roleRepository.findAll().stream()
+        return roleRepository.findAllByCompanyId(UserContext.getCurrentCompanyId()).stream()
                 .filter(role -> !PROTECTED_ROLE.equalsIgnoreCase(role.getName()))
                 .map(RoleResponse::new)
                 .collect(Collectors.toList());
     }
 
     @Override
+    @Transactional
     public RoleResponse updateRole(Long id, CreateRoleRequest request) {
-        Role role = roleRepository.findById(id)
+        Long companyId = UserContext.getCurrentCompanyId();
+        Role role = roleRepository.findByIdAndCompanyId(id, companyId)
                 .orElseThrow(() -> new RuntimeException("Role not found"));
 
         if (PROTECTED_ROLE.equalsIgnoreCase(role.getName())) {
             throw new RuntimeException("Group not found");
         }
+
+        roleRepository.findByNameIgnoreCaseAndCompanyId(request.getName(), companyId)
+                .filter(existing -> !existing.getId().equals(id))
+                .ifPresent(existing -> {
+                    throw new RuntimeException("Role already in use: " + request.getName());
+                });
 
         role.setName(request.getName());
         role.setDescription(request.getDescription());
@@ -92,14 +103,15 @@ public class GroupServiceImpl implements GroupService {
     }
 
     @Override
+    @Transactional
     public void deleteRole(Long id) {
-        Role role = roleRepository.findById(id)
+        Role role = roleRepository.findByIdAndCompanyId(id, UserContext.getCurrentCompanyId())
                 .orElseThrow(() -> new RuntimeException("Group not found"));
 
         if (PROTECTED_ROLE.equalsIgnoreCase(role.getName())) {
             throw new RuntimeException("Group not found");
         }
 
-        roleRepository.deleteById(id);
+        roleRepository.delete(role);
     }
 }
