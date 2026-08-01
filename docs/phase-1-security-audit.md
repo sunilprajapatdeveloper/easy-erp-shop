@@ -78,9 +78,9 @@ Final clean backend command:
 
 `gradlew.bat clean test --no-daemon --console=plain`
 
-Result: **BUILD SUCCESSFUL**, 26 tests, 0 failures, 0 errors, 0 skipped.
+Result: **BUILD SUCCESSFUL**, 27 tests, 0 failures, 0 errors, 0 skipped.
 
-Coverage includes authoritative principal derivation, company ownership, signed onboarding expiry/tampering, tenant role isolation, tenant-qualified product and purchase references, payment indirect references and warehouse integrity, warehouse owner/assignment behavior, fail-closed permission mappings, frontend/backend permission consistency, unsafe repository architecture rules, and WebSocket negative authorization.
+Coverage includes authoritative principal derivation, company ownership, signed onboarding expiry/tampering, tenant role isolation, tenant-qualified product and purchase references, payment indirect references and warehouse integrity, warehouse owner/assignment behavior, fail-closed permission mappings, frontend/backend permission consistency, unsafe repository architecture rules, WebSocket negative authorization, and an H2 persistence integration test proving direct and indirect media references cannot cross companies.
 
 Final frontend command:
 
@@ -100,7 +100,7 @@ Migrations changed:
 - `backend/src/main/resources/db/migration/V2__add_product_search_vector.sql`
 - `backend/src/main/resources/db/migration/V3__tenant_role_name_uniqueness.sql`
 
-Phase 1 consists of 30 small commits from `1fb60be` through `0a72908`, followed by this report commit. Each security module was committed as a separate reviewable slice.
+Phase 1 was delivered as 32 small commits beginning at `1fb60be`, including the closing audit and persistence-integration evidence. Each security module was committed as a separate reviewable slice.
 
 ## 9. Performance and compatibility impact
 
