@@ -12,6 +12,7 @@ import nextpos.app.nextpos.repository.CurrencyRepository;
 import nextpos.app.nextpos.repository.WarehouseRepository;
 import nextpos.app.nextpos.security.context.UserContext;
 import nextpos.app.nextpos.service.interf.WarehouseService;
+import nextpos.app.nextpos.security.access.WarehouseAccessService;
 import org.apache.kafka.common.errors.ResourceNotFoundException;
 import org.springframework.stereotype.Service;
 
@@ -25,6 +26,7 @@ public class WarehouseServiceImpl implements WarehouseService {
 
         private final WarehouseRepository warehouseRepository;
         private final CurrencyRepository currencyRepository;
+        private final WarehouseAccessService warehouseAccessService;
 
         @Override
         @Transactional
@@ -86,20 +88,14 @@ public class WarehouseServiceImpl implements WarehouseService {
 
         @Override
         public WarehouseResponse getWarehouseById(Long id) {
-                Long companyId = UserContext.getCurrentCompanyId();
-
-                Warehouse warehouse = warehouseRepository
-                                .findByIdAndCompanyIdAndIsDeletedFalse(id, companyId)
-                                .orElseThrow(() -> new ResourceNotFoundException("Warehouse not found with id " + id));
+                Warehouse warehouse = warehouseAccessService.requireAccessible(id);
 
                 return new WarehouseResponse(warehouse);
         }
 
         @Override
         public List<WarehouseResponse> getAllWarehouses() {
-                Long companyId = UserContext.getCurrentCompanyId();
-
-                return warehouseRepository.findAllByCompanyIdAndIsDeletedFalse(companyId)
+                return warehouseAccessService.accessibleWarehouses()
                                 .stream()
                                 .map(WarehouseResponse::new)
                                 .collect(Collectors.toList());
@@ -112,6 +108,9 @@ public class WarehouseServiceImpl implements WarehouseService {
                 return warehouseRepository
                                 .findAllByCreatedByAndCompanyIdAndIsDeletedFalse(userId, companyId)
                                 .stream()
+                                .filter(warehouse -> UserContext.canAccessWarehouse(warehouse.getId())
+                                                || UserContext.getAuthenticatedUser().getAuthorities().stream()
+                                                                .anyMatch(a -> "ROLE_COMPANY_OWNER".equals(a.getAuthority())))
                                 .map(WarehouseResponse::new)
                                 .collect(Collectors.toList());
         }
@@ -122,9 +121,7 @@ public class WarehouseServiceImpl implements WarehouseService {
                 Long currentUserId = UserContext.getCurrentUserId();
                 Long companyId = UserContext.getCurrentCompanyId();
 
-                Warehouse warehouse = warehouseRepository
-                                .findByIdAndCompanyIdAndIsDeletedFalse(id, companyId)
-                                .orElseThrow(() -> new ResourceNotFoundException("Warehouse not found with id " + id));
+                Warehouse warehouse = warehouseAccessService.requireAccessible(id);
 
                 // If name is being updated, check uniqueness
                 if (request.getName() != null && !request.getName().equals(warehouse.getName())) {
@@ -202,9 +199,7 @@ public class WarehouseServiceImpl implements WarehouseService {
                 Long currentUserId = UserContext.getCurrentUserId();
                 Long companyId = UserContext.getCurrentCompanyId();
 
-                Warehouse warehouse = warehouseRepository
-                                .findByIdAndCompanyIdAndIsDeletedFalse(id, companyId)
-                                .orElseThrow(() -> new ResourceNotFoundException("Warehouse not found with id " + id));
+                Warehouse warehouse = warehouseAccessService.requireAccessible(id);
 
                 warehouse.setDeleted(true);
                 warehouse.setUpdatedBy(currentUserId);
