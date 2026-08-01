@@ -21,7 +21,9 @@ class OnboardingTokenServiceTest {
 
     @Test
     void rejectsExpiredAndTamperedTokens() {
-        OnboardingTokenService expiredService = new OnboardingTokenService(SECRET, -1);
+        // JWT timestamps are serialized with second precision; keep the expiry safely
+        // behind the current second so this assertion cannot race the clock boundary.
+        OnboardingTokenService expiredService = new OnboardingTokenService(SECRET, -2_000);
         assertThatThrownBy(() -> expiredService.verify(expiredService.issue(42L, "owner@example.test")))
                 .isInstanceOf(BadCredentialsException.class);
 

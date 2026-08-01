@@ -20,8 +20,8 @@ import nextpos.app.nextpos.repository.CompanyRepository;
 import nextpos.app.nextpos.repository.CustomerRepository;
 import nextpos.app.nextpos.repository.POSGeneralSettingsRepository;
 import nextpos.app.nextpos.repository.WarehouseCurrencyRepository;
-import nextpos.app.nextpos.repository.WarehouseRepository;
 import nextpos.app.nextpos.security.context.UserContext;
+import nextpos.app.nextpos.security.access.WarehouseAccessService;
 import nextpos.app.nextpos.service.interf.POSGeneralSettingsService;
 
 @Service
@@ -29,10 +29,10 @@ import nextpos.app.nextpos.service.interf.POSGeneralSettingsService;
 public class POSGeneralSettingsServiceImpl implements POSGeneralSettingsService {
 
     private final POSGeneralSettingsRepository posRepo;
-    private final WarehouseRepository warehouseRepo;
     private final CompanyRepository companyRepo;
     private final CustomerRepository customerRepo;
     private final WarehouseCurrencyRepository warehouseCurrencyRepo;
+    private final WarehouseAccessService warehouseAccessService;
 
     @Override
     @Transactional
@@ -45,14 +45,11 @@ public class POSGeneralSettingsServiceImpl implements POSGeneralSettingsService 
                 .orElseThrow(() -> new NoSuchElementException("Company not found: " + companyId));
 
         // Validate warehouse and that it belongs to company
-        Warehouse warehouse = warehouseRepo.findById(warehouseId)
-                .orElseThrow(() -> new NoSuchElementException("Warehouse not found: " + warehouseId));
-        if (warehouse.getCompanyId() == null || !companyId.equals(warehouse.getCompanyId())) {
-            throw new IllegalArgumentException("Warehouse does not belong to the provided company");
-        }
+        Warehouse warehouse = warehouseAccessService.requireAccessible(warehouseId);
 
         // Validate currency: must exist, belong to the warehouse, and be active
-        WarehouseCurrency currency = warehouseCurrencyRepo.findById(request.getDefaultCurrencyId())
+        WarehouseCurrency currency = warehouseCurrencyRepo
+                .findByIdAndCompanyIdAndWarehouseId(request.getDefaultCurrencyId(), companyId, warehouseId)
                 .orElseThrow(() -> new NoSuchElementException(
                         "Currency not found: " + request.getDefaultCurrencyId()));
         if (!currency.getWarehouse().getId().equals(warehouseId)) {
@@ -65,7 +62,7 @@ public class POSGeneralSettingsServiceImpl implements POSGeneralSettingsService 
         // Validate optional customer
         Customer customer = null;
         if (request.getDefaultCustomerId() != null) {
-            customer = customerRepo.findById(request.getDefaultCustomerId())
+            customer = customerRepo.findByIdAndCompanyId(request.getDefaultCustomerId(), companyId)
                     .orElseThrow(
                             () -> new NoSuchElementException("Customer not found: " + request.getDefaultCustomerId()));
         }
@@ -93,15 +90,9 @@ public class POSGeneralSettingsServiceImpl implements POSGeneralSettingsService 
     public POSGeneralSettingsResponse getByWarehouse(Long warehouseId) {
         Long companyId = UserContext.getCurrentCompanyId();
 
-        Warehouse warehouse = warehouseRepo.findById(warehouseId)
-                .orElseThrow(() -> new NoSuchElementException("Warehouse not found: " + warehouseId));
+        warehouseAccessService.requireAccessible(warehouseId);
 
-        // Ensure warehouse belongs to company
-        if (warehouse.getCompanyId() == null || !companyId.equals(warehouse.getCompanyId())) {
-            throw new IllegalArgumentException("Warehouse does not belong to the provided company");
-        }
-
-        POSGeneralSettings settings = posRepo.findByWarehouse(warehouse)
+        POSGeneralSettings settings = posRepo.findByCompany_IdAndWarehouse_Id(companyId, warehouseId)
                 .orElseThrow(() -> new NoSuchElementException("POS settings not found for warehouse: " + warehouseId));
 
         return mapToResponse(settings);
@@ -115,7 +106,8 @@ public class POSGeneralSettingsServiceImpl implements POSGeneralSettingsService 
         Long userId = UserContext.getCurrentUserId();
 
         // Find setting by id and ensure scope matches
-        POSGeneralSettings settings = posRepo.findById(id)
+        warehouseAccessService.requireAccessible(warehouseId);
+        POSGeneralSettings settings = posRepo.findByIdAndCompanyIdAndWarehouse_Id(id, companyId, warehouseId)
                 .orElseThrow(() -> new NoSuchElementException("POS settings not found: " + id));
 
         if (settings.getCompany() == null || !companyId.equals(settings.getCompany().getId())) {
@@ -128,7 +120,7 @@ public class POSGeneralSettingsServiceImpl implements POSGeneralSettingsService 
 
         // Update customer if present
         if (request.getDefaultCustomerId() != null) {
-            Customer customer = customerRepo.findById(request.getDefaultCustomerId())
+            Customer customer = customerRepo.findByIdAndCompanyId(request.getDefaultCustomerId(), companyId)
                     .orElseThrow(
                             () -> new NoSuchElementException("Customer not found: " + request.getDefaultCustomerId()));
             settings.setDefaultCustomer(customer);
@@ -136,7 +128,8 @@ public class POSGeneralSettingsServiceImpl implements POSGeneralSettingsService 
 
         // Update currency if present
         if (request.getDefaultCurrencyId() != null) {
-            WarehouseCurrency currency = warehouseCurrencyRepo.findById(request.getDefaultCurrencyId())
+            WarehouseCurrency currency = warehouseCurrencyRepo
+                    .findByIdAndCompanyIdAndWarehouseId(request.getDefaultCurrencyId(), companyId, warehouseId)
                     .orElseThrow(
                             () -> new NoSuchElementException("Currency not found: " + request.getDefaultCurrencyId()));
             // Also verify that the currency belongs to the warehouse and is active
@@ -168,7 +161,8 @@ public class POSGeneralSettingsServiceImpl implements POSGeneralSettingsService 
     public void deletePOSSettings(Long warehouseId, Long id) {
         Long companyId = UserContext.getCurrentCompanyId();
 
-        POSGeneralSettings settings = posRepo.findById(id)
+        warehouseAccessService.requireAccessible(warehouseId);
+        POSGeneralSettings settings = posRepo.findByIdAndCompanyIdAndWarehouse_Id(id, companyId, warehouseId)
                 .orElseThrow(() -> new NoSuchElementException("POS settings not found: " + id));
 
         if (settings.getCompany() == null || !companyId.equals(settings.getCompany().getId())) {

@@ -64,13 +64,8 @@ public class PaymentGatewaySettingsServiceImpl implements PaymentGatewaySettings
     public PaymentGatewaySettingsResponse updateForCurrentCompany(UpdatePaymentGatewaySettingRequest request) {
         Long companyId = UserContext.getCurrentCompanyId();
 
-        PaymentGatewaySettings entity = repository.findById(request.getId())
+        PaymentGatewaySettings entity = repository.findByIdAndCompanyId(request.getId(), companyId)
                 .orElseThrow(() -> new ResourceNotFoundException("PaymentGatewaySettings not found"));
-
-        // Ensure the settings belong to the current user's company
-        if (!entity.getCompany().getId().equals(companyId)) {
-            throw new SecurityException("Access denied to this gateway configuration");
-        }
 
         // If gateway type is being changed, check uniqueness
         if (request.getGatewayType() != null && !request.getGatewayType().equals(entity.getGatewayType())) {
@@ -93,12 +88,8 @@ public class PaymentGatewaySettingsServiceImpl implements PaymentGatewaySettings
     public void deleteForCurrentCompany(Long id) {
         Long companyId = UserContext.getCurrentCompanyId();
 
-        PaymentGatewaySettings entity = repository.findById(id)
+        PaymentGatewaySettings entity = repository.findByIdAndCompanyId(id, companyId)
                 .orElseThrow(() -> new ResourceNotFoundException("PaymentGatewaySettings not found"));
-
-        if (!entity.getCompany().getId().equals(companyId)) {
-            throw new SecurityException("Access denied");
-        }
 
         repository.delete(entity);
         log.info("Deleted payment gateway settings id {} for company {}", id, companyId);
@@ -109,12 +100,8 @@ public class PaymentGatewaySettingsServiceImpl implements PaymentGatewaySettings
     public PaymentGatewaySettingsResponse getForCurrentCompany(Long id) {
         Long companyId = UserContext.getCurrentCompanyId();
 
-        PaymentGatewaySettings entity = repository.findById(id)
+        PaymentGatewaySettings entity = repository.findByIdAndCompanyId(id, companyId)
                 .orElseThrow(() -> new ResourceNotFoundException("PaymentGatewaySettings not found"));
-
-        if (!entity.getCompany().getId().equals(companyId)) {
-            throw new SecurityException("Access denied");
-        }
 
         return PaymentGatewaySettingsResponse.fromEntity(entity);
     }
@@ -159,12 +146,8 @@ public class PaymentGatewaySettingsServiceImpl implements PaymentGatewaySettings
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     @CacheEvict(value = "gatewaySettings", key = "#request.id")
     public PaymentGatewaySettingsResponse updateSystemSettings(UpdatePaymentGatewaySettingRequest request) {
-        PaymentGatewaySettings entity = repository.findById(request.getId())
+        PaymentGatewaySettings entity = repository.findByIdAndCompanyIsNull(request.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("PaymentGatewaySettings not found"));
-
-        if (entity.getCompany() != null) {
-            throw new IllegalArgumentException("This is not a system-level configuration");
-        }
 
         if (request.getGatewayType() != null && !request.getGatewayType().equals(entity.getGatewayType())) {
             if (repository.existsByCompanyIsNullAndGatewayType(request.getGatewayType())) {
@@ -183,12 +166,8 @@ public class PaymentGatewaySettingsServiceImpl implements PaymentGatewaySettings
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     @CacheEvict(value = "gatewaySettings", key = "#id")
     public void deleteSystemSettings(Long id) {
-        PaymentGatewaySettings entity = repository.findById(id)
+        PaymentGatewaySettings entity = repository.findByIdAndCompanyIsNull(id)
                 .orElseThrow(() -> new ResourceNotFoundException("PaymentGatewaySettings not found"));
-
-        if (entity.getCompany() != null) {
-            throw new IllegalArgumentException("Not a system-level configuration");
-        }
 
         repository.delete(entity);
         log.info("Deleted system payment gateway settings id {}", id);
@@ -197,12 +176,8 @@ public class PaymentGatewaySettingsServiceImpl implements PaymentGatewaySettings
     @Override
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     public PaymentGatewaySettingsResponse getSystemSettings(Long id) {
-        PaymentGatewaySettings entity = repository.findById(id)
+        PaymentGatewaySettings entity = repository.findByIdAndCompanyIsNull(id)
                 .orElseThrow(() -> new ResourceNotFoundException("PaymentGatewaySettings not found"));
-
-        if (entity.getCompany() != null) {
-            throw new IllegalArgumentException("Not a system-level configuration");
-        }
 
         return PaymentGatewaySettingsResponse.fromEntity(entity);
     }

@@ -18,6 +18,10 @@ public interface PaymentGatewaySettingsRepository extends JpaRepository<PaymentG
 
     Page<PaymentGatewaySettings> findByCompanyId(Long companyId, Pageable pageable);
 
+    Optional<PaymentGatewaySettings> findByIdAndCompanyId(Long id, Long companyId);
+
+    Optional<PaymentGatewaySettings> findByIdAndCompanyIsNull(Long id);
+
     Optional<PaymentGatewaySettings> findByCompanyIdAndGatewayType(Long companyId, PaymentGatewayProvider gatewayType);
 
     // Find system settings (company is null)
