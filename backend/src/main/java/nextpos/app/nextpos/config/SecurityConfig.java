@@ -5,6 +5,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import nextpos.app.nextpos.security.jwt.JwtFilter;
 import nextpos.app.nextpos.security.jwt.JwtUtils;
+import nextpos.app.nextpos.security.authorization.BusinessApiAuthorizationManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -33,6 +34,7 @@ public class SecurityConfig {
 
     private final JwtUtils jwtUtils;
     private final UserDetailsService userDetailsService;
+    private final BusinessApiAuthorizationManager businessApiAuthorizationManager;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -58,27 +60,21 @@ public class SecurityConfig {
                         // Allow listing company currencies during onboarding
                         .requestMatchers(HttpMethod.GET, "/api/v1/company-currencies").permitAll()
 
-                        // Allow warehouse currency creation during onboarding
-                        .requestMatchers(HttpMethod.POST, "/api/v1/warehouse-currencies/**").permitAll()
-
                         // Public endpoints
                         .requestMatchers(
                                 "/api/v1/users/login",
                                 "/api/v1/users/register",
                                 "/api/v1/verifications/**",
-                                "/actuator/**",
-                                "/api/v1/media/**",
+                                "/actuator/health",
                                 "/v2/api-docs",
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
                                 "/swagger-resources/**",
                                 "/webjars/**",
-                                "/ws-scanner/**")
+                                "/api/v1/webhooks/razorpay")
                         .permitAll()
-                        .requestMatchers("/api/ai/**").authenticated()
-                        .requestMatchers("/api/permissions/**").authenticated()
-                        .requestMatchers("/api/v1/**").authenticated()
+                        .requestMatchers("/api/**").access(businessApiAuthorizationManager)
                         .anyRequest().permitAll())
                 .exceptionHandling(exception -> exception
                         .authenticationEntryPoint(this::handleUnauthorized))

@@ -122,13 +122,13 @@ const routes: Array<RouteRecordRaw> = [
     path: "/create-product",
     name: "CreateProductsPage",
     component: CreateProductsPage,
-    meta: { requiresAuth: true, permission: "PRODUCT_CREATE" },
+    meta: { requiresAuth: true, permission: "USER_CREATE" },
   },
   {
     path: "/create-user",
     name: "CreateUserPage",
     component: CreateUserPage,
-    meta: { requiresAuth: true, permission: "PRODUCT_CREATE" },
+    meta: { requiresAuth: true, permission: "USER_EDIT" },
   },
   {
     path: "/update-user/:id",
@@ -224,7 +224,7 @@ const routes: Array<RouteRecordRaw> = [
     path: "/expense-category",
     name: "ExpenseCategoryPage",
     component: ExpenseCategoryPage,
-    meta: { requiresAuth: true, permission: "" },
+    meta: { requiresAuth: true, permission: "EXPENSE_LIST" },
   },
   // {
   //   path: "/create-quotation",
@@ -524,7 +524,7 @@ const routes: Array<RouteRecordRaw> = [
     path: "/payment-gateway",
     name: "PaymentGatewayPage",
     component: PaymentGatewayPage,
-    meta: { requiresAuth: true, permission: "" },
+    meta: { requiresAuth: true, permission: "SYSTEM_SETTING_PAYMENT_GATEWAY" },
   },
   {
     path: "/home-page",
