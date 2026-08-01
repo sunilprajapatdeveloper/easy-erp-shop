@@ -50,6 +50,9 @@ export function useBarcodeScanner() {
 
         stompClient.value = new Client({
           webSocketFactory: () => socket,
+          connectHeaders: {
+            Authorization: `Bearer ${localStorage.getItem("authToken") || ""}`,
+          },
           reconnectDelay: 5000,
           heartbeatIncoming: 4000,
           heartbeatOutgoing: 4000,
